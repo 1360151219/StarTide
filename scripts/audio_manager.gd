@@ -1,5 +1,7 @@
 extends Node
 
+signal settings_changed
+
 const STREAMS := {
 	"bgm": preload("res://assets/audio/bgm_starbound.wav"),
 	"ui_select": preload("res://assets/audio/ui_select.wav"),
@@ -110,6 +112,7 @@ func toggle_music() -> bool:
 	else:
 		music_player.stop()
 	_save_settings()
+	settings_changed.emit()
 	return music_enabled
 
 
@@ -119,6 +122,7 @@ func toggle_sfx() -> bool:
 		for player in sfx_players:
 			player.stop()
 	_save_settings()
+	settings_changed.emit()
 	return sfx_enabled
 
 
@@ -127,6 +131,7 @@ func set_music_volume(value: float, save := true) -> void:
 	_apply_music_volume()
 	if save:
 		_schedule_save()
+	settings_changed.emit()
 
 
 func set_sfx_volume(value: float, save := true) -> void:
@@ -136,6 +141,7 @@ func set_sfx_volume(value: float, save := true) -> void:
 			player.volume_db = _volume_db(sfx_volume, SFX_BASE_DB) + float(player.get_meta("event_volume_db", 0.0))
 	if save:
 		_schedule_save()
+	settings_changed.emit()
 
 
 func _apply_music_volume() -> void:

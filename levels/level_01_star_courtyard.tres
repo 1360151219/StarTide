@@ -1,0 +1,125 @@
+[gd_resource type="Resource" script_class="LevelConfig" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_config.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/levels/map_config.gd" id="2_map"]
+[ext_resource type="Script" path="res://scripts/levels/difficulty_config.gd" id="3_difficulty"]
+[ext_resource type="Script" path="res://scripts/levels/loot_config.gd" id="4_loot"]
+[ext_resource type="Script" path="res://scripts/levels/stage_config.gd" id="5_stage"]
+[ext_resource type="Script" path="res://scripts/levels/elite_config.gd" id="6_elite"]
+[ext_resource type="Script" path="res://scripts/levels/victory_config.gd" id="7_victory"]
+[ext_resource type="Script" path="res://scripts/levels/reward_config.gd" id="8_reward"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/celestial_floor.png" id="9_floor"]
+
+[sub_resource type="Resource" id="Map"]
+script = ExtResource("2_map")
+map_id = "star_courtyard"
+display_name = "星潮前庭"
+floor_texture = ExtResource("9_floor")
+world_bounds = Rect2(-1600, -1600, 3200, 3200)
+spawn_distance_min = 570.0
+spawn_distance_max = 690.0
+elite_spawn_distance_min = 500.0
+elite_spawn_distance_max = 560.0
+background_color = Color(0.035, 0.075, 0.173, 1)
+floor_tint = Color(0.82, 0.87, 1, 0.92)
+border_color = Color(0.76, 0.62, 0.3, 0.6)
+glow_color = Color(0.18, 0.72, 0.82, 0.025)
+
+[sub_resource type="Resource" id="Difficulty"]
+script = ExtResource("3_difficulty")
+health_start = 1.0
+health_end = 1.8571429
+speed_start = 1.0
+speed_end = 1.03
+damage_start = 1.0
+damage_end = 1.0
+
+[sub_resource type="Resource" id="Loot"]
+script = ExtResource("4_loot")
+heart_drop_chance = 0.055
+heart_value = 22
+magnet_drop_chance = 0.035
+magnet_duration = 5.0
+
+[sub_resource type="Resource" id="Stage1"]
+script = ExtResource("5_stage")
+stage_id = "awakening"
+display_name = "星潮初启"
+subtitle = "星蚀群正在苏醒"
+start_time = 0.0
+spawn_interval_start = 0.9
+spawn_interval_end = 0.74
+extra_spawn_chance = 0.0
+enemy_weights = {"slime": 0.82, "bat": 0.18, "brute": 0.0}
+transition_rest_duration = 0.0
+
+[sub_resource type="Resource" id="Stage2"]
+script = ExtResource("5_stage")
+stage_id = "dusk_hunt"
+display_name = "暮翼围猎"
+subtitle = "高速暮翼加入围猎"
+start_time = 30.0
+spawn_interval_start = 0.7
+spawn_interval_end = 0.55
+extra_spawn_chance = 0.18
+enemy_weights = {"slime": 0.45, "bat": 0.48, "brute": 0.07}
+transition_rest_duration = 3.0
+
+[sub_resource type="Resource" id="Stage3"]
+script = ExtResource("5_stage")
+stage_id = "meteor_judgement"
+display_name = "陨岩审判"
+subtitle = "重型陨岩正在苏醒"
+start_time = 60.0
+spawn_interval_start = 0.52
+spawn_interval_end = 0.38
+extra_spawn_chance = 0.3
+enemy_weights = {"slime": 0.28, "bat": 0.32, "brute": 0.4}
+transition_rest_duration = 3.0
+
+[sub_resource type="Resource" id="Elite"]
+script = ExtResource("6_elite")
+spawn_time = 60.0
+enemy_id = "brute"
+display_name = "陨岩执政官"
+health_multiplier = 2.4
+speed_multiplier = 0.92
+damage_multiplier = 1.35
+radius_multiplier = 1.25
+visual_scale = 1.25
+experience = 36
+bonus_upgrade_count = 1
+magnet_duration = 6.0
+
+[sub_resource type="Resource" id="Victory"]
+script = ExtResource("7_victory")
+mode = "survive_duration"
+perfect_requires_elite = true
+normal_heading = "星门已开启"
+perfect_heading = "完美远征"
+
+[sub_resource type="Resource" id="Reward"]
+script = ExtResource("8_reward")
+reward_id = "unlock_dusk_corridor"
+display_name = "暮翼航标"
+description = "首次通关解锁第二关·暮翼回廊"
+unlock_level_id = "level_02"
+
+[resource]
+script = ExtResource("1_level")
+level_id = "level_01"
+order = 1
+difficulty_rating = 1
+display_name = "星潮前庭"
+subtitle = "教学远征 · 坚持 90 秒"
+description = "守住星门开启前的第一轮星蚀侵袭。精英为可选挑战。"
+map = SubResource("Map")
+duration = 90.0
+initial_enemy_count = 5
+max_enemies = 80
+difficulty = SubResource("Difficulty")
+loot = SubResource("Loot")
+stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3")])
+elite = SubResource("Elite")
+victory = SubResource("Victory")
+reward = SubResource("Reward")

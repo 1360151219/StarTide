@@ -1,5 +1,7 @@
 extends Node2D
 
+const GAME_FONT := preload("res://assets/fonts/NotoSansSC-Regular.otf")
+
 var effects: Array = []
 
 
@@ -11,6 +13,20 @@ func add_effect(center: Vector2, radius: float, color: Color, duration: float, k
 		"duration": duration,
 		"time": duration,
 		"kind": kind,
+	})
+	queue_redraw()
+
+
+func add_damage_number(center: Vector2, amount: float, color: Color, is_player := false) -> void:
+	effects.append({
+		"position": center,
+		"radius": 0.0,
+		"color": color,
+		"duration": 0.62 if is_player else 0.46,
+		"time": 0.62 if is_player else 0.46,
+		"kind": "damage_text",
+		"text": "-%d" % roundi(amount) if is_player else "%d" % roundi(amount),
+		"is_player": is_player,
 	})
 	queue_redraw()
 
@@ -31,6 +47,8 @@ func _draw() -> void:
 		var center: Vector2 = effect["position"]
 		var radius: float = effect["radius"]
 		match effect["kind"]:
+			"damage_text":
+				_draw_damage_text(effect, progress, alpha)
 			"meteor":
 				_draw_meteor(center, radius, progress, alpha, color)
 			"phoenix":
@@ -43,6 +61,17 @@ func _draw() -> void:
 				_draw_sun_hit(center, radius, progress, alpha, color)
 			"defeat":
 				_draw_defeat(center, radius, progress, alpha, color)
+
+
+func _draw_damage_text(effect: Dictionary, progress: float, alpha: float) -> void:
+	var is_player: bool = effect["is_player"]
+	var font_size := 27 if is_player else 20
+	var position: Vector2 = effect["position"] + Vector2(0, -28.0 - progress * (42.0 if is_player else 27.0))
+	var color: Color = effect["color"]
+	color.a = alpha
+	var shadow := Color(0.015, 0.02, 0.06, alpha * 0.9)
+	draw_string(GAME_FONT, position + Vector2(2, 2), effect["text"], HORIZONTAL_ALIGNMENT_CENTER, 54.0, font_size, shadow)
+	draw_string(GAME_FONT, position, effect["text"], HORIZONTAL_ALIGNMENT_CENTER, 54.0, font_size, color)
 
 
 func _draw_meteor(center: Vector2, radius: float, progress: float, alpha: float, color: Color) -> void:

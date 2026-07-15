@@ -1,0 +1,125 @@
+[gd_resource type="Resource" script_class="LevelConfig" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_config.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/levels/map_config.gd" id="2_map"]
+[ext_resource type="Script" path="res://scripts/levels/difficulty_config.gd" id="3_difficulty"]
+[ext_resource type="Script" path="res://scripts/levels/loot_config.gd" id="4_loot"]
+[ext_resource type="Script" path="res://scripts/levels/stage_config.gd" id="5_stage"]
+[ext_resource type="Script" path="res://scripts/levels/elite_config.gd" id="6_elite"]
+[ext_resource type="Script" path="res://scripts/levels/victory_config.gd" id="7_victory"]
+[ext_resource type="Script" path="res://scripts/levels/reward_config.gd" id="8_reward"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/celestial_floor.png" id="9_floor"]
+
+[sub_resource type="Resource" id="Map"]
+script = ExtResource("2_map")
+map_id = "dusk_corridor"
+display_name = "暮翼回廊"
+floor_texture = ExtResource("9_floor")
+world_bounds = Rect2(-1050, -1800, 2100, 3600)
+spawn_distance_min = 550.0
+spawn_distance_max = 660.0
+elite_spawn_distance_min = 490.0
+elite_spawn_distance_max = 540.0
+background_color = Color(0.055, 0.035, 0.13, 1)
+floor_tint = Color(0.7, 0.64, 0.94, 0.9)
+border_color = Color(0.52, 0.38, 0.78, 0.7)
+glow_color = Color(0.48, 0.24, 0.86, 0.035)
+
+[sub_resource type="Resource" id="Difficulty"]
+script = ExtResource("3_difficulty")
+health_start = 1.08
+health_end = 2.0
+speed_start = 1.02
+speed_end = 1.08
+damage_start = 1.05
+damage_end = 1.12
+
+[sub_resource type="Resource" id="Loot"]
+script = ExtResource("4_loot")
+heart_drop_chance = 0.06
+heart_value = 22
+magnet_drop_chance = 0.03
+magnet_duration = 5.0
+
+[sub_resource type="Resource" id="Stage1"]
+script = ExtResource("5_stage")
+stage_id = "corridor_entry"
+display_name = "暮色侵染"
+subtitle = "回廊入口，翼群正在试探"
+start_time = 0.0
+spawn_interval_start = 0.84
+spawn_interval_end = 0.7
+extra_spawn_chance = 0.04
+enemy_weights = {"slime": 0.58, "bat": 0.39, "brute": 0.03}
+transition_rest_duration = 0.0
+
+[sub_resource type="Resource" id="Stage2"]
+script = ExtResource("5_stage")
+stage_id = "wing_swarm"
+display_name = "翼群折返"
+subtitle = "暮翼从回廊两端高速合围"
+start_time = 35.0
+spawn_interval_start = 0.66
+spawn_interval_end = 0.52
+extra_spawn_chance = 0.18
+enemy_weights = {"slime": 0.28, "bat": 0.62, "brute": 0.1}
+transition_rest_duration = 2.5
+
+[sub_resource type="Resource" id="Stage3"]
+script = ExtResource("5_stage")
+stage_id = "queen_blockade"
+display_name = "女王封锁"
+subtitle = "击破暮翼女王才能重新点亮星门"
+start_time = 70.0
+spawn_interval_start = 0.5
+spawn_interval_end = 0.38
+extra_spawn_chance = 0.3
+enemy_weights = {"slime": 0.18, "bat": 0.52, "brute": 0.3}
+transition_rest_duration = 2.5
+
+[sub_resource type="Resource" id="Elite"]
+script = ExtResource("6_elite")
+spawn_time = 70.0
+enemy_id = "bat"
+display_name = "暮翼女王"
+health_multiplier = 15.0
+speed_multiplier = 0.78
+damage_multiplier = 2.0
+radius_multiplier = 1.55
+visual_scale = 1.45
+experience = 64
+bonus_upgrade_count = 1
+magnet_duration = 7.0
+
+[sub_resource type="Resource" id="Victory"]
+script = ExtResource("7_victory")
+mode = "survive_and_defeat_elite"
+perfect_requires_elite = false
+normal_heading = "回廊已净化"
+failure_heading = "女王封锁未破"
+
+[sub_resource type="Resource" id="Reward"]
+script = ExtResource("8_reward")
+reward_id = "unlock_meteor_core"
+display_name = "星核坐标"
+description = "首次通关解锁第三关·陨岩星核"
+unlock_level_id = "level_03"
+
+[resource]
+script = ExtResource("1_level")
+level_id = "level_02"
+order = 2
+difficulty_rating = 2
+display_name = "暮翼回廊"
+subtitle = "进阶远征 · 105 秒"
+description = "狭长星路中的高速围猎。必须击败暮翼女王并坚持到星门开启。"
+map = SubResource("Map")
+duration = 105.0
+initial_enemy_count = 6
+max_enemies = 80
+difficulty = SubResource("Difficulty")
+loot = SubResource("Loot")
+stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3")])
+elite = SubResource("Elite")
+victory = SubResource("Victory")
+reward = SubResource("Reward")

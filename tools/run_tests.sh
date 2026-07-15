@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -u
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
+FAILED=0
+
+run_and_check() {
+  local name="$1"
+  local expected="$2"
+  shift 2
+  local output
+  local status
+  output="$("$GODOT" --headless --path "$ROOT" "$@" 2>&1)"
+  status=$?
+  printf '%s\n' "$output"
+  if [ "$status" -ne 0 ]; then
+    printf 'TEST_RUNNER_FAILED %s exit=%d\n' "$name" "$status" >&2
+    FAILED=1
+  fi
+  if printf '%s\n' "$output" | grep -Eq 'SCRIPT ERROR:|PARSE ERROR:|(^|[[:space:]])ERROR:'; then
+    printf 'TEST_RUNNER_FAILED %s engine_error=true\n' "$name" >&2
+    FAILED=1
+  fi
+  if [ -n "$expected" ] && [ "$(printf '%s\n' "$output" | grep -Fc "$expected")" -ne 1 ]; then
+    printf 'TEST_RUNNER_FAILED %s expected=%s\n' "$name" "$expected" >&2
+    FAILED=1
+  fi
+}
+
+run_and_check editor "" --editor --quit
+run_and_check levels LEVELS_OK --script res://tools/test_level_catalog.gd
+run_and_check stages STAGES_OK --script res://tools/test_stage_director.gd
+run_and_check spawner SPAWNER_OK --script res://tools/test_enemy_spawner.gd
+run_and_check victory VICTORY_OK --script res://tools/test_victory_conditions.gd
+run_and_check records RECORDS_OK --script res://tools/test_run_records.gd
+run_and_check heroes HEROES_OK --script res://tools/test_hero_systems.gd
+run_and_check campaign CAMPAIGN_OK --script res://tools/smoke_campaign.gd
+run_and_check smoke SMOKE_OK --script res://tools/smoke_game.gd
+run_and_check responsive RESPONSIVE_OK --script res://tools/test_responsive_layout.gd
+run_and_check architecture ARCHITECTURE_OK --script res://tools/check_architecture.gd
+
+if [ "$FAILED" -ne 0 ]; then
+  exit 1
+fi
+
+printf 'ALL_TESTS_OK suites=10 responsive_profiles=4 engine_errors=false\n'

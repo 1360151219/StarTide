@@ -22,6 +22,8 @@ var movement_amount := 0.0
 var side_blend := 0.0
 var horizontal_facing := -1
 var turn_progress := 1.0
+var passive_active := false
+var map: MapConfig
 
 
 func _process(delta: float) -> void:
@@ -33,15 +35,18 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func configure(selected_hero_id: String, hero_data: Dictionary) -> void:
+func configure(selected_hero_id: String, hero_data: Dictionary, map_config: MapConfig) -> void:
 	hero_id = selected_hero_id
+	map = map_config
 	max_health = hero_data["max_health"]
 	health = max_health
 	speed = hero_data["speed"]
 	queue_redraw()
 
 
-func move(direction: Vector2, delta: float, bounds: Rect2) -> void:
+func move(direction: Vector2, delta: float) -> Vector2:
+	var bounds := map.world_bounds
+	var previous_position := position
 	movement_amount = direction.length()
 	if direction.length_squared() > 0.01:
 		facing = direction.normalized()
@@ -53,7 +58,8 @@ func move(direction: Vector2, delta: float, bounds: Rect2) -> void:
 		position += facing * speed * delta
 	position.x = clampf(position.x, bounds.position.x + 24.0, bounds.end.x - 24.0)
 	position.y = clampf(position.y, bounds.position.y + 24.0, bounds.end.y - 24.0)
-	z_index = clampi(roundi(position.y + 1700.0), 1, 3800)
+	z_index = map.depth_index(position.y)
+	return position - previous_position
 
 
 func take_damage(amount: float) -> bool:
@@ -75,6 +81,15 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO)
 	draw_circle(Vector2.ZERO, 31.0, Color(0.23, 0.87, 1.0, 0.08))
 	draw_arc(Vector2.ZERO, 31.0, 0.0, TAU, 36, Color(0.55, 0.95, 1.0, 0.68), 2.2)
+	if passive_active and hero_id == "star_warden":
+		draw_circle(Vector2.ZERO, 43.0, Color(0.25, 0.9, 1.0, 0.08))
+		draw_arc(Vector2.ZERO, 43.0, animation_time * 0.45, animation_time * 0.45 + PI * 1.55, 48, Color(0.48, 0.94, 1.0, 0.86), 3.2)
+		for index in range(6):
+			draw_circle(Vector2.from_angle(animation_time * 0.35 + index * TAU / 6.0) * 43.0, 2.8, Color("d9fbff"))
+	elif passive_active and hero_id == "ember_ranger":
+		for index in range(3):
+			var wind_radius := 34.0 + index * 7.0
+			draw_arc(Vector2.ZERO, wind_radius, animation_time * 2.5 + index, animation_time * 2.5 + index + PI * 0.9, 22, Color(1.0, 0.46 + index * 0.1, 0.18, 0.72 - index * 0.12), 2.8)
 	var textures: Dictionary = HERO_TEXTURES[hero_id]
 	var front_texture: Texture2D = textures["front"]
 	var side_texture: Texture2D = textures["side"]

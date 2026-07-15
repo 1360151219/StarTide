@@ -11,16 +11,28 @@ var core_color := Color("dffcff")
 var outline_color := Color("e5b95e")
 var visual_kind := "star_lance"
 var age := 0.0
+var previous_position := Vector2.ZERO
 var hit_ids: Dictionary = {}
 
 
 func advance(delta: float) -> bool:
+	previous_position = position
 	age += delta
 	position += velocity * delta
 	rotation = velocity.angle()
 	lifetime -= delta
 	queue_redraw()
 	return lifetime <= 0.0
+
+
+func intersects_circle(center: Vector2, combined_radius: float) -> bool:
+	var segment := position - previous_position
+	var length_squared := segment.length_squared()
+	var progress := 0.0
+	if length_squared > 0.0001:
+		progress = clampf((center - previous_position).dot(segment) / length_squared, 0.0, 1.0)
+	var nearest_point := previous_position + segment * progress
+	return nearest_point.distance_squared_to(center) <= combined_radius * combined_radius
 
 
 func can_hit(enemy: Node) -> bool:

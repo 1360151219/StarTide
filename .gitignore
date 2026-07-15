@@ -1,4 +1,29 @@
-.godot/
+# Godot generated cache and imported artifacts
+/.godot/
+/.import/
+*.translation
+*.tmp
+
+# Godot C# generated files
+/.mono/
+/data_*/
+/mono_crash.*.json
+
+# Local temporary files
+/tmp/
+.DS_Store
+Thumbs.db
+*.log
+
+# Generated export output
+/build/
+/android/.build_version
+/android/build/
+*.apk
+*.apk.*
+*.aab
+*.ipa
+
+# Legacy/local export credentials
 export.cfg
-export_presets.cfg
-tmp/
+export_credentials.cfg

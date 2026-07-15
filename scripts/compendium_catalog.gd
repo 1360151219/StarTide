@@ -1,16 +1,11 @@
 extends RefCounted
 
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
+const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
 
 const HERO_TEXTURES := {
 	"star_warden": preload("res://assets/art/characters/star_tide_warden.png"),
 	"ember_ranger": preload("res://assets/art/characters/emberwing_ranger.png"),
-}
-
-const ENEMY_TEXTURES := {
-	"slime": preload("res://assets/art/enemies/starblight_slime.png"),
-	"bat": preload("res://assets/art/enemies/duskwing_bat.png"),
-	"brute": preload("res://assets/art/enemies/meteor_brute.png"),
 }
 
 const PICKUP_TEXTURES := {
@@ -26,12 +21,6 @@ const SKILL_TEXTURES := {
 	"ember_volley": preload("res://assets/art/skills/ember_volley.png"),
 	"meteor_rain": preload("res://assets/art/skills/meteor_rain.png"),
 	"phoenix_heart": preload("res://assets/art/skills/phoenix_heart.png"),
-}
-
-const ENEMIES := {
-	"slime": {"name": "星蚀史莱姆", "subtitle": "基础魔物", "description": "缓慢逼近的星蚀凝胶。\n生命与威胁均衡，最为常见。"},
-	"bat": {"name": "暮翼蝠", "subtitle": "高速魔物", "description": "轻盈却危险的高速飞行魔物。\n生命较低，擅长穿过技能空隙。"},
-	"brute": {"name": "陨岩巨怪", "subtitle": "重型魔物", "description": "披着陨岩外壳的重型魔物。\n生命和接触伤害都很高。"},
 }
 
 const PICKUPS := {
@@ -60,7 +49,7 @@ static func _hero_entries() -> Array:
 		result.append({
 			"name": hero["name"],
 			"subtitle": "%s · 生命 %d · 移速 %d" % [hero["title"], hero["max_health"], hero["speed"]],
-			"description": hero["description"].replace("\n", "；"),
+			"description": "%s\n固有 · %s：%s" % [hero["description"].replace("\n", "；"), hero["passive_name"], hero["passive_description"]],
 			"texture": HERO_TEXTURES[hero_id],
 			"accent": Color("70e8ff") if hero_id == "star_warden" else Color("ff9a62"),
 		})
@@ -69,10 +58,11 @@ static func _hero_entries() -> Array:
 
 static func _enemy_entries() -> Array:
 	var result: Array = []
-	for enemy_id in ENEMIES:
-		var entry: Dictionary = ENEMIES[enemy_id].duplicate()
-		entry["texture"] = ENEMY_TEXTURES[enemy_id]
-		entry["accent"] = Color("ef718d") if enemy_id == "slime" else Color("b889ff") if enemy_id == "bat" else Color("ff9f5a")
+	for enemy_id in EnemyCatalog.ids():
+		var data := EnemyCatalog.enemy(enemy_id)
+		var entry := {"name": data["name"], "subtitle": data["subtitle"], "description": data["description"]}
+		entry["texture"] = data["front"]
+		entry["accent"] = data["accent"]
 		result.append(entry)
 	return result
 
@@ -96,8 +86,9 @@ static func _skill_entries() -> Array:
 			result.append({
 				"name": skill["name"],
 				"subtitle": "%s专属 · 终极：%s" % [hero["name"], skill["ultimate_name"]],
-				"description": skill["descriptions"][1] + "；" + skill["descriptions"][3],
+				"description": "I · %s\nII · %s\n终极 · %s" % [skill["descriptions"][1], skill["descriptions"][2], skill["descriptions"][3]],
 				"texture": SKILL_TEXTURES[skill_id],
 				"accent": Color("70e8ff") if hero_id == "star_warden" else Color("ff9a62"),
+				"card_height": 246.0,
 			})
 	return result
