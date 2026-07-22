@@ -47,7 +47,7 @@ func _test_star_lance(host: Node2D, effects: Node2D) -> void:
 	_select_only_skill(session, "star_lance")
 	session.skills.runtime.bolt_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
-	_require(session.projectiles.projectiles.size() == 5, "星陨万华没有生成五枚星枪")
+	_require(session.projectiles.projectiles.size() == 3, "星陨万华没有生成三枚星枪")
 	session.free()
 
 
@@ -59,7 +59,7 @@ func _test_sun_orbit(host: Node2D, effects: Node2D) -> void:
 	session.skills.runtime.orbit_phase = 0.0
 	session.skills.runtime.orbit_hit_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
-	_require(enemy.health == health_before - 28.0, "日冕圣环没有造成独立接触伤害")
+	_require(enemy.health == health_before - 12.0, "日冕圣环没有造成独立接触伤害")
 	session.free()
 
 
@@ -70,7 +70,7 @@ func _test_frost_tide(host: Node2D, effects: Node2D) -> void:
 	var health_before: float = enemy.health
 	session.skills.runtime.pulse_timer = 0.0
 	session.skills.advance(0.0, 0.0, 2.0)
-	_require(enemy.health == health_before - 50.0, "时凝星海没有造成独立范围伤害")
+	_require(enemy.health == health_before - 49.0, "时凝星海没有造成独立范围伤害")
 	_require(is_equal_approx(enemy.slow_factor, 0.28) and session.skills.runtime.pulse_visual_time > 0.0, "时凝星海减速或视觉没有生效")
 	session.free()
 
@@ -99,16 +99,16 @@ func _test_ember_volley(host: Node2D, effects: Node2D) -> void:
 	_select_only_skill(session, "ember_volley")
 	session.skills.runtime.volley_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
-	_require(session.projectiles.projectiles.size() == 4, "百鸟朝阳没有生成四枚爆裂箭")
+	_require(session.projectiles.projectiles.size() == 3, "百鸟朝阳没有生成三枚爆裂箭")
 	for projectile in session.projectiles.projectiles:
-		_require(projectile.blast_radius == 74.0 and projectile.pierce == 1, "百鸟朝阳终极参数没有应用")
+		_require(projectile.blast_radius == 74.0 and projectile.pierce == 0, "百鸟朝阳终极参数没有应用")
 	session.free()
 
 
 func _test_meteor_rain(host: Node2D, effects: Node2D) -> void:
 	var session := _create_session(host, effects, "ember_ranger", 25)
 	_select_only_skill(session, "meteor_rain")
-	var targets: Array = session.enemies.snapshot().slice(0, 4)
+	var targets: Array = session.enemies.snapshot()
 	for index in range(targets.size()):
 		_durable_enemy(session, session.player.position + Vector2(index * 180.0, 0.0), targets[index])
 	var effect_count: int = effects.effects.size()
@@ -117,7 +117,7 @@ func _test_meteor_rain(host: Node2D, effects: Node2D) -> void:
 	var damaged := 0
 	for enemy in targets:
 		damaged += int(enemy.health < enemy.max_health)
-	_require(damaged == 4 and effects.effects.size() >= effect_count + 4, "天火坠世没有独立轰击四处目标")
+	_require(damaged == 3 and effects.effects.size() >= effect_count + 3, "天火坠世没有独立轰击三处目标")
 	session.free()
 
 
@@ -130,8 +130,8 @@ func _test_phoenix_heart(host: Node2D, effects: Node2D) -> void:
 	var enemy_health_before: float = enemy.health
 	session.skills.runtime.phoenix_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
-	_require(session.player.health == 907.0, "不灭炎翼没有独立治疗 7 点生命")
-	_require(enemy.health == enemy_health_before - 45.0, "不灭炎翼没有独立造成范围伤害")
+	_require(session.player.health == 902.5, "不灭炎翼没有独立治疗 2.5 点生命")
+	_require(enemy.health == enemy_health_before - 38.0, "不灭炎翼没有独立造成范围伤害")
 	session.free()
 
 
@@ -193,7 +193,7 @@ func _create_session(host: Node2D, effects: Node2D, hero_id: String, seed_value:
 
 func _random_streams(seed_value: int) -> Dictionary:
 	var streams := {}
-	for stream_id in ["spawn", "loot", "skill", "upgrade"]:
+	for stream_id in ["spawn", "loot", "skill", "upgrade", "enemy_ability"]:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value + streams.size()
 		streams[stream_id] = rng

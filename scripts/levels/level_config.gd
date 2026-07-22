@@ -13,6 +13,7 @@ extends Resource
 @export var max_enemies := 80
 @export var difficulty: DifficultyConfig
 @export var loot: LootConfig
+@export var enemy_ability_budget: EnemyAbilityBudgetConfig
 @export var stages: Array[StageConfig] = []
 @export var elite: EliteConfig
 @export var victory: VictoryConfig
@@ -32,7 +33,7 @@ func stage_end_time(index: int) -> float:
 	return duration
 
 
-func validation_errors(valid_enemy_ids: PackedStringArray) -> PackedStringArray:
+func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := PackedStringArray()) -> PackedStringArray:
 	var errors := PackedStringArray()
 	if level_id.is_empty():
 		errors.append("level_id 不能为空")
@@ -58,7 +59,11 @@ func validation_errors(valid_enemy_ids: PackedStringArray) -> PackedStringArray:
 		errors.append("掉落配置不能为空")
 	else:
 		_append_prefixed(errors, "掉落", loot.validation_errors())
-	_validate_stages(errors, valid_enemy_ids)
+	if enemy_ability_budget == null:
+		errors.append("怪物技能预算不能为空")
+	else:
+		_append_prefixed(errors, "怪物技能预算", enemy_ability_budget.validation_errors())
+	_validate_stages(errors, valid_enemy_ids, valid_ability_ids)
 	if elite == null:
 		errors.append("精英配置不能为空")
 	else:
@@ -74,7 +79,7 @@ func validation_errors(valid_enemy_ids: PackedStringArray) -> PackedStringArray:
 	return errors
 
 
-func _validate_stages(errors: PackedStringArray, valid_enemy_ids: PackedStringArray) -> void:
+func _validate_stages(errors: PackedStringArray, valid_enemy_ids: PackedStringArray, valid_ability_ids: PackedStringArray) -> void:
 	if stages.is_empty():
 		errors.append("至少需要一个阶段")
 		return
@@ -92,7 +97,7 @@ func _validate_stages(errors: PackedStringArray, valid_enemy_ids: PackedStringAr
 			errors.append("首个阶段必须从 0 秒开始")
 		if stage.start_time <= previous_start or stage.start_time >= duration:
 			errors.append("阶段 %d 的开始时间必须递增且小于关卡时长" % (index + 1))
-		_append_prefixed(errors, "阶段 %d" % (index + 1), stage.validation_errors(valid_enemy_ids))
+		_append_prefixed(errors, "阶段 %d" % (index + 1), stage.validation_errors(valid_enemy_ids, valid_ability_ids))
 		if stage.transition_rest_duration >= stage_end_time(index) - stage.start_time:
 			errors.append("阶段 %d 的喘息时间不能覆盖整个阶段" % (index + 1))
 		previous_start = stage.start_time

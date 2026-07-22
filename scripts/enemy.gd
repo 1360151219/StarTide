@@ -22,6 +22,9 @@ var turn_progress := 1.0
 var is_elite := false
 var display_name := ""
 var visual_scale := 1.0
+var ability_damage_multiplier := 1.0
+var contact_enabled := true
+var spawn_serial := 0
 
 
 func configure(enemy_kind: String, scaling: Dictionary, elite_config: EliteConfig = null) -> void:
@@ -30,6 +33,7 @@ func configure(enemy_kind: String, scaling: Dictionary, elite_config: EliteConfi
 	max_health = float(data["health"]) * float(scaling["health"])
 	speed = float(data["speed"]) * float(scaling["speed"])
 	damage = float(data["damage"]) * float(scaling["damage"])
+	ability_damage_multiplier = float(scaling["damage"])
 	radius = float(data["radius"])
 	experience = int(data["experience"])
 	color = data["color"]
@@ -40,6 +44,7 @@ func configure(enemy_kind: String, scaling: Dictionary, elite_config: EliteConfi
 		max_health *= elite_config.health_multiplier
 		speed *= elite_config.speed_multiplier
 		damage *= elite_config.damage_multiplier
+		ability_damage_multiplier *= elite_config.damage_multiplier
 		radius *= elite_config.radius_multiplier
 		experience = elite_config.experience
 		color = Color("f6c968")
@@ -48,8 +53,12 @@ func configure(enemy_kind: String, scaling: Dictionary, elite_config: EliteConfi
 
 
 func advance(target: Vector2, delta: float, now: float) -> void:
-	animation_time += delta
 	var direction := global_position.direction_to(target)
+	advance_motion(direction, speed, delta, now)
+
+
+func advance_motion(direction: Vector2, move_speed: float, delta: float, now: float) -> Vector2:
+	animation_time += delta
 	var target_side_blend := 1.0 if absf(direction.x) > 0.2 else 0.0
 	side_blend = move_toward(side_blend, target_side_blend, delta * 6.0)
 	if absf(direction.x) > 0.2:
@@ -59,9 +68,11 @@ func advance(target: Vector2, delta: float, now: float) -> void:
 			turn_progress = 0.0
 	turn_progress = minf(1.0, turn_progress + delta * 7.0)
 	_refresh_slow(now)
-	position += direction * speed * (slow_factor if slowed else 1.0) * delta
+	var movement := direction.normalized() * move_speed * (slow_factor if slowed else 1.0) * delta
+	position += movement
 	hit_flash = maxf(0.0, hit_flash - delta)
 	queue_redraw()
+	return movement
 
 
 func take_damage(amount: float) -> bool:
@@ -96,7 +107,8 @@ func _refresh_slow(now: float) -> void:
 
 
 func _draw() -> void:
-	var shown_color := Color.WHITE if hit_flash <= 0.0 else Color("ffd2dc")
+	var hit_color := Color("fff4d8") if kind == "green_grub" else Color("ffd2dc")
+	var shown_color := Color.WHITE if hit_flash <= 0.0 else hit_color
 	var metrics := _visual_metrics()
 	_draw_ground(metrics)
 	if slowed:
@@ -113,7 +125,12 @@ func _visual_metrics() -> Dictionary:
 	var texture_y := -30.0
 	var shadow_width := 25.0
 	var bar_y := -42.0
-	if kind == "bat":
+	if kind == "green_grub":
+		texture_size = Vector2(76.0, 56.0)
+		texture_y = -29.0
+		shadow_width = 24.0
+		bar_y = -41.0
+	elif kind == "bat":
 		texture_size = Vector2(92.0, 58.4)
 		texture_y = -33.0
 		bar_y = -44.0
@@ -143,21 +160,24 @@ func _draw_body(metrics: Dictionary, shown_color: Color) -> void:
 	var bob := sin(animation_time * (8.5 if kind == "bat" else 4.8)) * (3.5 if kind == "bat" else 1.5)
 	var data := EnemyCatalog.enemy(kind)
 	var size: Vector2 = metrics["size"]
+	var hit_scale := Vector2(1.14, 0.74) if kind == "green_grub" and hit_flash > 0.0 else Vector2.ONE
 	if side_blend < 1.0:
 		var front_color := shown_color
 		front_color.a *= 1.0 - side_blend
+		draw_set_transform(Vector2.ZERO, 0.0, hit_scale)
 		draw_texture_rect(data["front"], Rect2(-size.x * 0.5, metrics["y"] + bob, size.x, size.y), false, front_color)
+		draw_set_transform(Vector2.ZERO)
 	if side_blend > 0.0:
-		_draw_side(data["side"], metrics, shown_color, bob)
+		_draw_side(data["side"], metrics, shown_color, bob, hit_scale)
 
 
-func _draw_side(texture: Texture2D, metrics: Dictionary, shown_color: Color, bob: float) -> void:
+func _draw_side(texture: Texture2D, metrics: Dictionary, shown_color: Color, bob: float, hit_scale: Vector2) -> void:
 	var size: Vector2 = metrics["size"]
 	var side_size := Vector2(size.y * texture.get_width() / texture.get_height(), size.y)
 	var side_color := shown_color
 	side_color.a *= side_blend
 	var turn_width := lerpf(0.2, 1.0, sin(turn_progress * PI * 0.5))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2((1.0 if horizontal_facing < 0 else -1.0) * turn_width, 1.0))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2((1.0 if horizontal_facing < 0 else -1.0) * turn_width * hit_scale.x, hit_scale.y))
 	draw_texture_rect(texture, Rect2(-side_size.x * 0.5, metrics["y"] + bob, side_size.x, side_size.y), false, side_color)
 	draw_set_transform(Vector2.ZERO)
 

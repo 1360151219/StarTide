@@ -15,6 +15,7 @@ func finalize(records: RefCounted, state: RefCounted, level: LevelConfig, passiv
 		"won": state.victory,
 		"hero_id": state.hero_id,
 		"level_id": state.level_id,
+		"progression_reward": result["progression_reward"],
 	}
 
 
@@ -38,11 +39,15 @@ func _body(state: RefCounted, level: LevelConfig, passives: RefCounted, result: 
 
 
 func _reward_text(level: LevelConfig, result: Dictionary, won: bool) -> String:
+	var progression: Dictionary = result["progression_reward"]
+	var growth_line := "英雄熟练度 +%d · 当前 Lv.%d" % [progression["mastery_xp_gained"], progression["level"]]
+	if progression["levels_gained"] > 0:
+		growth_line += " · 技能点 +%d" % progression["skill_points_gained"]
 	if not won:
-		return "本次未获得通关奖励"
+		return "本次未获得关卡通关奖励\n" + growth_line
 	if result["first_clear"]:
-		return "首次通关 · %s\n%s" % [level.reward.display_name, level.reward.description]
-	return "重复通关 · 永久奖励已领取"
+		return "首次通关 · %s\n%s\n%s" % [level.reward.display_name, level.reward.description, growth_line]
+	return "重复通关 · 永久奖励已领取\n" + growth_line
 
 
 func victory_hint(level: LevelConfig) -> String:

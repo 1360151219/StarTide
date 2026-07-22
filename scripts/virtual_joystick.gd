@@ -72,19 +72,19 @@ func cancel_input() -> void:
 
 func _draw() -> void:
 	var center := base_position
-	var visual_alpha := 1.0 if active else 0.58
-	draw_circle(center, 71.0, Color(0.025, 0.045, 0.13, 0.58 * visual_alpha))
-	draw_arc(center, 71.0, 0.0, TAU, 64, Color(0.83, 0.67, 0.3, 0.52 * visual_alpha), 3.0)
-	draw_arc(center, 57.0, 0.0, TAU, 48, Color(0.33, 0.82, 0.93, 0.25 * visual_alpha), 1.5)
+	var visual_alpha := 1.0 if active else 0.38
+	draw_circle(center, 71.0, Color(0.05, 0.32, 0.36, 0.5 * visual_alpha))
+	draw_arc(center, 71.0, 0.0, TAU, 64, Color(1.0, 0.86, 0.42, 0.68 * visual_alpha), 3.0)
+	draw_arc(center, 57.0, 0.0, TAU, 48, Color(0.86, 1.0, 0.94, 0.46 * visual_alpha), 1.5)
 	for index in range(4):
 		var direction := Vector2.from_angle(index * PI * 0.5)
-		draw_circle(center + direction * 62.0, 3.5, Color(0.965, 0.843, 0.51, visual_alpha))
-	draw_line(center + Vector2(-40, 0), center + Vector2(40, 0), Color(0.4, 0.82, 0.9, 0.12), 1.0)
-	draw_line(center + Vector2(0, -40), center + Vector2(0, 40), Color(0.4, 0.82, 0.9, 0.12), 1.0)
-	draw_circle(knob_position, 31.0, Color(0.08, 0.17, 0.34, 0.92 * visual_alpha))
-	draw_arc(knob_position, 31.0, 0.0, TAU, 36, Color(0.44, 0.91, 0.96, visual_alpha), 2.5)
+		draw_circle(center + direction * 62.0, 3.5, Color(1.0, 0.86, 0.42, visual_alpha))
+	draw_line(center + Vector2(-40, 0), center + Vector2(40, 0), Color(0.86, 1.0, 0.94, 0.18 * visual_alpha), 1.0)
+	draw_line(center + Vector2(0, -40), center + Vector2(0, 40), Color(0.86, 1.0, 0.94, 0.18 * visual_alpha), 1.0)
+	draw_circle(knob_position, 31.0, Color(0.05, 0.42, 0.46, 0.9 * visual_alpha))
+	draw_arc(knob_position, 31.0, 0.0, TAU, 36, Color(0.9, 1.0, 0.94, visual_alpha), 2.5)
 	var star := PackedVector2Array()
 	for index in range(8):
 		var star_radius := 13.0 if index % 2 == 0 else 5.0
 		star.append(knob_position + Vector2.from_angle(-PI * 0.5 + index * PI * 0.25) * star_radius)
-	draw_colored_polygon(star, Color(0.965, 0.843, 0.51, visual_alpha))
+	draw_colored_polygon(star, Color(1.0, 0.86, 0.42, visual_alpha))

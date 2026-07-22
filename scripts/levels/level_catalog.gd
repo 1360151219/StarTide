@@ -1,6 +1,7 @@
 extends RefCounted
 
 const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
+const EnemyAbilityCatalog = preload("res://scripts/enemy_ability_catalog.gd")
 const LEVELS: Array[LevelConfig] = [
 	preload("res://levels/level_01_star_courtyard.tres"),
 	preload("res://levels/level_02_dusk_corridor.tres"),
@@ -37,7 +38,7 @@ static func validation_errors() -> PackedStringArray:
 	var seen_map_ids: Dictionary = {}
 	var seen_reward_ids: Dictionary = {}
 	for level in LEVELS:
-		for message in level.validation_errors(EnemyCatalog.ids()):
+		for message in level.validation_errors(EnemyCatalog.ids(), EnemyAbilityCatalog.ids()):
 			errors.append("%s：%s" % [level.resource_path, message])
 		if seen_ids.has(level.level_id):
 			errors.append("关卡 ID 重复：%s" % level.level_id)

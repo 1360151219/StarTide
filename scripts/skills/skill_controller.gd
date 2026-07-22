@@ -13,7 +13,7 @@ var flash_until: Dictionary = {}
 var current_elapsed := 0.0
 
 
-func configure(hero_id: String, player: Node2D, enemies: Node2D, projectiles: Node2D, effects: Node2D, audio: Node, rng: RandomNumberGenerator) -> void:
+func configure(hero_id: String, player: Node2D, enemies: Node2D, projectiles: Node2D, effects: Node2D, audio: Node, rng: RandomNumberGenerator, progression: Dictionary = {}) -> void:
 	active_skill_ids = HeroCatalog.hero(hero_id)["skills"].duplicate()
 	levels.clear()
 	for skill_id in active_skill_ids:
@@ -21,7 +21,7 @@ func configure(hero_id: String, player: Node2D, enemies: Node2D, projectiles: No
 	levels[active_skill_ids[0]] = 1
 	runtime = StarRuntime.new() if hero_id == "star_warden" else EmberRuntime.new()
 	add_child(runtime)
-	runtime.configure(player, enemies, projectiles, effects, audio, rng, levels)
+	runtime.configure(player, enemies, projectiles, effects, audio, rng, levels, progression.get("skill_modifiers", {}))
 	runtime.skill_released.connect(_on_skill_released)
 	if hero_id == "star_warden":
 		visuals = StarVisuals.new()

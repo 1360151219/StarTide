@@ -35,10 +35,10 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func configure(selected_hero_id: String, hero_data: Dictionary, map_config: MapConfig) -> void:
+func configure(selected_hero_id: String, hero_data: Dictionary, map_config: MapConfig, progression: Dictionary = {}) -> void:
 	hero_id = selected_hero_id
 	map = map_config
-	max_health = hero_data["max_health"]
+	max_health = hero_data["max_health"] * float(progression.get("health_multiplier", 1.0))
 	health = max_health
 	speed = hero_data["speed"]
 	queue_redraw()

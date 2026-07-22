@@ -3,11 +3,18 @@ extends Control
 signal level_selected(level_id: String)
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
+const MEDALLIONS := {
+	"level_01": preload("res://assets/art/ui/home/biome_meadow_medallion.png"),
+	"level_02": preload("res://assets/art/ui/home/biome_oasis_medallion.png"),
+	"level_03": preload("res://assets/art/ui/home/biome_volcano_medallion.png"),
+}
 
 var records: RefCounted
 var levels: Array[LevelConfig]
 var selected_level_id := "level_01"
 var buttons: Dictionary = {}
+var title_labels: Dictionary = {}
+var status_labels: Dictionary = {}
 var detail_label: Label
 
 
@@ -15,45 +22,84 @@ func configure(level_configs: Array[LevelConfig], run_records: RefCounted, initi
 	levels = level_configs
 	records = run_records
 	selected_level_id = initial_level_id if records.is_level_unlocked(initial_level_id) else levels[0].level_id
-	size = Vector2(504, 112)
-	var gap := 10.0
-	var button_width := (size.x - gap * (levels.size() - 1)) / levels.size()
+	size = Vector2(504, 194)
 	for index in range(levels.size()):
-		var level := levels[index]
-		var button := Button.new()
-		button.position = Vector2(index * (button_width + gap), 0)
-		button.size = Vector2(button_width, 66)
-		button.add_theme_font_size_override("font_size", 16 if button_width >= 140.0 else 14)
-		button.pressed.connect(select_level.bind(level.level_id))
-		add_child(button)
-		buttons[level.level_id] = button
-	detail_label = UiFactory.label("", 14, Color("cbd9e8"))
-	detail_label.position = Vector2(4, 72)
-	detail_label.size = Vector2(496, 36)
+		_build_medallion(levels[index], index)
+	detail_label = UiFactory.label("", 13, Color("e9f8ef"))
+	detail_label.position = Vector2(4, 174)
+	detail_label.size = Vector2(496, 20)
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(detail_label)
 	refresh()
 
 
-func select_level(level_id: String) -> void:
-	if not records.is_level_unlocked(level_id):
+func select_level(level_id: String, emit_change := true) -> void:
+	if not buttons.has(level_id):
 		return
 	selected_level_id = level_id
 	refresh()
-	level_selected.emit(level_id)
+	if emit_change:
+		level_selected.emit(level_id)
 
 
 func refresh() -> void:
 	for level in levels:
-		var button: Button = buttons[level.level_id]
+		var button: TextureButton = buttons[level.level_id]
 		var unlocked: bool = records.is_level_unlocked(level.level_id)
-		button.disabled = not unlocked
-		button.text = "%s\n%s" % [level.display_name, "难度 " + "◆".repeat(level.difficulty_rating) if unlocked else "未解锁"]
 		var selected := level.level_id == selected_level_id
-		button.add_theme_stylebox_override("normal", UiFactory.button_style(Color("173c63") if selected else Color("101d36"), Color("f2ca72") if selected else Color("526d8c")))
-		button.add_theme_stylebox_override("disabled", UiFactory.button_style(Color(0.04, 0.05, 0.08, 0.9), Color("354154")))
+		button.disabled = false
+		button.self_modulate = Color.WHITE if selected else Color(0.72, 0.78, 0.8, 0.9)
+		button.scale = Vector2.ONE * (1.025 if selected else 1.0)
+		button.tooltip_text = "%s · %s" % [level.display_name, level.subtitle]
+		title_labels[level.level_id].text = level.display_name
+		status_labels[level.level_id].text = "难度 %s" % "◆".repeat(level.difficulty_rating) if unlocked else "◇ 尚未解锁"
+		status_labels[level.level_id].add_theme_color_override("font_color", Color("ffe59a") if selected else Color("d8e7df"))
 	var selected := _selected_level()
-	detail_label.text = "%s · %s · %s" % [selected.subtitle, records.level_summary(selected.level_id), selected.reward.display_name]
+	detail_label.text = "%s  ·  首通奖励：%s" % [records.level_summary(selected.level_id), selected.reward.display_name]
+
+
+func is_selected_unlocked() -> bool:
+	return records.is_level_unlocked(selected_level_id)
+
+
+func _build_medallion(level: LevelConfig, index: int) -> void:
+	var button := TextureButton.new()
+	button.position = Vector2(index * 172.0, 0)
+	button.size = Vector2(160, 160)
+	button.pivot_offset = button.size * 0.5
+	button.texture_normal = MEDALLIONS[level.level_id]
+	button.texture_hover = MEDALLIONS[level.level_id]
+	button.texture_pressed = MEDALLIONS[level.level_id]
+	button.ignore_texture_size = true
+	button.stretch_mode = TextureButton.STRETCH_SCALE
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.pressed.connect(select_level.bind(level.level_id))
+	button.mouse_entered.connect(_set_hovered.bind(level.level_id, true))
+	button.mouse_exited.connect(_set_hovered.bind(level.level_id, false))
+	add_child(button)
+	buttons[level.level_id] = button
+	var title := UiFactory.label(level.display_name, 14, Color("2b2f2f"))
+	title.position = Vector2(26, 129)
+	title.size = Vector2(108, 22)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(title)
+	title_labels[level.level_id] = title
+	var status := UiFactory.label("", 12, Color("d8e7df"))
+	status.position = Vector2(0, 151)
+	status.size = Vector2(160, 20)
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(status)
+	status_labels[level.level_id] = status
+
+
+func _set_hovered(level_id: String, hovered: bool) -> void:
+	var button: TextureButton = buttons[level_id]
+	if level_id == selected_level_id:
+		return
+	button.self_modulate = Color(0.9, 0.95, 0.95) if hovered else Color(0.72, 0.78, 0.8, 0.9)
 
 
 func _selected_level() -> LevelConfig:

@@ -9,12 +9,12 @@ const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
 const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
 const LevelSelector = preload("res://scripts/ui/level_selector.gd")
+const LevelPreview = preload("res://scripts/ui/level_preview.gd")
+const HomePrimaryButton = preload("res://scripts/ui/home_primary_button.gd")
+const HeroSelector = preload("res://scripts/ui/hero_selector.gd")
+const HeroTrainingPanel = preload("res://scripts/ui/hero_training_panel.gd")
 const CompendiumOverlay = preload("res://scripts/ui/compendium_overlay.gd")
-const FLOOR_TEXTURE := preload("res://assets/art/environment/celestial_floor.png")
-const HERO_TEXTURES := {
-	"star_warden": preload("res://assets/art/characters/star_tide_warden.png"),
-	"ember_ranger": preload("res://assets/art/characters/emberwing_ranger.png"),
-}
+const HOME_BACKGROUND := preload("res://assets/art/ui/home/star_harbor_background.png")
 
 var records: RefCounted
 var audio: Node
@@ -22,12 +22,20 @@ var selected_hero_id := "star_warden"
 var selected_level_id := "level_01"
 var hero_panels: Dictionary = {}
 var hero_record_labels: Dictionary = {}
-var start_button: Button
+var start_button: HomePrimaryButton
+var confirm_button: Button
 var level_selector: Control
+var level_preview: Control
+var hero_selector: Control
+var training_panel: Panel
 var compendium: ColorRect
 var audio_settings: Control
-var screen_background: ColorRect
+var screen_background: TextureRect
 var design_frame: Control
+var lobby_view: Control
+var hero_view: Control
+var subtitle_label: Label
+var selected_level_label: Label
 
 
 func configure(run_records: RefCounted, audio_manager: Node) -> void:
@@ -38,167 +46,197 @@ func configure(run_records: RefCounted, audio_manager: Node) -> void:
 	layer = 20
 	design_frame = _build_background()
 	_build_header(design_frame)
-	_build_level_selector(design_frame)
-	_build_hero_cards(design_frame)
-	_build_actions(design_frame)
+	_build_lobby(design_frame)
+	_build_hero_view(design_frame)
 	compendium = CompendiumOverlay.new()
 	add_child(compendium)
+	_show_lobby()
+	select_level(selected_level_id)
 	select_hero(selected_hero_id)
 
 
 func select_hero(hero_id: String) -> void:
 	selected_hero_id = hero_id
-	if is_instance_valid(audio):
-		audio.play_sfx("ui_select", -2.0)
-	for card_hero_id in hero_panels:
-		var selected: bool = card_hero_id == hero_id
-		var border := Color("f2ca72") if selected else Color(0.34, 0.5, 0.68, 0.6)
-		var background := Color(0.045, 0.075, 0.15, 0.97) if selected else Color(0.025, 0.045, 0.1, 0.9)
-		hero_panels[card_hero_id].add_theme_stylebox_override("panel", UiFactory.panel_style(background, 20.0, border))
-	start_button.text = "以%s进入%s" % [HeroCatalog.hero(hero_id)["name"], LevelCatalog.by_id(selected_level_id).display_name]
+	if is_instance_valid(hero_selector):
+		hero_selector.select_hero(hero_id, false)
+	confirm_button.text = "使用%s出发" % HeroCatalog.hero(hero_id)["name"]
 
 
 func select_level(level_id: String) -> void:
+	var level := LevelCatalog.by_id(level_id)
+	if level == null:
+		return
 	selected_level_id = level_id
-	start_button.text = "以%s进入%s" % [HeroCatalog.hero(selected_hero_id)["name"], LevelCatalog.by_id(level_id).display_name]
+	if is_instance_valid(level_selector) and level_selector.selected_level_id != level_id:
+		level_selector.select_level(level_id, false)
+	var unlocked: bool = records.is_level_unlocked(level_id)
+	level_preview.show_level(level, records.level_summary(level_id), unlocked)
+	selected_level_label.text = "%s  ·  %s" % [level.display_name, level.subtitle]
+	start_button.set_caption("踏入星门" if unlocked else "完成上一关后解锁", unlocked)
 
 
 func refresh_progress() -> void:
-	for hero_id in hero_record_labels:
-		hero_record_labels[hero_id].text = records.summary(hero_id)
+	hero_selector.refresh()
 	level_selector.refresh()
+	select_level(selected_level_id)
+	if training_panel.visible:
+		training_panel.refresh()
 
 
 func open_compendium(category := "heroes") -> void:
-	audio.play_sfx("ui_confirm", -1.0)
+	if is_instance_valid(audio):
+		audio.play_sfx("ui_confirm", -1.0)
 	compendium.open(category)
 
 
 func _build_background() -> Control:
-	screen_background = ColorRect.new()
-	screen_background.color = Color("071126")
+	screen_background = TextureRect.new()
+	screen_background.texture = HOME_BACKGROUND
+	screen_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	screen_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	screen_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(screen_background)
 	ScreenLayout.fill(screen_background)
-	var floor_art := TextureRect.new()
-	floor_art.texture = FLOOR_TEXTURE
-	floor_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	floor_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	floor_art.modulate = Color(0.62, 0.72, 1.0, 0.42)
-	floor_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	screen_background.add_child(floor_art)
-	ScreenLayout.fill(floor_art)
-	var shade := ColorRect.new()
-	shade.color = Color(0.01, 0.025, 0.08, 0.62)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	screen_background.add_child(shade)
-	ScreenLayout.fill(shade)
+	var veil := ColorRect.new()
+	veil.color = Color(0.015, 0.09, 0.14, 0.13)
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	screen_background.add_child(veil)
+	ScreenLayout.fill(veil)
 	var content := DesignFrame.new()
 	add_child(content)
 	return content
 
 
-func _build_header(background: Control) -> void:
+func _build_header(parent: Control) -> void:
 	audio_settings = AudioSettingsPanel.new()
-	audio_settings.position = Vector2(136, 8)
-	background.add_child(audio_settings)
-	audio_settings.configure(audio)
-	var title := UiFactory.label("星潮守望者", 42, Color("f6d782"))
-	title.position = Vector2(20, 80)
-	title.size = Vector2(500, 56)
+	audio_settings.position = Vector2(386, 18)
+	parent.add_child(audio_settings)
+	audio_settings.configure(audio, true)
+	var title := UiFactory.label("星潮守望者", 43, Color("fff1b8"))
+	title.position = Vector2(20, 58)
+	title.size = Vector2(500, 54)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	background.add_child(title)
-	var subtitle := UiFactory.label("选择英雄与远征关卡", 18, Color("d3e5f3"))
-	subtitle.position = Vector2(20, 132)
-	subtitle.size = Vector2(500, 30)
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	background.add_child(subtitle)
+	parent.add_child(title)
+	subtitle_label = UiFactory.label("远征大厅  ·  选择今天要守护的世界", 16, Color("d8f7ef"))
+	subtitle_label.position = Vector2(20, 110)
+	subtitle_label.size = Vector2(500, 30)
+	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(subtitle_label)
 
 
-func _build_level_selector(background: Control) -> void:
+func _build_lobby(parent: Control) -> void:
+	lobby_view = Control.new()
+	parent.add_child(lobby_view)
+	ScreenLayout.fill(lobby_view)
+	level_preview = LevelPreview.new()
+	level_preview.position = Vector2(18, 136)
+	level_preview.size = Vector2(504, 390)
+	lobby_view.add_child(level_preview)
 	level_selector = LevelSelector.new()
-	level_selector.position = Vector2(18, 172)
-	background.add_child(level_selector)
+	level_selector.position = Vector2(18, 520)
+	lobby_view.add_child(level_selector)
 	level_selector.configure(LevelCatalog.all(), records, selected_level_id)
 	selected_level_id = level_selector.selected_level_id
-	level_selector.level_selected.connect(select_level)
-
-
-func _build_hero_cards(background: Control) -> void:
-	var hero_ids := HeroCatalog.ids()
-	for index in range(hero_ids.size()):
-		var hero_id: String = hero_ids[index]
-		var card := Panel.new()
-		card.position = Vector2(18 + index * 254, 296)
-		card.size = Vector2(232, 350)
-		background.add_child(card)
-		hero_panels[hero_id] = card
-		_build_hero_card(card, hero_id)
-
-
-func _build_hero_card(card: Panel, hero_id: String) -> void:
-	var hero := HeroCatalog.hero(hero_id)
-	var name_label := UiFactory.label(hero["name"], 23, Color("fff0b0"))
-	name_label.position = Vector2(10, 10)
-	name_label.size = Vector2(212, 32)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	card.add_child(name_label)
-	var portrait := TextureRect.new()
-	portrait.position = Vector2(21, 42)
-	portrait.size = Vector2(190, 155)
-	portrait.texture = HERO_TEXTURES[hero_id]
-	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	card.add_child(portrait)
-	var role := UiFactory.label(hero["title"], 17, Color("70e8ff") if hero_id == "star_warden" else Color("ff9a62"))
-	role.position = Vector2(10, 198)
-	role.size = Vector2(212, 25)
-	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	card.add_child(role)
-	var description := UiFactory.label("%s\n%s" % [hero["passive_name"], hero["passive_description"]], 12, Color("d3ddea"))
-	description.position = Vector2(14, 222)
-	description.size = Vector2(204, 48)
-	description.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-	description.clip_text = true
-	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	card.add_child(description)
-	var record := UiFactory.label(records.summary(hero_id), 12, Color("9db8d2"))
-	record.position = Vector2(12, 269)
-	record.size = Vector2(208, 22)
-	record.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	card.add_child(record)
-	hero_record_labels[hero_id] = record
-	var select_button := Button.new()
-	select_button.position = Vector2(22, 296)
-	select_button.size = Vector2(188, 44)
-	select_button.text = "选择"
-	select_button.add_theme_font_size_override("font_size", 18)
-	select_button.add_theme_stylebox_override("normal", UiFactory.button_style(Color("17304e"), Color("527fa8")))
-	select_button.pressed.connect(select_hero.bind(hero_id))
-	card.add_child(select_button)
-
-
-func _build_actions(background: Control) -> void:
-	start_button = Button.new()
-	start_button.position = Vector2(72, 674)
-	start_button.size = Vector2(396, 68)
-	start_button.add_theme_font_size_override("font_size", 23)
-	start_button.add_theme_stylebox_override("normal", UiFactory.button_style(Color("173c63"), Color("f2ca72")))
-	start_button.pressed.connect(_request_start)
-	background.add_child(start_button)
-	var compendium_button := Button.new()
-	compendium_button.position = Vector2(126, 766)
-	compendium_button.size = Vector2(288, 58)
-	compendium_button.text = "★  星潮图鉴"
-	compendium_button.add_theme_font_size_override("font_size", 21)
-	compendium_button.add_theme_stylebox_override("normal", UiFactory.button_style(Color(0.045, 0.07, 0.14, 0.96), Color("6285ad")))
+	level_selector.level_selected.connect(_on_level_selected)
+	start_button = HomePrimaryButton.new()
+	start_button.position = Vector2(58, 718)
+	start_button.size = Vector2(424, 82)
+	lobby_view.add_child(start_button)
+	start_button.set_caption("踏入星门", true)
+	start_button.pressed.connect(_show_hero_selection)
+	var compendium_button := _make_button(lobby_view, "✦  星潮图鉴", Vector2(126, 820), Vector2(288, 52), false)
 	compendium_button.pressed.connect(open_compendium)
-	background.add_child(compendium_button)
-	var hint := UiFactory.label("左下摇杆移动 · 技能自动释放 · 通关解锁下一关", 15, Color("aebfd2"))
-	hint.position = Vector2(20, 850)
-	hint.size = Vector2(500, 34)
+	var hint := UiFactory.label("选择远征地后，再挑选一位守望者", 14, Color("deeee5"))
+	hint.position = Vector2(20, 888)
+	hint.size = Vector2(500, 32)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	background.add_child(hint)
+	lobby_view.add_child(hint)
+
+
+func _build_hero_view(parent: Control) -> void:
+	hero_view = Control.new()
+	parent.add_child(hero_view)
+	ScreenLayout.fill(hero_view)
+	selected_level_label = UiFactory.label("", 16, UiFactory.PALE_MUTED)
+	selected_level_label.position = Vector2(20, 170)
+	selected_level_label.size = Vector2(500, 34)
+	selected_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hero_view.add_child(selected_level_label)
+	hero_selector = HeroSelector.new()
+	hero_selector.position = Vector2(18, 218)
+	hero_view.add_child(hero_selector)
+	hero_selector.configure(records, selected_hero_id)
+	hero_selector.hero_selected.connect(_on_hero_selected)
+	hero_panels = hero_selector.hero_panels
+	hero_record_labels = hero_selector.hero_record_labels
+	var train_button := _make_button(hero_view, "培养英雄技能", Vector2(126, 620), Vector2(288, 54), false)
+	train_button.pressed.connect(_open_training)
+	confirm_button = _make_button(hero_view, "出发", Vector2(72, 692), Vector2(396, 68), true)
+	confirm_button.pressed.connect(_request_start)
+	var back_button := _make_button(hero_view, "返回选择关卡", Vector2(150, 784), Vector2(240, 52), false)
+	back_button.pressed.connect(_show_lobby)
+	training_panel = HeroTrainingPanel.new()
+	training_panel.position = Vector2(18, 166)
+	hero_view.add_child(training_panel)
+	training_panel.configure(records)
+	training_panel.closed.connect(_close_training)
+	training_panel.progression_changed.connect(_on_progression_changed)
+
+
+func _make_button(parent: Control, text: String, at: Vector2, button_size: Vector2, primary: bool) -> Button:
+	var button := Button.new()
+	button.position = at
+	button.size = button_size
+	button.text = text
+	button.add_theme_font_size_override("font_size", 22 if primary else 18)
+	UiFactory.apply_glass_button(button, primary, UiFactory.GOLD if primary else UiFactory.STROKE)
+	parent.add_child(button)
+	return button
+
+
+func _on_level_selected(level_id: String) -> void:
+	if is_instance_valid(audio):
+		audio.play_sfx("ui_select", -2.0)
+	select_level(level_id)
+
+
+func _on_hero_selected(hero_id: String) -> void:
+	if is_instance_valid(audio):
+		audio.play_sfx("ui_select", -2.0)
+	select_hero(hero_id)
+
+
+func _show_lobby() -> void:
+	lobby_view.visible = true
+	hero_view.visible = false
+	training_panel.visible = false
+	level_preview.set_active(true)
+	subtitle_label.text = "远征大厅  ·  选择今天要守护的世界"
+
+
+func _show_hero_selection() -> void:
+	if not records.is_level_unlocked(selected_level_id):
+		return
+	audio_settings.close_popup()
+	lobby_view.visible = false
+	hero_view.visible = true
+	level_preview.set_active(false)
+	subtitle_label.text = "选择出征英雄"
+	hero_selector.refresh()
+
+
+func _open_training() -> void:
+	training_panel.show_for(selected_hero_id)
+
+
+func _close_training() -> void:
+	hero_selector.refresh()
+
+
+func _on_progression_changed() -> void:
+	hero_selector.refresh()
 
 
 func _request_start() -> void:
-	start_requested.emit(selected_hero_id, selected_level_id)
+	if records.is_level_unlocked(selected_level_id):
+		start_requested.emit(selected_hero_id, selected_level_id)

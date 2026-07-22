@@ -1,8 +1,16 @@
 extends RefCounted
 
-const IDS := ["slime", "bat", "brute"]
+const IDS := ["green_grub", "slime", "bat", "brute"]
 
 const ENEMIES := {
+	"green_grub": {
+		"name": "张姐蛆", "subtitle": "翠绒毛虫 · 一级魔物",
+		"description": "看起来软绵绵，最喜欢把自己团起来冲出去。\n威胁很低，留意它滚动前的直线预警。",
+		"health": 30.0, "speed": 72.0, "damage": 6.0, "radius": 15.0, "experience": 5,
+		"color": Color("78d84b"), "accent": Color("65c743"),
+		"front": preload("res://assets/art/enemies/green_grub.png"),
+		"side": preload("res://assets/art/enemies/green_grub_side.png"),
+	},
 	"slime": {
 		"name": "星蚀史莱姆", "subtitle": "基础魔物",
 		"description": "缓慢逼近的星蚀凝胶。\n生命与威胁均衡，最为常见。",
@@ -12,9 +20,9 @@ const ENEMIES := {
 		"side": preload("res://assets/art/enemies/starblight_slime_side.png"),
 	},
 	"bat": {
-		"name": "暮翼蝠", "subtitle": "高速魔物",
-		"description": "轻盈却危险的高速飞行魔物。\n生命较低，擅长穿过技能空隙。",
-		"health": 22.0, "speed": 128.0, "damage": 7.0, "radius": 14.0, "experience": 6,
+		"name": "暮翼蝠", "subtitle": "远程魔物",
+		"description": "在远处盘旋并发射暮翼光弹。\n观察虚线预警，横向移动即可躲开。",
+		"health": 22.0, "speed": 116.0, "damage": 7.0, "radius": 14.0, "experience": 6,
 		"color": Color("b889ff"), "accent": Color("b889ff"),
 		"front": preload("res://assets/art/enemies/duskwing_bat.png"),
 		"side": preload("res://assets/art/enemies/duskwing_bat_side.png"),

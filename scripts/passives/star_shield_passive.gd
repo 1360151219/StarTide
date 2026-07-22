@@ -29,18 +29,27 @@ func advance(_direction: Vector2, delta: float, elapsed: float) -> float:
 
 
 func try_absorb(enemy: Node, elapsed: float) -> bool:
+	return _absorb(enemy.damage, enemy, elapsed, true)
+
+
+func try_absorb_hit(hit: PlayerHit, elapsed: float) -> bool:
+	return _absorb(hit.damage, hit.source, elapsed, hit.can_knockback_source())
+
+
+func _absorb(damage: float, source: Node, elapsed: float, knockback_source: bool) -> bool:
 	if not ready:
 		return false
 	ready = false
 	recharge_at = elapsed + 24.0
 	blocks += 1
-	damage_blocked += enemy.damage
+	damage_blocked += damage
 	player.passive_active = false
 	audio.play_sfx("skill_frost_tide", -2.0, 1.08)
 	effects.add_effect(player.position, 74.0, Color("70e8ff"), 0.42, "star_hit")
-	var knockback_direction: Vector2 = player.position.direction_to(enemy.position)
-	enemy.position += knockback_direction * 45.0
-	enemy.apply_slow(0.35, 1.2, elapsed)
+	if knockback_source and is_instance_valid(source):
+		var knockback_direction: Vector2 = player.position.direction_to(source.position)
+		source.position += knockback_direction * 45.0
+		source.apply_slow(0.35, 1.2, elapsed)
 	return true
 
 

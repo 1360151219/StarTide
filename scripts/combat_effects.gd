@@ -61,6 +61,8 @@ func _draw() -> void:
 				_draw_sun_hit(center, radius, progress, alpha, color)
 			"defeat":
 				_draw_defeat(center, radius, progress, alpha, color)
+			"grub_defeat":
+				_draw_grub_defeat(center, radius, progress, alpha)
 
 
 func _draw_damage_text(effect: Dictionary, progress: float, alpha: float) -> void:
@@ -151,3 +153,18 @@ func _draw_defeat(center: Vector2, radius: float, progress: float, alpha: float,
 		var fragment := center + Vector2.from_angle(angle) * distance + Vector2(0, progress * progress * 18.0)
 		draw_circle(fragment, maxf(1.0, 5.0 * alpha), Color(color.r, color.g, color.b, alpha))
 	draw_arc(center, radius * (0.4 + progress * 0.8), 0.0, TAU, 32, Color(color.r, color.g, color.b, alpha * 0.55), 2.5)
+
+
+func _draw_grub_defeat(center: Vector2, radius: float, progress: float, alpha: float) -> void:
+	for index in range(8):
+		var angle := index * TAU / 8.0 + 0.22
+		var fragment := center + Vector2.from_angle(angle) * radius * (0.25 + progress)
+		if index % 2 == 0:
+			var leaf := PackedVector2Array([fragment + Vector2(-5, 0), fragment + Vector2(0, -8), fragment + Vector2(5, 0), fragment + Vector2(0, 5)])
+			draw_colored_polygon(leaf, Color(0.48, 0.86, 0.29, alpha))
+		else:
+			var star := PackedVector2Array()
+			for point in range(10):
+				star.append(fragment + Vector2.from_angle(point * TAU / 10.0) * (6.0 if point % 2 == 0 else 2.5))
+			star.append(star[0])
+			draw_polyline(star, Color(1.0, 0.88, 0.34, alpha), 2.0)

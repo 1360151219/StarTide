@@ -1,6 +1,8 @@
 extends Node2D
 
 signal enemy_defeated(enemy: Node)
+signal enemy_spawned(enemy: Node)
+signal enemy_removed(enemy: Node)
 
 const EnemyEntity = preload("res://scripts/enemy.gd")
 const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
@@ -15,6 +17,7 @@ var effects: Node2D
 var audio: Node
 var spawner := EnemySpawner.new()
 var enemies: Array[Node] = []
+var next_spawn_serial := 0
 
 
 func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D, director: RefCounted, random: RandomNumberGenerator, combat_effects: Node2D, audio_manager: Node) -> void:
@@ -26,6 +29,7 @@ func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D
 	effects = combat_effects
 	audio = audio_manager
 	spawner.configure(level, stage_director, rng)
+	next_spawn_serial = 0
 
 
 func spawn_initial() -> void:
@@ -45,9 +49,12 @@ func spawn_enemy(enemy_id: String, elite_config: EliteConfig = null, elapsed := 
 	var viewport_size := viewport.get_visible_rect().size if viewport != null else Vector2.ZERO
 	enemy.position = spawner.spawn_position(player.position, elite_config != null, viewport_size)
 	enemy.configure(enemy_id, scaling, elite_config)
+	enemy.spawn_serial = next_spawn_serial
+	next_spawn_serial += 1
 	enemy.z_index = level.map.depth_index(enemy.position.y)
 	add_child(enemy)
 	enemies.append(enemy)
+	enemy_spawned.emit(enemy)
 	return enemy
 
 
@@ -82,7 +89,7 @@ func is_combat_active() -> bool:
 func contact_candidates(elapsed: float) -> Array[Node]:
 	var result: Array[Node] = []
 	for enemy in enemies:
-		if not is_instance_valid(enemy) or elapsed < enemy.next_contact_time:
+		if not is_instance_valid(enemy) or not enemy.contact_enabled or elapsed < enemy.next_contact_time:
 			continue
 		var contact_distance: float = enemy.radius + 21.0
 		if enemy.position.distance_squared_to(player.position) <= contact_distance * contact_distance:
@@ -123,7 +130,8 @@ func damage_enemy(enemy: Node, damage: float, number_color := Color("e6fbff")) -
 	effects.add_damage_number(enemy.position - Vector2(18, enemy.radius + 4.0), damage, number_color)
 	if enemy.take_damage(damage):
 		audio.play_sfx("enemy_defeat", -2.0, rng.randf_range(0.9, 1.1))
-		effects.add_effect(enemy.position, enemy.radius + 24.0, enemy.color, 0.42, "defeat")
+		var defeat_kind := "grub_defeat" if enemy.kind == "green_grub" else "defeat"
+		effects.add_effect(enemy.position, enemy.radius + 24.0, enemy.color, 0.42, defeat_kind)
 		enemy_defeated.emit(enemy)
 		remove_enemy(enemy)
 
@@ -131,4 +139,5 @@ func damage_enemy(enemy: Node, damage: float, number_color := Color("e6fbff")) -
 func remove_enemy(enemy: Node) -> void:
 	enemies.erase(enemy)
 	if is_instance_valid(enemy):
+		enemy_removed.emit(enemy)
 		enemy.queue_free()

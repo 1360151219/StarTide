@@ -23,43 +23,61 @@ func _on_process_frame() -> void:
 		CaptureSetup.isolate_records(game)
 	elif frame_count == 10:
 		_capture("start.png")
-	elif frame_count == 14:
-		game.start_screen.open_compendium("heroes")
+	elif frame_count == 12:
+		game.start_screen.audio_settings.open_popup()
+	elif frame_count == 18:
+		_capture("audio_settings.png")
 	elif frame_count == 20:
+		game.start_screen.audio_settings.close_popup()
+		game.start_screen.open_compendium("heroes")
+	elif frame_count == 26:
 		_capture("compendium_heroes.png")
-	elif frame_count == 24:
-		game.start_screen.compendium.show_category("enemies")
 	elif frame_count == 30:
+		game.start_screen.compendium.show_category("enemies")
+	elif frame_count == 36:
 		_capture("compendium_enemies.png")
-	elif frame_count == 34:
-		game.start_screen.compendium.show_category("pickups")
 	elif frame_count == 40:
+		game.start_screen.compendium.show_category("pickups")
+	elif frame_count == 46:
 		_capture("compendium_pickups.png")
-	elif frame_count == 44:
-		game.start_screen.compendium.show_category("skills")
 	elif frame_count == 50:
-		_capture("compendium_skills.png")
+		game.start_screen.compendium.show_category("skills")
 	elif frame_count == 56:
+		_capture("compendium_skills.png")
+	elif frame_count == 62:
 		game.start_screen.compendium.close()
-		game.start_run("ember_ranger", "level_01")
-	elif frame_count == 64:
-		_prepare_ember_showcase(game)
+		game.start_screen._show_hero_selection()
+	elif frame_count == 68:
+		_capture("hero_selection.png")
 	elif frame_count == 70:
-		_capture("gameplay_ember.png")
+		game.start_screen.training_panel.show_for("star_warden")
 	elif frame_count == 76:
+		_capture("hero_training.png")
+	elif frame_count == 78:
+		game.start_screen.training_panel._close()
+		game.start_run("ember_ranger", "level_01")
+	elif frame_count == 86:
+		_prepare_ember_showcase(game)
+	elif frame_count == 92:
+		_capture("gameplay_ember.png")
+	elif frame_count == 98:
 		game.session.resume()
 		game.hud.pause_requested.emit()
-	elif frame_count == 82:
+	elif frame_count == 104:
 		_capture("pause.png")
-	elif frame_count == 88:
+	elif frame_count == 110:
 		game.pause_overlay.resume_requested.emit()
 		game.session.add_experience(40)
-	elif frame_count == 94:
+	elif frame_count == 116:
 		_capture("upgrade_ember.png")
-	elif frame_count == 100:
+	elif frame_count == 122:
 		_prepare_ember_ultimate(game)
-	elif frame_count == 108:
-		if _capture("ultimate_ember.png"):
+	elif frame_count == 130:
+		_capture("ultimate_ember.png")
+	elif frame_count == 134:
+		game.result_overlay.show_result("远征完成", "坚持 90 秒\n击败 42\n英雄等级 4", "首次通关 · 星潮徽记\n英雄熟练度 +120", true)
+	elif frame_count == 140:
+		if _capture("result_victory.png"):
 			print("CAPTURE_OK set=previews")
 			quit()
 

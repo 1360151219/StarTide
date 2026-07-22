@@ -14,7 +14,8 @@ var scroll: ScrollContainer
 
 func _ready() -> void:
 	ScreenLayout.fill(self)
-	color = Color(0.008, 0.018, 0.055, 0.985)
+	color = Color(0.008, 0.045, 0.075, 0.96)
+	z_index = 80
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	safe_area = SafeArea.new()
@@ -57,7 +58,7 @@ func show_category(category: String) -> void:
 	for category_id in tab_buttons:
 		var selected: bool = category_id == category
 		var button: Button = tab_buttons[category_id]
-		button.add_theme_stylebox_override("normal", UiFactory.button_style(Color("173c63") if selected else Color("101d36"), Color("f2ca72") if selected else Color("526d8c")))
+		UiFactory.apply_glass_button(button, selected, UiFactory.GOLD if selected else UiFactory.STROKE)
 	for child in list.get_children():
 		child.queue_free()
 	for entry in CompendiumCatalog.entries(category):
@@ -65,7 +66,7 @@ func show_category(category: String) -> void:
 
 
 func _build_header() -> void:
-	var title := UiFactory.label("星潮图鉴", 38, Color("f6d782"))
+	var title := UiFactory.label("星潮图鉴", 38, UiFactory.PALE)
 	title.position = Vector2(28, 34)
 	title.size = Vector2(360, 54)
 	content.add_child(title)
@@ -74,7 +75,7 @@ func _build_header() -> void:
 	close_button.size = Vector2(72, 60)
 	close_button.text = "×"
 	close_button.add_theme_font_size_override("font_size", 30)
-	close_button.add_theme_stylebox_override("normal", UiFactory.button_style(Color("172944"), Color("6683a3")))
+	UiFactory.apply_glass_button(close_button, false, UiFactory.GOLD)
 	close_button.pressed.connect(close)
 	content.add_child(close_button)
 
@@ -97,7 +98,7 @@ func _make_card(entry: Dictionary) -> Panel:
 	var card := Panel.new()
 	var height: float = entry.get("card_height", 178.0)
 	card.custom_minimum_size = Vector2(478, height)
-	card.add_theme_stylebox_override("panel", UiFactory.panel_style(Color(0.035, 0.06, 0.125, 0.98), 18.0, entry["accent"]))
+	card.add_theme_stylebox_override("panel", UiFactory.panel_style(UiFactory.GLASS, 18.0, entry["accent"]))
 	var icon := TextureRect.new()
 	icon.position = Vector2(16, 18)
 	icon.size = Vector2(132, 140)
@@ -105,7 +106,7 @@ func _make_card(entry: Dictionary) -> Panel:
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	card.add_child(icon)
-	var name_label := UiFactory.label(entry["name"], 24, Color("fff0b0"))
+	var name_label := UiFactory.label(entry["name"], 24, UiFactory.PALE)
 	name_label.position = Vector2(164, 17)
 	name_label.size = Vector2(292, 34)
 	card.add_child(name_label)
@@ -113,7 +114,7 @@ func _make_card(entry: Dictionary) -> Panel:
 	subtitle.position = Vector2(164, 52)
 	subtitle.size = Vector2(292, 28)
 	card.add_child(subtitle)
-	var description := UiFactory.label(entry["description"], 14 if height > 200.0 else 15, Color("d5e0ee"))
+	var description := UiFactory.label(entry["description"], 14 if height > 200.0 else 15, UiFactory.PALE_MUTED)
 	description.position = Vector2(164, 84)
 	description.size = Vector2(292, height - 96.0)
 	description.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY

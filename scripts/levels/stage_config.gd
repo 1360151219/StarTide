@@ -9,6 +9,7 @@ extends Resource
 @export var spawn_interval_end := 0.74
 @export_range(0.0, 1.0, 0.01) var extra_spawn_chance := 0.0
 @export var enemy_weights: Dictionary = {"slime": 1.0}
+@export var enabled_ability_ids := PackedStringArray()
 @export var transition_rest_duration := 3.0
 
 
@@ -18,7 +19,7 @@ func spawn_interval_at(elapsed: float, end_time: float) -> float:
 	return lerpf(spawn_interval_start, spawn_interval_end, progress)
 
 
-func validation_errors(valid_enemy_ids: PackedStringArray) -> PackedStringArray:
+func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := PackedStringArray()) -> PackedStringArray:
 	var errors := PackedStringArray()
 	if stage_id.is_empty():
 		errors.append("stage_id 不能为空")
@@ -40,4 +41,7 @@ func validation_errors(valid_enemy_ids: PackedStringArray) -> PackedStringArray:
 		total_weight += weight
 	if not is_equal_approx(total_weight, 1.0):
 		errors.append("怪物权重总和必须为 1，当前为 %.3f" % total_weight)
+	for ability_id in enabled_ability_ids:
+		if not valid_ability_ids.has(ability_id):
+			errors.append("未知怪物技能：%s" % ability_id)
 	return errors

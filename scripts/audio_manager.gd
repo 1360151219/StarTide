@@ -30,11 +30,13 @@ const SFX_COOLDOWNS := {
 const SETTINGS_PATH := "user://audio_settings.cfg"
 const MUSIC_BASE_DB := -9.0
 const SFX_BASE_DB := -4.0
+const MUSIC_DUCK_DB := -6.0
 
 var music_enabled := true
 var sfx_enabled := true
 var music_volume := 0.65
 var sfx_volume := 0.75
+var music_ducked := false
 var audio_output_available := true
 var music_player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
@@ -144,9 +146,16 @@ func set_sfx_volume(value: float, save := true) -> void:
 	settings_changed.emit()
 
 
+func set_music_ducked(value: bool) -> void:
+	if music_ducked == value:
+		return
+	music_ducked = value
+	_apply_music_volume()
+
+
 func _apply_music_volume() -> void:
 	if is_instance_valid(music_player):
-		music_player.volume_db = _volume_db(music_volume, MUSIC_BASE_DB)
+		music_player.volume_db = _volume_db(music_volume, MUSIC_BASE_DB) + (MUSIC_DUCK_DB if music_ducked else 0.0)
 
 
 func _volume_db(value: float, base_db: float) -> float:

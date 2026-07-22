@@ -1,0 +1,91 @@
+extends "res://scripts/profile/profile_repository.gd"
+
+const SCHEMA_VERSION := 3
+
+var storage_path: String
+
+
+func _init(path: String) -> void:
+	storage_path = path
+
+
+func load_profile(default_profile: Dictionary) -> Dictionary:
+	var profile := default_profile.duplicate(true)
+	_ensure_profile_id(profile)
+	if storage_path.is_empty():
+		return profile
+	var config := ConfigFile.new()
+	if config.load(storage_path) != OK:
+		return profile
+	var source_schema := maxi(1, int(config.get_value("meta", "schema_version", 1)))
+	profile["source_schema_version"] = source_schema
+	profile["profile_id"] = str(config.get_value("meta", "profile_id", profile["profile_id"]))
+	profile["revision"] = maxi(0, int(config.get_value("meta", "revision", 0)))
+	profile["last_hero_id"] = str(config.get_value("meta", "last_hero_id", profile["last_hero_id"]))
+	profile["last_level_id"] = str(config.get_value("meta", "last_level_id", profile["last_level_id"]))
+	for hero_id in profile["records"]:
+		_load_record(config, "hero/" + hero_id, profile["records"][hero_id])
+	for level_id in profile["level_records"]:
+		_load_record(config, "level/" + level_id, profile["level_records"][level_id])
+		profile["unlocked_levels"][level_id] = bool(config.get_value("progress", "unlocked_" + level_id, profile["unlocked_levels"][level_id]))
+	for hero_id in profile["hero_progressions"]:
+		_load_progression(config, profile, hero_id, source_schema)
+	_ensure_profile_id(profile)
+	return profile
+
+
+func save_profile(profile: Dictionary) -> Error:
+	if storage_path.is_empty():
+		return OK
+	_ensure_profile_id(profile)
+	profile["revision"] = maxi(0, int(profile.get("revision", 0))) + 1
+	var config := ConfigFile.new()
+	config.set_value("meta", "schema_version", SCHEMA_VERSION)
+	config.set_value("meta", "profile_id", profile["profile_id"])
+	config.set_value("meta", "revision", profile["revision"])
+	config.set_value("meta", "last_hero_id", profile["last_hero_id"])
+	config.set_value("meta", "last_level_id", profile["last_level_id"])
+	for hero_id in profile["records"]:
+		_write_record(config, "hero/" + hero_id, profile["records"][hero_id])
+	for level_id in profile["level_records"]:
+		_write_record(config, "level/" + level_id, profile["level_records"][level_id])
+		config.set_value("progress", "unlocked_" + level_id, profile["unlocked_levels"][level_id])
+	for hero_id in profile["hero_progressions"]:
+		_write_progression(config, hero_id, profile["hero_progressions"][hero_id])
+	return config.save(storage_path)
+
+
+func _load_progression(config: ConfigFile, profile: Dictionary, hero_id: String, source_schema: int) -> void:
+	var progression: Dictionary = profile["hero_progressions"][hero_id]
+	if source_schema < SCHEMA_VERSION:
+		progression["mastery_xp"] = int(profile["records"][hero_id]["wins"]) * 100
+		return
+	var section := "progression/" + hero_id
+	progression["mastery_xp"] = maxi(0, int(config.get_value(section, "mastery_xp", 0)))
+	for skill_id in progression["training"]:
+		progression["training"][skill_id] = int(config.get_value(section, "training_" + skill_id, 0))
+
+
+func _write_progression(config: ConfigFile, hero_id: String, progression: Dictionary) -> void:
+	var section := "progression/" + hero_id
+	config.set_value(section, "mastery_xp", progression["mastery_xp"])
+	for skill_id in progression["training"]:
+		config.set_value(section, "training_" + skill_id, progression["training"][skill_id])
+
+
+func _load_record(config: ConfigFile, section: String, record: Dictionary) -> void:
+	for field in record:
+		record[field] = maxi(0, int(config.get_value(section, field, 0)))
+
+
+func _write_record(config: ConfigFile, section: String, record: Dictionary) -> void:
+	for field in record:
+		config.set_value(section, field, record[field])
+
+
+func _ensure_profile_id(profile: Dictionary) -> void:
+	if not str(profile.get("profile_id", "")).is_empty():
+		return
+	var random := RandomNumberGenerator.new()
+	random.randomize()
+	profile["profile_id"] = "local-%x-%x-%x" % [Time.get_unix_time_from_system(), Time.get_ticks_usec(), random.randi()]

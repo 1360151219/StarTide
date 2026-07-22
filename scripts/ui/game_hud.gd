@@ -11,6 +11,7 @@ const VirtualJoystickScript = preload("res://scripts/virtual_joystick.gd")
 
 var health_bar: ProgressBar
 var xp_bar: ProgressBar
+var health_label: Label
 var level_label: Label
 var stats_label: Label
 var skill_dock: Panel
@@ -20,7 +21,8 @@ var tutorial_label: Label
 var damage_flash: ColorRect
 var safe_area: Control
 var pause_button: Button
-var tutorial_time := 8.0
+var top_panel: Panel
+var tutorial_time := 5.0
 
 
 func _ready() -> void:
@@ -30,12 +32,14 @@ func _ready() -> void:
 	_build_top_panel(safe_area)
 	skill_dock = SkillDock.new()
 	safe_area.add_child(skill_dock)
-	skill_dock.anchor_left = 0.5
-	skill_dock.anchor_right = 0.5
-	skill_dock.offset_left = -138.0
-	skill_dock.offset_top = 140.0
-	skill_dock.offset_right = 138.0
-	skill_dock.offset_bottom = 204.0
+	skill_dock.anchor_left = 1.0
+	skill_dock.anchor_top = 1.0
+	skill_dock.anchor_right = 1.0
+	skill_dock.anchor_bottom = 1.0
+	skill_dock.offset_left = -228.0
+	skill_dock.offset_top = -104.0
+	skill_dock.offset_right = -18.0
+	skill_dock.offset_bottom = -42.0
 	stage_hud = StageHud.new()
 	safe_area.add_child(stage_hud)
 	_build_controls(safe_area)
@@ -45,16 +49,18 @@ func _ready() -> void:
 
 func configure(active_skill_ids: Array) -> void:
 	skill_dock.configure(active_skill_ids)
-	tutorial_time = 8.0
+	tutorial_time = 5.0
 
 
 func refresh(state: RefCounted, level: LevelConfig, player: Node2D, skills: Node2D, pickups: Node2D, passives: RefCounted, stage: StageConfig, elite: Node) -> void:
 	health_bar.max_value = player.max_health
 	health_bar.value = player.health
+	health_label.text = "%d / %d" % [ceili(player.health), ceili(player.max_health)]
+	health_label.modulate = Color.WHITE if player.health / player.max_health > 0.3 else Color(1.0, 0.74, 0.62)
 	xp_bar.max_value = state.experience_needed
 	xp_bar.value = state.experience
 	level_label.text = "LV.%d" % state.player_level
-	stats_label.text = "星门 %s   击败 %d" % [_format_time(maxf(0.0, level.duration - state.elapsed)), state.kills]
+	stats_label.text = "剩余 %s  ·  击败 %d" % [_format_time(maxf(0.0, level.duration - state.elapsed)), state.kills]
 	skill_dock.refresh(skills, state.elapsed)
 	var passive_color := Color("70e8ff") if state.hero_id == "star_warden" else Color("ff9a62")
 	stage_hud.refresh(stage, passives.status_text(state.elapsed), passive_color, pickups.remaining_magnet_seconds(state.elapsed), elite)
@@ -79,42 +85,46 @@ func show_banner(title: String, subtitle: String, duration: float) -> void:
 
 
 func _build_top_panel(parent: Control) -> void:
-	var panel := Panel.new()
-	parent.add_child(panel)
-	panel.anchor_left = 0.5
-	panel.anchor_right = 0.5
-	panel.offset_left = -252.0
-	panel.offset_top = 18.0
-	panel.offset_right = 252.0
-	panel.offset_bottom = 130.0
-	panel.add_theme_stylebox_override("panel", UiFactory.panel_style(Color(0.025, 0.045, 0.115, 0.92), 18.0, Color(0.75, 0.58, 0.27, 0.65)))
-	level_label = UiFactory.label("LV.1", 24, Color("f6d782"))
-	level_label.position = Vector2(18, 12)
-	panel.add_child(level_label)
-	stats_label = UiFactory.label("", 19, Color("d9e8f4"))
-	stats_label.position = Vector2(190, 15)
-	stats_label.size = Vector2(292, 28)
+	top_panel = Panel.new()
+	parent.add_child(top_panel)
+	top_panel.anchor_left = 0.5
+	top_panel.anchor_right = 0.5
+	top_panel.offset_left = -252.0
+	top_panel.offset_top = 8.0
+	top_panel.offset_right = 252.0
+	top_panel.offset_bottom = 80.0
+	top_panel.add_theme_stylebox_override("panel", UiFactory.panel_style(UiFactory.GLASS, 16.0, UiFactory.GOLD))
+	level_label = UiFactory.label("LV.1", 21, UiFactory.PALE)
+	level_label.position = Vector2(14, 8)
+	level_label.size = Vector2(82, 28)
+	top_panel.add_child(level_label)
+	stats_label = UiFactory.label("", 17, UiFactory.PALE)
+	stats_label.position = Vector2(94, 10)
+	stats_label.size = Vector2(340, 26)
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	panel.add_child(stats_label)
-	health_bar = _make_bar(Vector2(18, 49), Vector2(466, 17), Color("f0647d"), 8.0)
-	panel.add_child(health_bar)
-	xp_bar = _make_bar(Vector2(18, 76), Vector2(466, 9), Color("55d9e8"), 5.0)
-	panel.add_child(xp_bar)
+	top_panel.add_child(stats_label)
+	health_bar = _make_bar(Vector2(14, 39), Vector2(420, 17), UiFactory.CORAL, 8.0)
+	top_panel.add_child(health_bar)
+	health_label = UiFactory.label("100 / 100", 14, UiFactory.CREAM)
+	health_label.position = Vector2(14, 37)
+	health_label.size = Vector2(420, 21)
+	health_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	health_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_panel.add_child(health_label)
+	xp_bar = _make_bar(Vector2(14, 61), Vector2(420, 5), UiFactory.PRIMARY, 3.0)
+	top_panel.add_child(xp_bar)
+	pause_button = Button.new()
+	pause_button.position = Vector2(444, 10)
+	pause_button.size = Vector2(48, 48)
+	pause_button.text = "II"
+	pause_button.add_theme_font_size_override("font_size", 21)
+	pause_button.add_theme_color_override("font_color", UiFactory.CREAM)
+	UiFactory.apply_button_styles(pause_button, UiFactory.PRIMARY_DARK, UiFactory.GOLD)
+	pause_button.pressed.connect(pause_requested.emit)
+	top_panel.add_child(pause_button)
 
 
 func _build_controls(parent: Control) -> void:
-	pause_button = Button.new()
-	parent.add_child(pause_button)
-	pause_button.anchor_left = 0.5
-	pause_button.anchor_right = 0.5
-	pause_button.offset_left = 168.0
-	pause_button.offset_top = 140.0
-	pause_button.offset_right = 252.0
-	pause_button.offset_bottom = 204.0
-	pause_button.text = "Ⅱ"
-	pause_button.add_theme_font_size_override("font_size", 25)
-	pause_button.add_theme_stylebox_override("normal", UiFactory.button_style(Color(0.025, 0.045, 0.115, 0.9), Color(0.75, 0.58, 0.27, 0.65)))
-	pause_button.pressed.connect(pause_requested.emit)
 	joystick = VirtualJoystickScript.new()
 	parent.add_child(joystick)
 	joystick.anchor_top = 0.5
@@ -124,15 +134,15 @@ func _build_controls(parent: Control) -> void:
 	joystick.offset_top = 0.0
 	joystick.offset_right = 0.0
 	joystick.offset_bottom = 0.0
-	tutorial_label = UiFactory.label("拖动左下摇杆移动 · 技能会自动释放", 18, Color("dff7ff"))
+	tutorial_label = UiFactory.label("拖动左下摇杆移动 · 技能会自动释放", 17, UiFactory.CREAM)
 	parent.add_child(tutorial_label)
 	tutorial_label.anchor_top = 1.0
 	tutorial_label.anchor_right = 1.0
 	tutorial_label.anchor_bottom = 1.0
-	tutorial_label.offset_left = 110.0
-	tutorial_label.offset_top = -68.0
-	tutorial_label.offset_right = -20.0
-	tutorial_label.offset_bottom = -32.0
+	tutorial_label.offset_left = 98.0
+	tutorial_label.offset_top = -158.0
+	tutorial_label.offset_right = -18.0
+	tutorial_label.offset_bottom = -126.0
 	tutorial_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
@@ -149,7 +159,7 @@ func _make_bar(at: Vector2, bar_size: Vector2, color: Color, radius: float) -> P
 	bar.position = at
 	bar.size = bar_size
 	bar.show_percentage = false
-	bar.add_theme_stylebox_override("background", UiFactory.flat_bar_style(Color("18203c"), radius))
+	bar.add_theme_stylebox_override("background", UiFactory.flat_bar_style(Color(0.35, 0.5, 0.52, 0.24), radius))
 	bar.add_theme_stylebox_override("fill", UiFactory.flat_bar_style(color, radius))
 	return bar
 

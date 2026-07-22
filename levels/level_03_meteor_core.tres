@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="LevelConfig" load_steps=13 format=3]
+[gd_resource type="Resource" script_class="LevelConfig" load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/level_config.gd" id="1_level"]
 [ext_resource type="Script" path="res://scripts/levels/map_config.gd" id="2_map"]
@@ -8,38 +8,51 @@
 [ext_resource type="Script" path="res://scripts/levels/elite_config.gd" id="6_elite"]
 [ext_resource type="Script" path="res://scripts/levels/victory_config.gd" id="7_victory"]
 [ext_resource type="Script" path="res://scripts/levels/reward_config.gd" id="8_reward"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/celestial_floor.png" id="9_floor"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/crystal_volcano_floor.png" id="9_floor"]
+[ext_resource type="Script" path="res://scripts/levels/enemy_ability_budget_config.gd" id="10_abilities"]
 
 [sub_resource type="Resource" id="Map"]
 script = ExtResource("2_map")
 map_id = "meteor_core"
-display_name = "陨岩星核"
+display_name = "彩晶火山"
+biome_id = "crystal_volcano"
 floor_texture = ExtResource("9_floor")
 world_bounds = Rect2(-1100, -1100, 2200, 2200)
 spawn_distance_min = 520.0
 spawn_distance_max = 620.0
 elite_spawn_distance_min = 470.0
 elite_spawn_distance_max = 520.0
-background_color = Color(0.12, 0.04, 0.035, 1)
-floor_tint = Color(0.96, 0.68, 0.48, 0.88)
-border_color = Color(0.92, 0.42, 0.18, 0.75)
-glow_color = Color(1, 0.28, 0.08, 0.04)
+background_color = Color(0.9, 0.38, 0.31, 1)
+floor_tint = Color(1, 0.93, 0.88, 0.86)
+border_color = Color(0.3, 0.83, 0.79, 0.82)
+glow_color = Color(0.35, 0.93, 0.86, 0.065)
+decoration_count = 80
+environment_particle_color = Color(0.72, 1, 0.91, 0.78)
 
 [sub_resource type="Resource" id="Difficulty"]
 script = ExtResource("3_difficulty")
-health_start = 1.18
-health_end = 2.25
-speed_start = 1.04
-speed_end = 1.12
-damage_start = 1.1
-damage_end = 1.2
+health_start = 1.25
+health_end = 2.45
+speed_start = 1.05
+speed_end = 1.15
+damage_start = 1.13
+damage_end = 1.25
 
 [sub_resource type="Resource" id="Loot"]
 script = ExtResource("4_loot")
 heart_drop_chance = 0.065
-heart_value = 22
+heart_value = 16
+max_heart_drops = 7
 magnet_drop_chance = 0.025
 magnet_duration = 5.0
+
+[sub_resource type="Resource" id="AbilityBudget"]
+script = ExtResource("10_abilities")
+opening_protection_time = 0.0
+max_telegraphs = 5
+max_projectiles = 5
+min_start_interval = 0.35
+max_player_danger_areas = 2
 
 [sub_resource type="Resource" id="Stage1"]
 script = ExtResource("5_stage")
@@ -50,7 +63,8 @@ start_time = 0.0
 spawn_interval_start = 0.78
 spawn_interval_end = 0.66
 extra_spawn_chance = 0.06
-enemy_weights = {"slime": 0.55, "bat": 0.35, "brute": 0.1}
+enemy_weights = {"green_grub": 0.15, "slime": 0.35, "bat": 0.38, "brute": 0.12}
+enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
 transition_rest_duration = 0.0
 
 [sub_resource type="Resource" id="Stage2"]
@@ -62,7 +76,8 @@ start_time = 30.0
 spawn_interval_start = 0.64
 spawn_interval_end = 0.52
 extra_spawn_chance = 0.18
-enemy_weights = {"slime": 0.35, "bat": 0.4, "brute": 0.25}
+enemy_weights = {"green_grub": 0.08, "slime": 0.25, "bat": 0.37, "brute": 0.3}
+enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Stage3"]
@@ -74,7 +89,8 @@ start_time = 60.0
 spawn_interval_start = 0.5
 spawn_interval_end = 0.4
 extra_spawn_chance = 0.28
-enemy_weights = {"slime": 0.22, "bat": 0.35, "brute": 0.43}
+enemy_weights = {"green_grub": 0.05, "slime": 0.18, "bat": 0.32, "brute": 0.45}
+enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Stage4"]
@@ -86,7 +102,8 @@ start_time = 90.0
 spawn_interval_start = 0.44
 spawn_interval_end = 0.35
 extra_spawn_chance = 0.35
-enemy_weights = {"slime": 0.15, "bat": 0.3, "brute": 0.55}
+enemy_weights = {"green_grub": 0.03, "slime": 0.12, "bat": 0.25, "brute": 0.6}
+enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Elite"]
@@ -122,15 +139,16 @@ script = ExtResource("1_level")
 level_id = "level_03"
 order = 3
 difficulty_rating = 3
-display_name = "陨岩星核"
-subtitle = "终局远征 · 120 秒"
-description = "紧凑星核中的重型敌潮。击败星核暴君并守住最终过载。"
+display_name = "彩晶火山"
+subtitle = "终局远征 · 坚持 120 秒"
+description = "在明亮熔流与青色晶簇之间，击败星核暴君并守住最终过载。"
 map = SubResource("Map")
 duration = 120.0
 initial_enemy_count = 7
-max_enemies = 80
+max_enemies = 70
 difficulty = SubResource("Difficulty")
 loot = SubResource("Loot")
+enemy_ability_budget = SubResource("AbilityBudget")
 stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3"), SubResource("Stage4")])
 elite = SubResource("Elite")
 victory = SubResource("Victory")

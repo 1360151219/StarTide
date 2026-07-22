@@ -74,6 +74,7 @@ func start_run(hero_id: String, level_id: String) -> void:
 	hud.visible = true
 	start_screen.visible = false
 	feedback.configure(session.camera, hud.damage_flash)
+	audio_manager.set_music_ducked(false)
 	audio_manager.play_sfx("ui_confirm", 2.0)
 	refresh_presentation()
 
@@ -95,11 +96,13 @@ func refresh_presentation() -> void:
 func _show_upgrade(player_level: int, choices: Array, upgrade_system: RefCounted, skill_levels: Dictionary) -> void:
 	hud.cancel_input()
 	upgrade_overlay.show_choices(player_level, choices, upgrade_system, skill_levels)
+	audio_manager.set_music_ducked(true)
 	audio_manager.play_sfx("upgrade", -1.0)
 
 
 func _on_upgrade_selected(choice_id: String) -> void:
 	audio_manager.play_sfx("ui_confirm", 0.0)
+	audio_manager.set_music_ducked(false)
 	upgrade_overlay.visible = false
 	session.select_upgrade(choice_id)
 
@@ -109,6 +112,7 @@ func _show_result(presentation: Dictionary) -> void:
 	hud.visible = false
 	pause_overlay.visible = false
 	upgrade_overlay.visible = false
+	audio_manager.set_music_ducked(true)
 	result_overlay.show_result(presentation["heading"], presentation["body"], presentation["reward_text"], presentation["won"])
 
 
@@ -118,11 +122,13 @@ func _pause_game() -> void:
 	session.pause()
 	hud.cancel_input()
 	pause_overlay.visible = true
+	audio_manager.set_music_ducked(true)
 	audio_manager.play_sfx("ui_select", -1.0)
 
 
 func _resume_game() -> void:
 	audio_manager.play_sfx("ui_confirm", -1.0)
+	audio_manager.set_music_ducked(false)
 	pause_overlay.visible = false
 	session.resume()
 
@@ -159,7 +165,7 @@ func _create_random_streams() -> Dictionary:
 	var source := RandomNumberGenerator.new()
 	source.randomize()
 	var streams := {}
-	for stream_id in ["spawn", "loot", "skill", "upgrade"]:
+	for stream_id in ["spawn", "loot", "skill", "upgrade", "enemy_ability"]:
 		var stream := RandomNumberGenerator.new()
 		stream.seed = source.randi()
 		streams[stream_id] = stream

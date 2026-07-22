@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="LevelConfig" load_steps=12 format=3]
+[gd_resource type="Resource" script_class="LevelConfig" load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/level_config.gd" id="1_level"]
 [ext_resource type="Script" path="res://scripts/levels/map_config.gd" id="2_map"]
@@ -8,38 +8,51 @@
 [ext_resource type="Script" path="res://scripts/levels/elite_config.gd" id="6_elite"]
 [ext_resource type="Script" path="res://scripts/levels/victory_config.gd" id="7_victory"]
 [ext_resource type="Script" path="res://scripts/levels/reward_config.gd" id="8_reward"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/celestial_floor.png" id="9_floor"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/windbell_meadow_floor.png" id="9_floor"]
+[ext_resource type="Script" path="res://scripts/levels/enemy_ability_budget_config.gd" id="10_abilities"]
 
 [sub_resource type="Resource" id="Map"]
 script = ExtResource("2_map")
 map_id = "star_courtyard"
-display_name = "星潮前庭"
+display_name = "风铃草原"
+biome_id = "windbell_meadow"
 floor_texture = ExtResource("9_floor")
 world_bounds = Rect2(-1600, -1600, 3200, 3200)
 spawn_distance_min = 570.0
 spawn_distance_max = 690.0
 elite_spawn_distance_min = 500.0
 elite_spawn_distance_max = 560.0
-background_color = Color(0.035, 0.075, 0.173, 1)
-floor_tint = Color(0.82, 0.87, 1, 0.92)
-border_color = Color(0.76, 0.62, 0.3, 0.6)
-glow_color = Color(0.18, 0.72, 0.82, 0.025)
+background_color = Color(0.63, 0.86, 0.6, 1)
+floor_tint = Color(0.96, 1, 0.93, 0.86)
+border_color = Color(0.37, 0.69, 0.38, 0.78)
+glow_color = Color(1, 0.96, 0.52, 0.055)
+decoration_count = 72
+environment_particle_color = Color(1, 0.98, 0.75, 0.72)
 
 [sub_resource type="Resource" id="Difficulty"]
 script = ExtResource("3_difficulty")
-health_start = 1.0
-health_end = 1.8571429
+health_start = 1.03
+health_end = 1.95
 speed_start = 1.0
-speed_end = 1.03
+speed_end = 1.05
 damage_start = 1.0
-damage_end = 1.0
+damage_end = 1.05
 
 [sub_resource type="Resource" id="Loot"]
 script = ExtResource("4_loot")
 heart_drop_chance = 0.055
-heart_value = 22
+heart_value = 20
+max_heart_drops = 5
 magnet_drop_chance = 0.035
 magnet_duration = 5.0
+
+[sub_resource type="Resource" id="AbilityBudget"]
+script = ExtResource("10_abilities")
+opening_protection_time = 20.0
+max_telegraphs = 3
+max_projectiles = 2
+min_start_interval = 0.35
+max_player_danger_areas = 2
 
 [sub_resource type="Resource" id="Stage1"]
 script = ExtResource("5_stage")
@@ -50,7 +63,8 @@ start_time = 0.0
 spawn_interval_start = 0.9
 spawn_interval_end = 0.74
 extra_spawn_chance = 0.0
-enemy_weights = {"slime": 0.82, "bat": 0.18, "brute": 0.0}
+enemy_weights = {"green_grub": 0.7, "slime": 0.3, "bat": 0.0, "brute": 0.0}
+enabled_ability_ids = PackedStringArray("green_grub_roll")
 transition_rest_duration = 0.0
 
 [sub_resource type="Resource" id="Stage2"]
@@ -62,7 +76,8 @@ start_time = 30.0
 spawn_interval_start = 0.7
 spawn_interval_end = 0.55
 extra_spawn_chance = 0.18
-enemy_weights = {"slime": 0.45, "bat": 0.48, "brute": 0.07}
+enemy_weights = {"green_grub": 0.25, "slime": 0.35, "bat": 0.32, "brute": 0.08}
+enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt")
 transition_rest_duration = 3.0
 
 [sub_resource type="Resource" id="Stage3"]
@@ -74,7 +89,8 @@ start_time = 60.0
 spawn_interval_start = 0.52
 spawn_interval_end = 0.38
 extra_spawn_chance = 0.3
-enemy_weights = {"slime": 0.28, "bat": 0.32, "brute": 0.4}
+enemy_weights = {"green_grub": 0.1, "slime": 0.25, "bat": 0.3, "brute": 0.35}
+enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
 transition_rest_duration = 3.0
 
 [sub_resource type="Resource" id="Elite"]
@@ -102,7 +118,7 @@ perfect_heading = "完美远征"
 script = ExtResource("8_reward")
 reward_id = "unlock_dusk_corridor"
 display_name = "暮翼航标"
-description = "首次通关解锁第二关·暮翼回廊"
+description = "首次通关解锁第二关·金砂绿洲"
 unlock_level_id = "level_02"
 
 [resource]
@@ -110,15 +126,16 @@ script = ExtResource("1_level")
 level_id = "level_01"
 order = 1
 difficulty_rating = 1
-display_name = "星潮前庭"
-subtitle = "教学远征 · 坚持 90 秒"
-description = "守住星门开启前的第一轮星蚀侵袭。精英为可选挑战。"
+display_name = "风铃草原"
+subtitle = "新手远征 · 坚持 90 秒"
+description = "在花簇与蒲公英之间学习走位，躲开第一轮星蚀侵袭。"
 map = SubResource("Map")
 duration = 90.0
 initial_enemy_count = 5
-max_enemies = 80
+max_enemies = 60
 difficulty = SubResource("Difficulty")
 loot = SubResource("Loot")
+enemy_ability_budget = SubResource("AbilityBudget")
 stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3")])
 elite = SubResource("Elite")
 victory = SubResource("Victory")

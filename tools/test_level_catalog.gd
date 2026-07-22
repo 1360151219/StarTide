@@ -46,9 +46,10 @@ func _initialize() -> void:
 		pressures.append(pressure)
 	var second_ratio := pressures[1] / pressures[0]
 	var third_ratio := pressures[2] / pressures[1]
-	_require(second_ratio >= 1.15 and second_ratio <= 1.35, "第二关压力增长不在 15%%～35%% 目标区间：%.3f" % second_ratio)
-	_require(third_ratio >= 1.50 and third_ratio <= 2.10, "第三关压力增长不在 50%%～110%% 目标区间：%.3f" % third_ratio)
+	_require(second_ratio >= 1.30 and second_ratio <= 1.50, "第二关压力增长不在 30%%～50%% 目标区间：%.3f" % second_ratio)
+	_require(third_ratio >= 1.90 and third_ratio <= 2.30, "第三关压力增长不在 90%%～130%% 目标区间：%.3f" % third_ratio)
 	_test_pressure_formula()
+	_test_ability_pressure()
 	_test_rest_duration()
 	var first_unlock: String = levels[0].reward.unlock_level_id
 	var second_unlock: String = levels[1].reward.unlock_level_id
@@ -56,7 +57,7 @@ func _initialize() -> void:
 	_require(second_unlock == levels[2].level_id, "第二关解锁关系错误")
 	_require(levels[2].reward.unlock_level_id.is_empty(), "第三关不应解锁不存在的关卡")
 	if not failed:
-		print("LEVELS_OK count=3 validated=true pressure=bounded formula=true rewards=chained")
+		print("LEVELS_OK count=3 validated=true pressure=bounded abilities=weighted rewards=chained")
 	quit(1 if failed else 0)
 
 
@@ -87,6 +88,16 @@ func _test_rest_duration() -> void:
 	level.stages = [first, second]
 	var stage_pressure := LevelBalance.stage_pressure(level, 0)
 	_require(is_equal_approx(LevelBalance.level_pressure(level), stage_pressure * 0.8), "关卡压力没有扣除阶段喘息时间")
+
+
+func _test_ability_pressure() -> void:
+	var level := _synthetic_level(10.0)
+	level.enemy_ability_budget = EnemyAbilityBudgetConfig.new()
+	var stage := _synthetic_stage(0.0, 0.0, {"slime": 1.0})
+	level.stages = [stage]
+	var base := LevelBalance.stage_pressure(level, 0)
+	stage.enabled_ability_ids = PackedStringArray(["slime_jump"])
+	_require(is_equal_approx(LevelBalance.stage_pressure(level, 0), base * 1.15), "技能威胁没有按怪物类型计入压力")
 
 
 func _synthetic_level(duration: float) -> LevelConfig:

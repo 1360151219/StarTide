@@ -25,7 +25,7 @@ const SKILL_TEXTURES := {
 
 const PICKUPS := {
 	"xp": {"name": "星辉碎片", "subtitle": "经验道具", "description": "怪物被击败后掉落。\n积满经验即可获得三选一强化。"},
-	"heart": {"name": "治愈星心", "subtitle": "恢复道具", "description": "少量怪物会掉落。\n拾取后立即恢复 22 点生命。"},
+	"heart": {"name": "治愈星心", "subtitle": "恢复道具", "description": "少量怪物会掉落。\n三关分别恢复 20、18、16 点生命。"},
 	"magnet": {"name": "星引护符", "subtitle": "功能道具", "description": "稀有的功能型掉落。\n5 秒内大范围吸取所有道具。"},
 }
 

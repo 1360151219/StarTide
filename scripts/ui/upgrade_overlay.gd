@@ -26,7 +26,7 @@ var design_frame: Control
 func _ready() -> void:
 	layer = 35
 	screen_overlay = ColorRect.new()
-	screen_overlay.color = Color(0.012, 0.02, 0.07, 0.96)
+	screen_overlay.color = Color(0.006, 0.04, 0.07, 0.92)
 	screen_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(screen_overlay)
 	ScreenLayout.fill(screen_overlay)
@@ -34,18 +34,18 @@ func _ready() -> void:
 	backdrop.texture = FLOOR_TEXTURE
 	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	backdrop.modulate = Color(0.38, 0.5, 0.72, 0.14)
+	backdrop.modulate = Color(0.34, 0.72, 0.68, 0.14)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	screen_overlay.add_child(backdrop)
 	ScreenLayout.fill(backdrop)
 	design_frame = DesignFrame.new()
 	screen_overlay.add_child(design_frame)
-	title = UiFactory.label("星辉赐福", 34, Color("f6d782"))
+	title = UiFactory.label("成长三选一", 34, UiFactory.PALE)
 	title.position = Vector2(30, 80)
 	title.size = Vector2(480, 50)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	design_frame.add_child(title)
-	var hint := UiFactory.label("选择 1 项强化，构筑只属于你的流派", 19, Color("b9c7e5"))
+	var hint := UiFactory.label("选择 1 项强化，打造你的专属流派", 19, UiFactory.PALE_MUTED)
 	hint.position = Vector2(30, 132)
 	hint.size = Vector2(480, 34)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -64,7 +64,7 @@ func show_choices(player_level: int, choices: Array, upgrade_system: RefCounted,
 		button.icon = _choice_icon(choice_id)
 		button.set_meta("choice_id", choice_id)
 		var ultimate: bool = skill_levels.has(choice_id) and int(skill_levels[choice_id]) + 1 == 3
-		button.add_theme_stylebox_override("normal", UiFactory.button_style(Color(0.055, 0.085, 0.18, 0.98), Color("f2ca72") if ultimate else Color("578ac6")))
+		UiFactory.apply_glass_button(button, ultimate, UiFactory.GOLD if ultimate else UiFactory.STROKE)
 	visible = true
 
 
@@ -78,7 +78,7 @@ func _build_choice_button(parent: Control, index: int) -> Button:
 	button.add_theme_font_size_override("font_size", 21)
 	button.add_theme_constant_override("icon_max_width", 112)
 	button.add_theme_constant_override("h_separation", 22)
-	button.add_theme_stylebox_override("normal", UiFactory.button_style(Color(0.055, 0.085, 0.18, 0.98), Color("578ac6")))
+	UiFactory.apply_glass_button(button, false, UiFactory.STROKE)
 	button.pressed.connect(_select.bind(button))
 	parent.add_child(button)
 	return button

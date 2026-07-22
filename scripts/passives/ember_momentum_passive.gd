@@ -36,6 +36,10 @@ func try_absorb(_enemy: Node, _elapsed: float) -> bool:
 	return false
 
 
+func try_absorb_hit(_hit: PlayerHit, _elapsed: float) -> bool:
+	return false
+
+
 func status_text(_elapsed: float) -> String:
 	if active:
 		return "燎原 +18%"

@@ -3,7 +3,6 @@
 /.import/
 *.translation
 *.tmp
-
 # Godot C# generated files
 /.mono/
 /data_*/
@@ -14,6 +13,8 @@
 .DS_Store
 Thumbs.db
 *.log
+/preview/
+
 
 # Generated export output
 /build/

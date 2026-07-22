@@ -19,6 +19,10 @@ func try_absorb(enemy: Node, elapsed: float) -> bool:
 	return runtime.try_absorb(enemy, elapsed)
 
 
+func try_absorb_hit(hit: PlayerHit, elapsed: float) -> bool:
+	return runtime.try_absorb_hit(hit, elapsed)
+
+
 func status_text(elapsed: float) -> String:
 	return runtime.status_text(elapsed)
 

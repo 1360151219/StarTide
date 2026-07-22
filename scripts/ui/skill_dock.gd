@@ -17,8 +17,8 @@ var cooldown_bars: Array[ColorRect] = []
 
 
 func _ready() -> void:
-	size = Vector2(276, 64)
-	add_theme_stylebox_override("panel", UiFactory.panel_style(Color(0.025, 0.045, 0.115, 0.86), 16.0, Color(0.38, 0.64, 0.78, 0.5)))
+	size = Vector2(210, 62)
+	add_theme_stylebox_override("panel", UiFactory.panel_style(UiFactory.GLASS, 15.0, UiFactory.GOLD))
 	for index in range(3):
 		_build_slot(index)
 
@@ -34,33 +34,33 @@ func refresh(skills: Node2D, elapsed: float) -> void:
 		var skill_id: String = skill_ids[index]
 		var skill_level: int = skills.levels[skill_id]
 		var color := Color("fff1a8") if skills.is_flashing(skill_id, elapsed) else Color.WHITE
-		icons[index].modulate = color if skill_level > 0 else Color(0.38, 0.44, 0.58, 0.4)
+		icons[index].modulate = color if skill_level > 0 else Color(0.38, 0.48, 0.5, 0.38)
 		badges[index].text = _badge(skill_level)
-		cooldown_bars[index].size.x = 48.0 * skills.cooldown_progress(skill_id)
+		cooldown_bars[index].size.x = 42.0 * skills.cooldown_progress(skill_id)
 
 
 func _build_slot(index: int) -> void:
 	var icon := TextureRect.new()
-	icon.position = Vector2(13 + index * 88, 8)
-	icon.size = Vector2(48, 48)
+	icon.position = Vector2(10 + index * 66, 8)
+	icon.size = Vector2(42, 42)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	add_child(icon)
 	icons.append(icon)
-	var badge := UiFactory.label("—", 14, Color("fff0a8"))
-	badge.position = Vector2(53 + index * 88, 35)
-	badge.size = Vector2(32, 22)
+	var badge := UiFactory.label("—", 12, UiFactory.PALE)
+	badge.position = Vector2(38 + index * 66, 31)
+	badge.size = Vector2(27, 20)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(badge)
 	badges.append(badge)
 	var background := ColorRect.new()
-	background.position = Vector2(13 + index * 88, 56)
-	background.size = Vector2(48, 4)
-	background.color = Color(0.05, 0.08, 0.15, 0.92)
+	background.position = Vector2(10 + index * 66, 54)
+	background.size = Vector2(42, 4)
+	background.color = Color(0.22, 0.38, 0.41, 0.28)
 	add_child(background)
 	var fill := ColorRect.new()
 	fill.size = Vector2(0, 4)
-	fill.color = Color("f6d782")
+	fill.color = UiFactory.GOLD
 	background.add_child(fill)
 	cooldown_bars.append(fill)
 

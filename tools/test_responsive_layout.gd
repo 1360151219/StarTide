@@ -23,6 +23,7 @@ func _on_process_frame() -> void:
 	_test_project_settings()
 	_test_safe_area_conversion()
 	_test_full_screen_roots(game)
+	_test_compact_ui(game)
 	for profile in _profiles():
 		_test_profile(game, profile)
 	_test_no_fixed_screen_rects()
@@ -54,6 +55,14 @@ func _test_full_screen_roots(game: Node) -> void:
 		game.result_overlay.screen_overlay,
 	]:
 		_require(_is_full_rect(control), "%s 没有覆盖完整视口" % control.name)
+
+
+func _test_compact_ui(game: Node) -> void:
+	_require(game.hud.top_panel.size.y <= 72.0, "战斗顶部状态栏超过 72 像素")
+	_require(game.hud.skill_dock.anchor_top == 1.0 and game.hud.skill_dock.size.x <= 210.0, "技能栏没有移动到紧凑的右下区域")
+	_require(game.hud.stage_hud.banner.size.y <= 64.0, "阶段提示高度超过 64 像素")
+	_require(game.start_screen.lobby_view.visible and not game.start_screen.hero_view.visible, "开始页没有默认停留在关卡大厅")
+	_require(game.start_screen.level_preview.animation_player.is_playing(), "关卡预览动画没有播放")
 
 
 func _test_profile(game: Node, profile: Dictionary) -> void:
