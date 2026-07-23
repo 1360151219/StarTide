@@ -13,7 +13,7 @@ const SkillController = preload("res://scripts/skills/skill_controller.gd")
 const WorldRenderer = preload("res://scripts/presentation/world_renderer.gd")
 
 
-func build(parent: Node2D, state: RefCounted, level: LevelConfig, stage_director: RefCounted, audio: Node, effects: Node2D, random_streams: Dictionary, progression: Dictionary = {}) -> Dictionary:
+func build(parent: Node2D, state: RefCounted, build_state: RefCounted, level: LevelConfig, stage_director: RefCounted, audio: Node, effects: Node2D, random_streams: Dictionary, progression: Dictionary = {}) -> Dictionary:
 	var world := WorldRenderer.new()
 	world.z_index = -100
 	world.configure(level.map)
@@ -21,6 +21,7 @@ func build(parent: Node2D, state: RefCounted, level: LevelConfig, stage_director
 	var player := PlayerEntity.new()
 	player.position = level.map.player_start
 	player.configure(state.hero_id, HeroCatalog.hero(state.hero_id), level.map, progression)
+	player.apply_build_modifiers(build_state)
 	player.z_index = level.map.depth_index(player.position.y)
 	parent.add_child(player)
 	var camera := _create_camera(player, level.map)
@@ -41,11 +42,11 @@ func build(parent: Node2D, state: RefCounted, level: LevelConfig, stage_director
 	projectiles.configure(enemies, effects, audio, random_streams["skill"])
 	var pickups := PickupSystem.new()
 	parent.add_child(pickups)
-	pickups.configure(level, state, player, random_streams["loot"], audio)
+	pickups.configure(level, state, build_state, player, enemies, random_streams["loot"], audio)
 	var skills := SkillController.new()
 	skills.z_index = 3850
 	parent.add_child(skills)
-	skills.configure(state.hero_id, player, enemies, projectiles, effects, audio, random_streams["skill"], progression)
+	skills.configure(state.hero_id, build_state, player, enemies, projectiles, effects, audio, random_streams["skill"], progression)
 	var passives := PassiveController.new()
 	passives.configure(state.hero_id, player, effects, audio)
 	return {

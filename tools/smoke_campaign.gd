@@ -30,11 +30,11 @@ func _initialize() -> void:
 		session.enemies.damage_enemy(session.elite_enemy, session.elite_enemy.max_health + 1.0)
 		var upgrade_steps := 0
 		while session.state.pending_upgrades > 0 and not session.state.finished:
-			var choices: Array = session.upgrades.build_choices(session.skills.active_skill_ids, session.skills.levels, 1.0)
+			var choices: Array = session.build_state.pending_choices.values()
 			if choices.is_empty() or upgrade_steps >= 10:
 				_require(false, "%s 精英奖励升级无法收敛" % level.display_name)
 				break
-			session.select_upgrade(choices[0])
+			session.select_upgrade(choices[0]["choice_key"])
 			upgrade_steps += 1
 		if not session.state.finished:
 			session.advance(level.duration - session.state.elapsed, Vector2.ZERO)

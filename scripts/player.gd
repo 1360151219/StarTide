@@ -14,7 +14,11 @@ const HERO_TEXTURES := {
 var hero_id := "star_warden"
 var max_health := 100.0
 var health := 100.0
+var base_max_health := 100.0
 var speed := 230.0
+var base_speed := 230.0
+var build_speed_bonus := 0.0
+var temporary_speed_multiplier := 1.0
 var facing := Vector2.DOWN
 var hurt_flash := 0.0
 var animation_time := 0.0
@@ -38,10 +42,34 @@ func _process(delta: float) -> void:
 func configure(selected_hero_id: String, hero_data: Dictionary, map_config: MapConfig, progression: Dictionary = {}) -> void:
 	hero_id = selected_hero_id
 	map = map_config
-	max_health = hero_data["max_health"] * float(progression.get("health_multiplier", 1.0))
+	base_max_health = hero_data["max_health"] * float(progression.get("health_multiplier", 1.0))
+	max_health = base_max_health
 	health = max_health
-	speed = hero_data["speed"]
+	base_speed = hero_data["speed"]
+	build_speed_bonus = 0.0
+	temporary_speed_multiplier = 1.0
+	_refresh_speed()
 	queue_redraw()
+
+
+func set_build_speed_bonus(additive_bonus: float) -> void:
+	build_speed_bonus = maxf(0.0, additive_bonus)
+	_refresh_speed()
+
+
+func apply_build_modifiers(build_state: RefCounted) -> void:
+	max_health = base_max_health + build_state.modifier("max_health_flat")
+	health = minf(health, max_health)
+	set_build_speed_bonus(build_state.modifier("move_speed_multiplier") - 1.0)
+
+
+func set_temporary_speed_multiplier(multiplier: float) -> void:
+	temporary_speed_multiplier = maxf(0.1, multiplier)
+	_refresh_speed()
+
+
+func _refresh_speed() -> void:
+	speed = base_speed * (1.0 + build_speed_bonus) * temporary_speed_multiplier
 
 
 func move(direction: Vector2, delta: float) -> Vector2:

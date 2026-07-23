@@ -1,6 +1,7 @@
 extends RefCounted
 
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const MAX_LEVEL := 10
 const XP_PER_LEVEL := 100
 const MAX_MASTERY_XP := (MAX_LEVEL - 1) * XP_PER_LEVEL
@@ -164,4 +165,4 @@ static func _effect_text(skill_id: String, training_level: int) -> String:
 static func _skill_ids(hero_id: String) -> Array:
 	if not HeroCatalog.HEROES.has(hero_id):
 		return []
-	return HeroCatalog.hero(hero_id)["skills"].duplicate()
+	return Array(SkillCatalog.skills_for_hero(hero_id))

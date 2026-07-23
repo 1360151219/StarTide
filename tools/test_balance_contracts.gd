@@ -2,6 +2,7 @@ extends SceneTree
 
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
+const PickupCatalog = preload("res://scripts/pickup_catalog.gd")
 const RunState = preload("res://scripts/run/run_state.gd")
 
 var failed := false
@@ -50,8 +51,13 @@ func _effective_skill_output(skill_id: String, skill_level: int) -> float:
 func _test_healing_budget() -> void:
 	var levels := LevelCatalog.all()
 	for index in range(levels.size()):
-		_require(levels[index].loot.max_heart_drops == 5 + index, "%s 治疗心预算错误" % levels[index].display_name)
-		_require(levels[index].loot.heart_value == 20 - index * 2, "%s 单个治疗心数值错误" % levels[index].display_name)
+		var heart_entry: DropEntryConfig
+		for entry in levels[index].loot.bonus_entries:
+			if entry.pickup_id == "heart":
+				heart_entry = entry
+				break
+		_require(heart_entry != null and heart_entry.max_per_run == 5 + index, "%s 治疗心预算错误" % levels[index].display_name)
+	_require(PickupCatalog.pickup("heart")["amount"] == 20.0, "治疗心效果没有由道具目录统一维护")
 
 
 func _test_biomes() -> void:

@@ -13,6 +13,7 @@ extends Resource
 @export var max_enemies := 80
 @export var difficulty: DifficultyConfig
 @export var loot: LootConfig
+@export var content_pool: LevelContentPoolConfig
 @export var enemy_ability_budget: EnemyAbilityBudgetConfig
 @export var stages: Array[StageConfig] = []
 @export var elite: EliteConfig
@@ -59,6 +60,10 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 		errors.append("掉落配置不能为空")
 	else:
 		_append_prefixed(errors, "掉落", loot.validation_errors())
+	if content_pool == null:
+		errors.append("内容池配置不能为空")
+	else:
+		_append_prefixed(errors, "内容池", content_pool.validation_errors())
 	if enemy_ability_budget == null:
 		errors.append("怪物技能预算不能为空")
 	else:

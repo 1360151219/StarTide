@@ -10,6 +10,8 @@
 [ext_resource type="Script" path="res://scripts/levels/reward_config.gd" id="8_reward"]
 [ext_resource type="Texture2D" path="res://assets/art/environment/windbell_meadow_floor.png" id="9_floor"]
 [ext_resource type="Script" path="res://scripts/levels/enemy_ability_budget_config.gd" id="10_abilities"]
+[ext_resource type="Script" path="res://scripts/levels/drop_entry_config.gd" id="11_drop"]
+[ext_resource type="Script" path="res://scripts/levels/level_content_pool_config.gd" id="12_pool"]
 
 [sub_resource type="Resource" id="Map"]
 script = ExtResource("2_map")
@@ -38,13 +40,21 @@ speed_end = 1.05
 damage_start = 1.0
 damage_end = 1.05
 
+[sub_resource type="Resource" id="DropHeart"]
+script = ExtResource("11_drop")
+pickup_id = "heart"
+chance = 0.055
+max_per_run = 5
+
 [sub_resource type="Resource" id="Loot"]
 script = ExtResource("4_loot")
-heart_drop_chance = 0.055
-heart_value = 20
-max_heart_drops = 5
-magnet_drop_chance = 0.035
-magnet_duration = 5.0
+experience_multiplier = 1.2
+bonus_entries = Array[ExtResource("11_drop")]([SubResource("DropHeart")])
+
+[sub_resource type="Resource" id="ContentPool"]
+script = ExtResource("12_pool")
+added_skill_ids = PackedStringArray("star_lance", "ember_volley")
+added_relic_ids = PackedStringArray("star_core", "flow_feather")
 
 [sub_resource type="Resource" id="AbilityBudget"]
 script = ExtResource("10_abilities")
@@ -63,46 +73,46 @@ start_time = 0.0
 spawn_interval_start = 0.9
 spawn_interval_end = 0.74
 extra_spawn_chance = 0.0
-enemy_weights = {"green_grub": 0.7, "slime": 0.3, "bat": 0.0, "brute": 0.0}
+enemy_weights = {"green_grub": 0.7, "slime": 0.3}
 enabled_ability_ids = PackedStringArray("green_grub_roll")
 transition_rest_duration = 0.0
 
 [sub_resource type="Resource" id="Stage2"]
 script = ExtResource("5_stage")
 stage_id = "dusk_hunt"
-display_name = "暮翼围猎"
-subtitle = "高速暮翼加入围猎"
+display_name = "果冻围猎"
+subtitle = "史莱姆开始密集合围"
 start_time = 30.0
 spawn_interval_start = 0.7
 spawn_interval_end = 0.55
 extra_spawn_chance = 0.18
-enemy_weights = {"green_grub": 0.25, "slime": 0.35, "bat": 0.32, "brute": 0.08}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt")
+enemy_weights = {"green_grub": 0.45, "slime": 0.55}
+enabled_ability_ids = PackedStringArray("green_grub_roll")
 transition_rest_duration = 3.0
 
 [sub_resource type="Resource" id="Stage3"]
 script = ExtResource("5_stage")
 stage_id = "meteor_judgement"
-display_name = "陨岩审判"
-subtitle = "重型陨岩正在苏醒"
+display_name = "翠潮冲刺"
+subtitle = "软绵魔物发起最后冲锋"
 start_time = 60.0
 spawn_interval_start = 0.52
 spawn_interval_end = 0.38
 extra_spawn_chance = 0.3
-enemy_weights = {"green_grub": 0.1, "slime": 0.25, "bat": 0.3, "brute": 0.35}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
+enemy_weights = {"green_grub": 0.3, "slime": 0.7}
+enabled_ability_ids = PackedStringArray("green_grub_roll")
 transition_rest_duration = 3.0
 
 [sub_resource type="Resource" id="Elite"]
 script = ExtResource("6_elite")
 spawn_time = 60.0
-enemy_id = "brute"
-display_name = "陨岩执政官"
-health_multiplier = 2.4
-speed_multiplier = 0.92
-damage_multiplier = 1.35
-radius_multiplier = 1.25
-visual_scale = 1.25
+enemy_id = "slime"
+display_name = "星蚀团子王"
+health_multiplier = 7.0
+speed_multiplier = 0.62
+damage_multiplier = 2.4
+radius_multiplier = 1.95
+visual_scale = 1.65
 experience = 36
 bonus_upgrade_count = 1
 magnet_duration = 6.0
@@ -135,6 +145,7 @@ initial_enemy_count = 5
 max_enemies = 60
 difficulty = SubResource("Difficulty")
 loot = SubResource("Loot")
+content_pool = SubResource("ContentPool")
 enemy_ability_budget = SubResource("AbilityBudget")
 stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3")])
 elite = SubResource("Elite")

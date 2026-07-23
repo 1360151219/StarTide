@@ -93,18 +93,26 @@ func refresh_presentation() -> void:
 	hud.refresh(session.state, session.level, session.player, session.skills, session.pickups, session.passives, session.stage_director.current_stage(), session.elite_enemy)
 
 
-func _show_upgrade(player_level: int, choices: Array, upgrade_system: RefCounted, skill_levels: Dictionary) -> void:
+func _show_upgrade(player_level: int, choices: Array, upgrade_system: RefCounted, build_state: RefCounted) -> void:
 	hud.cancel_input()
-	upgrade_overlay.show_choices(player_level, choices, upgrade_system, skill_levels)
+	upgrade_overlay.show_choices(player_level, choices, upgrade_system, build_state)
 	audio_manager.set_music_ducked(true)
 	audio_manager.play_sfx("upgrade", -1.0)
 
 
 func _on_upgrade_selected(choice_id: String) -> void:
-	audio_manager.play_sfx("ui_confirm", 0.0)
-	audio_manager.set_music_ducked(false)
 	upgrade_overlay.visible = false
-	session.select_upgrade(choice_id)
+	if not session.select_upgrade(choice_id):
+		upgrade_overlay.visible = true
+		return
+	audio_manager.play_sfx("ui_confirm", 0.0)
+	if not upgrade_overlay.visible:
+		audio_manager.set_music_ducked(false)
+
+
+func _on_upgrade_reroll() -> void:
+	if session.reroll_upgrade():
+		audio_manager.play_sfx("ui_select", -1.0)
 
 
 func _show_result(presentation: Dictionary) -> void:
@@ -113,7 +121,7 @@ func _show_result(presentation: Dictionary) -> void:
 	pause_overlay.visible = false
 	upgrade_overlay.visible = false
 	audio_manager.set_music_ducked(true)
-	result_overlay.show_result(presentation["heading"], presentation["body"], presentation["reward_text"], presentation["won"])
+	result_overlay.show_result(presentation["heading"], presentation["body"], presentation["reward_text"], presentation["won"], presentation["build_text"])
 
 
 func _pause_game() -> void:
@@ -121,6 +129,7 @@ func _pause_game() -> void:
 		return
 	session.pause()
 	hud.cancel_input()
+	pause_overlay.show_build(session.build_state)
 	pause_overlay.visible = true
 	audio_manager.set_music_ducked(true)
 	audio_manager.play_sfx("ui_select", -1.0)
@@ -155,6 +164,7 @@ func _build_ui() -> void:
 	upgrade_overlay = UpgradeOverlay.new()
 	add_child(upgrade_overlay)
 	upgrade_overlay.choice_selected.connect(_on_upgrade_selected)
+	upgrade_overlay.reroll_requested.connect(_on_upgrade_reroll)
 	result_overlay = ResultOverlay.new()
 	add_child(result_overlay)
 	result_overlay.replay_requested.connect(_replay_same_run)

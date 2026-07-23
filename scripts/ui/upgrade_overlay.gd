@@ -1,26 +1,21 @@
 extends CanvasLayer
 
 signal choice_selected(choice_id: String)
+signal reroll_requested
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
+const RelicCatalog = preload("res://scripts/relic_catalog.gd")
 const FLOOR_TEXTURE := preload("res://assets/art/environment/celestial_floor.png")
-const SKILL_ICONS := {
-	"star_lance": preload("res://assets/art/skills/star_lance.png"),
-	"sun_orbit": preload("res://assets/art/skills/sun_orbit.png"),
-	"frost_tide": preload("res://assets/art/skills/frost_tide.png"),
-	"ember_volley": preload("res://assets/art/skills/ember_volley.png"),
-	"meteor_rain": preload("res://assets/art/skills/meteor_rain.png"),
-	"phoenix_heart": preload("res://assets/art/skills/phoenix_heart.png"),
-}
 const HEART_ICON := preload("res://assets/art/pickups/healing_heart.png")
-const MAGNET_ICON := preload("res://assets/art/pickups/magnet_charm.png")
 
 var title: Label
 var buttons: Array[Button] = []
 var screen_overlay: ColorRect
 var design_frame: Control
+var reroll_button: Button
 
 
 func _ready() -> void:
@@ -52,19 +47,32 @@ func _ready() -> void:
 	design_frame.add_child(hint)
 	for index in range(3):
 		buttons.append(_build_choice_button(design_frame, index))
+	reroll_button = Button.new()
+	reroll_button.position = Vector2(140, 808)
+	reroll_button.size = Vector2(260, 56)
+	reroll_button.add_theme_font_size_override("font_size", 18)
+	UiFactory.apply_glass_button(reroll_button, false, UiFactory.GOLD)
+	reroll_button.pressed.connect(reroll_requested.emit)
+	design_frame.add_child(reroll_button)
 	visible = false
 
 
-func show_choices(player_level: int, choices: Array, upgrade_system: RefCounted, skill_levels: Dictionary) -> void:
+func show_choices(player_level: int, choices: Array, upgrade_system: RefCounted, build_state: RefCounted) -> void:
 	title.text = "等级 %d · 星辉赐福" % player_level
 	for index in range(3):
-		var choice_id: String = choices[index]
 		var button := buttons[index]
-		button.text = upgrade_system.choice_text(choice_id, skill_levels)
-		button.icon = _choice_icon(choice_id)
-		button.set_meta("choice_id", choice_id)
-		var ultimate: bool = skill_levels.has(choice_id) and int(skill_levels[choice_id]) + 1 == 3
-		UiFactory.apply_glass_button(button, ultimate, UiFactory.GOLD if ultimate else UiFactory.STROKE)
+		if index >= choices.size():
+			button.visible = false
+			continue
+		var choice: Dictionary = choices[index]
+		button.visible = true
+		button.text = upgrade_system.choice_text(choice)
+		button.icon = _choice_icon(choice)
+		button.set_meta("choice_id", choice["choice_key"])
+		var highlighted: bool = int(choice.get("target_level", 0)) >= 3 or str(choice["kind"]) == "skill_branch"
+		UiFactory.apply_glass_button(button, highlighted, UiFactory.GOLD if highlighted else UiFactory.STROKE)
+	reroll_button.disabled = int(build_state.rerolls_remaining) <= 0
+	reroll_button.text = "重抽本组选项 · 剩余 %d 次" % int(build_state.rerolls_remaining)
 	visible = true
 
 
@@ -88,7 +96,10 @@ func _select(button: Button) -> void:
 	choice_selected.emit(button.get_meta("choice_id"))
 
 
-func _choice_icon(choice_id: String) -> Texture2D:
-	if SKILL_ICONS.has(choice_id):
-		return SKILL_ICONS[choice_id]
-	return MAGNET_ICON if choice_id == "swiftness" else HEART_ICON
+func _choice_icon(choice: Dictionary) -> Texture2D:
+	var content_id := str(choice["content_id"])
+	if str(choice["kind"]) == "relic_upgrade":
+		return RelicCatalog.icon(content_id)
+	if SkillCatalog.has(content_id):
+		return SkillCatalog.skill(content_id)["icon"]
+	return HEART_ICON

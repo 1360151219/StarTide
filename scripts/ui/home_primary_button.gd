@@ -46,8 +46,11 @@ func set_caption(value: String, available: bool) -> void:
 
 
 func _layout_caption() -> void:
-	caption.position = Vector2(34, 22)
-	caption.size = size - Vector2(68, 35)
+	caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	caption.offset_left = 34.0
+	caption.offset_top = 12.0
+	caption.offset_right = -34.0
+	caption.offset_bottom = -12.0
 	pivot_offset = size * 0.5
 
 

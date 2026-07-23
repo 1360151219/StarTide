@@ -1,14 +1,7 @@
 extends Panel
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const ICONS := {
-	"star_lance": preload("res://assets/art/skills/star_lance.png"),
-	"sun_orbit": preload("res://assets/art/skills/sun_orbit.png"),
-	"frost_tide": preload("res://assets/art/skills/frost_tide.png"),
-	"ember_volley": preload("res://assets/art/skills/ember_volley.png"),
-	"meteor_rain": preload("res://assets/art/skills/meteor_rain.png"),
-	"phoenix_heart": preload("res://assets/art/skills/phoenix_heart.png"),
-}
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 
 var skill_ids: Array = []
 var icons: Array[TextureRect] = []
@@ -26,12 +19,20 @@ func _ready() -> void:
 func configure(active_skill_ids: Array) -> void:
 	skill_ids = active_skill_ids.duplicate()
 	for index in range(3):
-		icons[index].texture = ICONS[skill_ids[index]]
+		var skill_id := str(skill_ids[index]) if index < skill_ids.size() else ""
+		icons[index].texture = SkillCatalog.skill(skill_id).get("icon") if SkillCatalog.has(skill_id) else null
 
 
 func refresh(skills: Node2D, elapsed: float) -> void:
-	for index in range(skill_ids.size()):
+	if skills.active_skill_ids != skill_ids:
+		configure(skills.active_skill_ids)
+	for index in range(3):
 		var skill_id: String = skill_ids[index]
+		if skill_id.is_empty():
+			icons[index].modulate = Color(0.3, 0.4, 0.43, 0.22)
+			badges[index].text = "＋"
+			cooldown_bars[index].size.x = 0.0
+			continue
 		var skill_level: int = skills.levels[skill_id]
 		var color := Color("fff1a8") if skills.is_flashing(skill_id, elapsed) else Color.WHITE
 		icons[index].modulate = color if skill_level > 0 else Color(0.38, 0.48, 0.5, 0.38)

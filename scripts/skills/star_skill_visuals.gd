@@ -1,6 +1,6 @@
 extends Node2D
 
-const HeroCatalog = preload("res://scripts/hero_catalog.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 
 var runtime: Node
 var player: Node2D
@@ -28,11 +28,11 @@ func _draw_orbit() -> void:
 	var skill_level: int = levels.get("sun_orbit", 0)
 	if skill_level <= 0:
 		return
-	var data: Dictionary = HeroCatalog.skill("sun_orbit")["runtime"]
-	var count: int = data["count"][skill_level]
+	var data: Dictionary = SkillCatalog.skill("sun_orbit")["runtime"]
+	var count := int(runtime._stat("sun_orbit", "count", data["count"][skill_level]))
 	var range_multiplier := _range_multiplier("sun_orbit")
 	var distance: float = data["orbit_radius"][skill_level] * range_multiplier
-	var orb_size: float = data["orb_radius"][skill_level] * range_multiplier
+	var orb_size: float = data["orb_radius"][skill_level] * range_multiplier * runtime._branch_multiplier("sun_orbit", "orb_radius_multiplier")
 	for index in range(count):
 		var position: Vector2 = player.position + Vector2.from_angle(runtime.orbit_phase + index * TAU / count) * distance
 		draw_circle(position, orb_size + 16.0, Color(1.0, 0.58, 0.16, 0.12))
@@ -51,8 +51,8 @@ func _draw_frost_pulse() -> void:
 	var skill_level: int = levels.get("frost_tide", 0)
 	if skill_level <= 0 or runtime.pulse_visual_time <= 0.0:
 		return
-	var data: Dictionary = HeroCatalog.skill("frost_tide")["runtime"]
-	var radius: float = data["radius"][skill_level] * _range_multiplier("frost_tide")
+	var data: Dictionary = SkillCatalog.skill("frost_tide")["runtime"]
+	var radius: float = data["radius"][skill_level] * _range_multiplier("frost_tide") * runtime._branch_multiplier("frost_tide", "radius_multiplier")
 	var progress: float = 1.0 - runtime.pulse_visual_time / 0.3
 	var alpha := 1.0 - progress
 	draw_arc(player.position, radius * progress, 0.0, TAU, 72, Color(0.55, 0.95, 1.0, alpha), 8.0)
@@ -66,5 +66,4 @@ func _draw_frost_pulse() -> void:
 
 
 func _range_multiplier(skill_id: String) -> float:
-	var modifiers: Dictionary = runtime.skill_modifiers.get(skill_id, {})
-	return float(modifiers.get("range_multiplier", 1.0))
+	return runtime._multiplier(skill_id, "range_multiplier")

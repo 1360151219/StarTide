@@ -63,6 +63,18 @@ func _test_compact_ui(game: Node) -> void:
 	_require(game.hud.stage_hud.banner.size.y <= 64.0, "阶段提示高度超过 64 像素")
 	_require(game.start_screen.lobby_view.visible and not game.start_screen.hero_view.visible, "开始页没有默认停留在关卡大厅")
 	_require(game.start_screen.level_preview.animation_player.is_playing(), "关卡预览动画没有播放")
+	game.result_overlay.show_result(
+		"完美远征与星门守护认证",
+		"彩晶火山 · 星潮守望者\n挑战成功 · 击败星核暴君并坚持 120 秒\n用时 02:00 · 击败 123 · 等级 11\n精英 已击败\n星潮伤害 +99% · 移速 +24% · 最大生命 +45\n个人最佳 · 击败 123",
+		"首次通关 · 星门守望者\n完成当前三关远征，获得星门守望者认证与额外成长奖励\n英雄熟练度 +100 · 当前 Lv.10 · 技能点 +1",
+		true,
+		"技能：星芒枪 III·星雨齐射 / 日轮守卫 III·群星环列 / 霜潮脉冲 III·永冻冰原\n遗物：星核扩容 III / 聚能棱晶 III / 时砂齿轮 III / 回响透镜 III · 重抽 0"
+	)
+	var card_rect: Rect2 = game.result_overlay.result_card.get_global_rect()
+	for label in [game.result_overlay.heading, game.result_overlay.summary, game.result_overlay.reward_label, game.result_overlay.build_label]:
+		_require(_contains_rect(card_rect, label.get_global_rect(), 0.51), "结算文案越过卡片边界")
+		_require(label.autowrap_mode != TextServer.AUTOWRAP_OFF and label.clip_text, "结算文案没有启用受限换行")
+	game.result_overlay.visible = false
 
 
 func _test_profile(game: Node, profile: Dictionary) -> void:
@@ -91,6 +103,8 @@ func _test_profile(game: Node, profile: Dictionary) -> void:
 func _check_interactive_bounds(root: Node, safe_rect: Rect2, profile_id: String) -> void:
 	for node in _descendants(root):
 		if not (node is BaseButton or node is HSlider or node == current_scene.hud.joystick):
+			continue
+		if not node.is_visible_in_tree():
 			continue
 		var rect: Rect2 = node.get_global_rect()
 		_require(_contains_rect(safe_rect, rect, 0.51), "%s 的 %s 越过安全区：%s" % [profile_id, node.name, rect])

@@ -4,15 +4,8 @@ signal closed
 signal progression_changed
 
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const SKILL_ICONS := {
-	"star_lance": preload("res://assets/art/skills/star_lance.png"),
-	"sun_orbit": preload("res://assets/art/skills/sun_orbit.png"),
-	"frost_tide": preload("res://assets/art/skills/frost_tide.png"),
-	"ember_volley": preload("res://assets/art/skills/ember_volley.png"),
-	"meteor_rain": preload("res://assets/art/skills/meteor_rain.png"),
-	"phoenix_heart": preload("res://assets/art/skills/phoenix_heart.png"),
-}
 
 var records: RefCounted
 var hero_id := ""
@@ -132,7 +125,13 @@ func _refresh_skill_button(button: Button, skill: Dictionary) -> void:
 		return
 	var skill_id: String = skill.get("id", "")
 	button.set_meta("skill_id", skill_id)
-	button.icon = SKILL_ICONS.get(skill_id)
+	button.icon = SkillCatalog.skill(skill_id).get("icon") if SkillCatalog.has(skill_id) else null
+	if records.has_method("is_content_discovered") and not records.is_content_discovered("skills", skill_id):
+		button.text = "？？？ · 尚未发现\n在对应远征中获得后开放永久培养"
+		button.disabled = true
+		button.modulate = Color(0.58, 0.66, 0.68)
+		return
+	button.modulate = Color.WHITE
 	var training_level := int(skill.get("training_level", 0))
 	var maximum := int(skill.get("max_training_level", 3))
 	var cost_text := "已满级" if training_level >= maximum else "下一级消耗 %d 点" % int(skill.get("next_cost", 1))

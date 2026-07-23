@@ -4,8 +4,10 @@ const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const HeroProgression = preload("res://scripts/profile/hero_progression.gd")
 const LocalProfileRepository = preload("res://scripts/profile/local_profile_repository.gd")
+const ProfileSchema = preload("res://scripts/profile/profile_schema.gd")
+const ContentDiscoveryService = preload("res://scripts/profile/content_discovery_service.gd")
 const DEFAULT_PATH := "user://run_records.cfg"
-const SCHEMA_VERSION := 3
+const SCHEMA_VERSION := ProfileSchema.VERSION
 
 static var pending_replay_hero_id := ""
 static var pending_replay_level_id := ""
@@ -20,6 +22,7 @@ var records: Dictionary = {}
 var level_records: Dictionary = {}
 var unlocked_levels: Dictionary = {}
 var hero_progressions: Dictionary = {}
+var discovery: RefCounted
 var last_hero_id := ""
 var last_level_id := ""
 
@@ -51,6 +54,8 @@ func progression_snapshot(hero_id: String) -> Dictionary:
 func train_skill(hero_id: String, skill_id: String) -> Dictionary:
 	if not hero_progressions.has(hero_id):
 		return {"success": false, "reason": "未知英雄", "snapshot": {}}
+	if not is_content_discovered("skills", skill_id):
+		return {"success": false, "reason": "先在远征中发现该技能", "snapshot": progression_snapshot(hero_id)}
 	var result := HeroProgression.train(hero_id, hero_progressions[hero_id], skill_id)
 	hero_progressions[hero_id] = result["progress"]
 	if result["success"]:
@@ -70,6 +75,33 @@ func reset_skill_training(hero_id: String) -> Dictionary:
 
 func is_level_unlocked(level_id: String) -> bool:
 	return bool(unlocked_levels.get(level_id, false))
+
+
+func discover_content(category: String, content_id: String) -> bool:
+	if not discovery.discover(category, content_id):
+		return false
+	_save()
+	return true
+
+
+func is_content_discovered(category: String, content_id: String) -> bool:
+	return discovery.is_discovered(category, content_id)
+
+
+func discovered_content_count(category: String) -> int:
+	return discovery.count(category)
+
+
+func discovered_content_ids(category: String) -> PackedStringArray:
+	return discovery.ids(category)
+
+
+func new_content_discoveries() -> Array[Dictionary]:
+	return discovery.new_discoveries()
+
+
+func clear_new_content_discoveries() -> void:
+	discovery.clear_new_discoveries()
 
 
 func record_run(hero_id: String, won: bool, killed_elite: bool, kills: int, run_level: int, survival_seconds: float) -> Dictionary:
@@ -150,6 +182,7 @@ func _load() -> void:
 	level_records = profile["level_records"]
 	unlocked_levels = profile["unlocked_levels"]
 	hero_progressions = profile["hero_progressions"]
+	discovery = ContentDiscoveryService.new(profile.get("discovered_content", {}))
 	var needs_repair := int(profile.get("source_schema_version", SCHEMA_VERSION)) < SCHEMA_VERSION
 	for hero_id in hero_ids:
 		var normalized: Dictionary = HeroProgression.sanitize(hero_id, hero_progressions[hero_id])
@@ -178,6 +211,7 @@ func _default_profile() -> Dictionary:
 		"schema_version": SCHEMA_VERSION, "profile_id": "", "revision": 0,
 		"last_hero_id": hero_ids[0], "last_level_id": level_ids[0],
 		"records": {}, "level_records": {}, "unlocked_levels": {}, "hero_progressions": {},
+		"discovered_content": _empty_discovered_content(),
 	}
 	for hero_id in hero_ids:
 		profile["records"][hero_id] = _empty_record()
@@ -193,9 +227,16 @@ func _profile_data() -> Dictionary:
 		"schema_version": SCHEMA_VERSION, "profile_id": profile_id, "revision": revision,
 		"last_hero_id": last_hero_id, "last_level_id": last_level_id,
 		"records": records, "level_records": level_records, "unlocked_levels": unlocked_levels,
-		"hero_progressions": hero_progressions,
+		"hero_progressions": hero_progressions, "discovered_content": discovery.snapshot(),
 	}
 
 
 func _empty_record() -> Dictionary:
 	return {"runs": 0, "wins": 0, "elite_kills": 0, "best_kills": 0, "best_level": 0, "best_survival_ms": 0}
+
+
+func _empty_discovered_content() -> Dictionary:
+	var result := {}
+	for category in ProfileSchema.DISCOVERY_CATEGORIES:
+		result[category] = {}
+	return result

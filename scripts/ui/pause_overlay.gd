@@ -7,8 +7,10 @@ const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
 const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
+const BuildSummary = preload("res://scripts/run/build_summary.gd")
 
 var audio_settings: Control
+var build_label: Label
 var screen_overlay: ColorRect
 var design_frame: Control
 
@@ -36,9 +38,21 @@ func configure(audio: Node) -> void:
 	audio_settings.position = Vector2(92, 292)
 	design_frame.add_child(audio_settings)
 	audio_settings.configure(audio)
-	_add_button(design_frame, "继续游戏", Vector2(92, 544), true, resume_requested.emit)
-	_add_button(design_frame, "返回关卡大厅", Vector2(92, 644), false, home_requested.emit)
+	build_label = UiFactory.label("", 15, UiFactory.PALE_MUTED)
+	build_label.position = Vector2(42, 526)
+	build_label.size = Vector2(456, 94)
+	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	build_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	build_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	build_label.clip_text = true
+	design_frame.add_child(build_label)
+	_add_button(design_frame, "继续游戏", Vector2(92, 638), true, resume_requested.emit)
+	_add_button(design_frame, "返回关卡大厅", Vector2(92, 736), false, home_requested.emit)
 	visible = false
+
+
+func show_build(build_state: RefCounted) -> void:
+	build_label.text = BuildSummary.text(build_state)
 
 
 func _add_button(parent: Control, text: String, at: Vector2, primary: bool, callback: Callable) -> void:

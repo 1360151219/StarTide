@@ -32,7 +32,7 @@ func _on_process_frame() -> void:
 		_test_victory(game)
 	if frame_count == 22:
 		if not failed:
-			print("SMOKE_OK levels=3 menu=two_step preview=animated session=modular pause=stable upgrade=true victory=true unlock=true audio=14 volume_sync=true")
+			print("SMOKE_OK levels=3 menu=two_step carousel=3 preview=animated session=modular pause=stable upgrade=true victory=true unlock=true audio=14 volume_sync=true")
 		quit(1 if failed else 0)
 
 
@@ -53,13 +53,13 @@ func _test_start_screen(game: Node) -> void:
 	_require(not game.start_screen.audio_settings.settings_card.visible, "开始页声音设置无法关闭")
 	game.audio_manager.set_music_volume(original_music, false)
 	game.audio_manager.set_sfx_volume(original_sfx, false)
-	_require(game.start_screen.level_selector.buttons.size() == 3, "开始页没有三个关卡")
-	_require(not game.start_screen.level_selector.buttons["level_01"].disabled, "第一关未默认解锁")
-	_require(not game.start_screen.level_selector.buttons["level_02"].disabled, "未解锁关卡应允许预览")
+	_require(game.start_screen.level_selector.page_buttons.size() == 3, "开始页轮播没有固定三个复用节点")
+	_require(game.start_screen.level_selector.left_button.disabled, "第一关左侧轮播按钮仍可用")
+	_require(not game.start_screen.level_selector.right_button.disabled, "后续关卡无法通过轮播预览")
 	_require(game.start_screen.level_preview.animation_player.is_playing(), "关卡动态预览没有播放")
-	game.start_screen.level_selector.buttons["level_02"].pressed.emit()
+	game.start_screen.level_selector.right_button.pressed.emit()
 	_require(game.start_screen.selected_level_id == "level_02" and game.start_screen.start_button.disabled, "未解锁关卡预览没有阻止进入")
-	game.start_screen.level_selector.buttons["level_01"].pressed.emit()
+	game.start_screen.level_selector.left_button.pressed.emit()
 	game.start_screen.start_button.pressed.emit()
 	_require(game.start_screen.hero_view.visible and not game.start_screen.lobby_view.visible, "点击进入游戏后没有显示英雄选择")
 	_require(not game.start_screen.level_preview.animation_player.is_playing(), "离开关卡大厅后预览仍在播放")
@@ -87,7 +87,7 @@ func _test_running_session(game: Node) -> void:
 	_require(session.level.level_id == "level_01", "运行会话没有读取第一关配置")
 	_require(session.level.map.world_bounds.size == Vector2(3200, 3200), "地图配置未注入运行会话")
 	_require(session.enemies.enemies.size() == session.level.initial_enemy_count, "初始刷怪数量错误")
-	_require(session.skills.levels["star_lance"] == 1 and session.skills.levels["sun_orbit"] == 0, "英雄初始技能错误")
+	_require(session.skills.levels["star_lance"] == 1 and not session.skills.levels.has("sun_orbit"), "第一关技能池没有只启用签名技能")
 	_require(session.stage_director.current_stage().stage_id == "awakening", "初始阶段错误")
 
 
@@ -106,6 +106,9 @@ func _finish_pause_and_upgrade(game: Node) -> void:
 	game.session.add_experience(40)
 	_require(game.upgrade_overlay.visible and game.upgrade_overlay.buttons.size() == 3, "升级三选一没有出现")
 	_require(game.audio_manager.music_ducked, "升级选择时背景音乐没有降噪")
+	_require(not game.upgrade_overlay.reroll_button.disabled and game.session.build_state.rerolls_remaining == 1, "本局免费重抽没有显示")
+	game.upgrade_overlay.reroll_button.pressed.emit()
+	_require(game.upgrade_overlay.visible and game.session.build_state.rerolls_remaining == 0, "重抽没有刷新候选或消费次数")
 	game.upgrade_overlay.buttons[0].pressed.emit()
 	_require(not game.upgrade_overlay.visible and not game.session.state.paused, "选择升级后没有恢复游戏")
 	_require(not game.audio_manager.music_ducked, "选择升级后背景音乐没有恢复")

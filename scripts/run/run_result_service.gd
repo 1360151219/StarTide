@@ -1,21 +1,25 @@
 extends RefCounted
 
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
+const BuildSummary = preload("res://scripts/run/build_summary.gd")
 
 
-func finalize(records: RefCounted, state: RefCounted, level: LevelConfig, passives: RefCounted) -> Dictionary:
+func finalize(records: RefCounted, state: RefCounted, level: LevelConfig, passives: RefCounted, build_state: RefCounted) -> Dictionary:
 	var result: Dictionary = records.record_level_run(
 		state.hero_id, state.level_id, state.victory, state.elite_defeated,
 		state.kills, state.player_level, state.elapsed, level.reward
 	)
+	var discoveries: Array[Dictionary] = records.new_content_discoveries()
 	return {
 		"heading": _heading(state, level),
 		"body": _body(state, level, passives, result),
-		"reward_text": _reward_text(level, result, state.victory),
+		"reward_text": _reward_text(level, result, state.victory, discoveries.size()),
+		"build_text": BuildSummary.text(build_state),
 		"won": state.victory,
 		"hero_id": state.hero_id,
 		"level_id": state.level_id,
 		"progression_reward": result["progression_reward"],
+		"discoveries": discoveries,
 	}
 
 
@@ -38,11 +42,13 @@ func _body(state: RefCounted, level: LevelConfig, passives: RefCounted, result: 
 	]
 
 
-func _reward_text(level: LevelConfig, result: Dictionary, won: bool) -> String:
+func _reward_text(level: LevelConfig, result: Dictionary, won: bool, discovery_count: int) -> String:
 	var progression: Dictionary = result["progression_reward"]
 	var growth_line := "英雄熟练度 +%d · 当前 Lv.%d" % [progression["mastery_xp_gained"], progression["level"]]
 	if progression["levels_gained"] > 0:
 		growth_line += " · 技能点 +%d" % progression["skill_points_gained"]
+	if discovery_count > 0:
+		growth_line += "\n本局新发现 %d 项 · 已加入图鉴" % discovery_count
 	if not won:
 		return "本次未获得关卡通关奖励\n" + growth_line
 	if result["first_clear"]:

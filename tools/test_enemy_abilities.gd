@@ -16,28 +16,31 @@ func _initialize() -> void:
 	_test_catalog_and_level_budgets()
 	_test_opening_protection_and_budget()
 	_test_grub_roll()
-	_test_slime_jump()
+	_test_non_casters_stay_idle()
 	_test_bat_lock_and_projectile()
-	_test_brute_slam()
 	_test_deterministic_cooldown()
 	_test_pause_and_projectile_cap()
 	_test_death_and_projectile_lifetime()
 	_test_shared_invulnerability_and_shield()
 	if not failed:
-		print("ENEMY_ABILITIES_OK enemies=4 telegraphs=4 deterministic=true budgets=true swept=true shield=true cleanup=true")
+		print("ENEMY_ABILITIES_OK skilled_enemies=2 abilities=2 deterministic=true budgets=true swept=true shield=true cleanup=true")
 	quit(1 if failed else 0)
 
 
 func _test_catalog_and_level_budgets() -> void:
-	_require(EnemyAbilityCatalog.ids().size() == 4, "怪物技能目录必须包含四项技能")
+	_require(EnemyAbilityCatalog.ids().size() == 2, "怪物技能目录必须仅包含两项技能")
+	_require(EnemyAbilityCatalog.ability_for_enemy("green_grub") == "green_grub_roll", "张姐蛆缺少技能映射")
+	_require(EnemyAbilityCatalog.ability_for_enemy("bat") == "bat_bolt", "暮翼蝠缺少技能映射")
+	_require(EnemyAbilityCatalog.ability_for_enemy("slime").is_empty(), "星蚀史莱姆不应拥有技能")
+	_require(EnemyAbilityCatalog.ability_for_enemy("brute").is_empty(), "陨岩巨怪不应拥有技能")
 	var expected_limits := [[3, 2], [4, 4], [5, 5]]
 	for index in range(3):
 		var level := LevelCatalog.all()[index]
 		_require(level.enemy_ability_budget.max_telegraphs == expected_limits[index][0], "%s 预警预算错误" % level.display_name)
 		_require(level.enemy_ability_budget.max_projectiles == expected_limits[index][1], "%s 敌弹预算错误" % level.display_name)
 		for stage in level.stages:
-			for enemy_id in stage.enemy_weights:
-				_require(EnemyAbilityCatalog.ability_for_enemy(enemy_id) != "", "怪物缺少技能映射：%s" % enemy_id)
+			for ability_id in stage.enabled_ability_ids:
+				_require(EnemyAbilityCatalog.ids().has(ability_id), "阶段引用了无效技能：%s" % ability_id)
 
 
 func _test_opening_protection_and_budget() -> void:
@@ -60,7 +63,7 @@ func _test_opening_protection_and_budget() -> void:
 
 
 func _test_grub_roll() -> void:
-	var session := _create_session("level_02", "ember_ranger", 102)
+	var session := _create_session("level_03", "ember_ranger", 102)
 	var enemy := _spawn_only(session, "green_grub", Vector2(120, 0))
 	_prime_and_start(session, enemy)
 	_advance_abilities(session, 0.65, 1.91)
@@ -72,19 +75,24 @@ func _test_grub_roll() -> void:
 	session.free()
 
 
-func _test_slime_jump() -> void:
-	var session := _create_session("level_02", "ember_ranger", 103)
-	var enemy := _spawn_only(session, "slime", Vector2(100, 0))
-	_prime_and_start(session, enemy)
-	_advance_abilities(session, 0.8, 2.06)
-	var before: float = session.player.health
-	_advance_abilities(session, 0.28, 2.34)
-	_require(session.player.health < before and enemy.position.distance_to(session.player.position) < 0.1, "果冻弹跳落点或伤害错误")
+func _test_non_casters_stay_idle() -> void:
+	var session := _create_session("level_03", "ember_ranger", 103)
+	for existing in session.enemies.snapshot():
+		session.enemies.remove_enemy(existing)
+	var slime: Node = session.enemies.spawn_enemy("slime", null, 0.0)
+	var brute: Node = session.enemies.spawn_enemy("brute", null, 0.0)
+	slime.position = Vector2(100, 0)
+	brute.position = Vector2(140, 0)
+	_prime_visibility(session, 0.0)
+	_advance_abilities(session, 0.0, 10.0)
+	_require(_phase_of(session, slime) == "idle" and slime.contact_enabled, "星蚀史莱姆仍然进入了技能状态")
+	_require(_phase_of(session, brute) == "idle" and brute.contact_enabled, "陨岩巨怪仍然进入了技能状态")
+	_require(session.enemy_projectiles.projectiles.is_empty(), "无技能怪物错误生成了敌方弹体")
 	session.free()
 
 
 func _test_bat_lock_and_projectile() -> void:
-	var session := _create_session("level_02", "ember_ranger", 104)
+	var session := _create_session("level_03", "ember_ranger", 104)
 	var enemy := _spawn_only(session, "bat", Vector2(250, 0))
 	_prime_and_start(session, enemy)
 	session.player.position = Vector2(0, 80)
@@ -102,16 +110,6 @@ func _test_bat_lock_and_projectile() -> void:
 	session.free()
 
 
-func _test_brute_slam() -> void:
-	var session := _create_session("level_02", "ember_ranger", 105)
-	var enemy := _spawn_only(session, "brute", Vector2(100, 0))
-	_prime_and_start(session, enemy)
-	var before: float = session.player.health
-	_advance_abilities(session, 1.15, 2.41)
-	_require(session.player.health < before and session.player.position.x <= -59.9, "陨岩拍击伤害或 60 距离击退错误")
-	session.free()
-
-
 func _test_deterministic_cooldown() -> void:
 	var first := _cooldown_after_roll(205)
 	var second := _cooldown_after_roll(205)
@@ -119,7 +117,7 @@ func _test_deterministic_cooldown() -> void:
 
 
 func _cooldown_after_roll(seed_value: int) -> float:
-	var session := _create_session("level_02", "ember_ranger", seed_value)
+	var session := _create_session("level_03", "ember_ranger", seed_value)
 	var enemy := _spawn_only(session, "green_grub", Vector2(120, 0))
 	_prime_and_start(session, enemy)
 	_advance_abilities(session, 0.65, 1.91)
@@ -146,7 +144,7 @@ func _test_pause_and_projectile_cap() -> void:
 
 
 func _test_death_and_projectile_lifetime() -> void:
-	var session := _create_session("level_02", "ember_ranger", 106)
+	var session := _create_session("level_03", "ember_ranger", 106)
 	var grub := _spawn_only(session, "green_grub", Vector2(120, 0))
 	_prime_and_start(session, grub)
 	session.enemies.remove_enemy(grub)

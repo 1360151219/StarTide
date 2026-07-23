@@ -10,6 +10,8 @@
 [ext_resource type="Script" path="res://scripts/levels/reward_config.gd" id="8_reward"]
 [ext_resource type="Texture2D" path="res://assets/art/environment/crystal_volcano_floor.png" id="9_floor"]
 [ext_resource type="Script" path="res://scripts/levels/enemy_ability_budget_config.gd" id="10_abilities"]
+[ext_resource type="Script" path="res://scripts/levels/drop_entry_config.gd" id="11_drop"]
+[ext_resource type="Script" path="res://scripts/levels/level_content_pool_config.gd" id="12_pool"]
 
 [sub_resource type="Resource" id="Map"]
 script = ExtResource("2_map")
@@ -31,20 +33,46 @@ environment_particle_color = Color(0.72, 1, 0.91, 0.78)
 
 [sub_resource type="Resource" id="Difficulty"]
 script = ExtResource("3_difficulty")
-health_start = 1.25
-health_end = 2.45
-speed_start = 1.05
-speed_end = 1.15
-damage_start = 1.13
-damage_end = 1.25
+health_start = 1.15
+health_end = 1.75
+speed_start = 1.02
+speed_end = 1.09
+damage_start = 1.04
+damage_end = 1.13
+
+[sub_resource type="Resource" id="DropHeart"]
+script = ExtResource("11_drop")
+pickup_id = "heart"
+chance = 0.065
+max_per_run = 7
+
+[sub_resource type="Resource" id="DropMagnet"]
+script = ExtResource("11_drop")
+pickup_id = "magnet"
+chance = 0.025
+max_per_run = 4
+
+[sub_resource type="Resource" id="DropHaste"]
+script = ExtResource("11_drop")
+pickup_id = "haste_leaf"
+chance = 0.012
+max_per_run = 2
+
+[sub_resource type="Resource" id="DropBomb"]
+script = ExtResource("11_drop")
+pickup_id = "star_bomb"
+chance = 0.01
+max_per_run = 2
 
 [sub_resource type="Resource" id="Loot"]
 script = ExtResource("4_loot")
-heart_drop_chance = 0.065
-heart_value = 16
-max_heart_drops = 7
-magnet_drop_chance = 0.025
-magnet_duration = 5.0
+bonus_entries = Array[ExtResource("11_drop")]([SubResource("DropHeart"), SubResource("DropMagnet"), SubResource("DropHaste"), SubResource("DropBomb")])
+
+[sub_resource type="Resource" id="ContentPool"]
+script = ExtResource("12_pool")
+inherit_from_level_id = "level_02"
+added_skill_ids = PackedStringArray("frost_tide", "phoenix_heart")
+added_relic_ids = PackedStringArray("time_gear", "echo_lens")
 
 [sub_resource type="Resource" id="AbilityBudget"]
 script = ExtResource("10_abilities")
@@ -64,7 +92,7 @@ spawn_interval_start = 0.78
 spawn_interval_end = 0.66
 extra_spawn_chance = 0.06
 enemy_weights = {"green_grub": 0.15, "slime": 0.35, "bat": 0.38, "brute": 0.12}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
+enabled_ability_ids = PackedStringArray("green_grub_roll", "bat_bolt")
 transition_rest_duration = 0.0
 
 [sub_resource type="Resource" id="Stage2"]
@@ -77,7 +105,7 @@ spawn_interval_start = 0.64
 spawn_interval_end = 0.52
 extra_spawn_chance = 0.18
 enemy_weights = {"green_grub": 0.08, "slime": 0.25, "bat": 0.37, "brute": 0.3}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
+enabled_ability_ids = PackedStringArray("green_grub_roll", "bat_bolt")
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Stage3"]
@@ -90,7 +118,7 @@ spawn_interval_start = 0.5
 spawn_interval_end = 0.4
 extra_spawn_chance = 0.28
 enemy_weights = {"green_grub": 0.05, "slime": 0.18, "bat": 0.32, "brute": 0.45}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
+enabled_ability_ids = PackedStringArray("green_grub_roll", "bat_bolt")
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Stage4"]
@@ -103,7 +131,7 @@ spawn_interval_start = 0.44
 spawn_interval_end = 0.35
 extra_spawn_chance = 0.35
 enemy_weights = {"green_grub": 0.03, "slime": 0.12, "bat": 0.25, "brute": 0.6}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "slime_jump", "bat_bolt", "brute_slam")
+enabled_ability_ids = PackedStringArray("green_grub_roll", "bat_bolt")
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Elite"]
@@ -148,6 +176,7 @@ initial_enemy_count = 7
 max_enemies = 70
 difficulty = SubResource("Difficulty")
 loot = SubResource("Loot")
+content_pool = SubResource("ContentPool")
 enemy_ability_budget = SubResource("AbilityBudget")
 stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3"), SubResource("Stage4")])
 elite = SubResource("Elite")

@@ -75,7 +75,7 @@ func _state_for(enemy: Node) -> Dictionary:
 		states[key] = {
 			"enemy": enemy, "phase": "idle", "phase_left": 0.0,
 			"cooldown_until": 0.0, "visible_since": -1.0,
-			"direction": Vector2.ZERO, "target": enemy.position,
+			"direction": Vector2.ZERO,
 			"start": enemy.position, "remaining": 0.0, "hit_done": false,
 		}
 	return states[key]
@@ -113,7 +113,6 @@ func _begin_warning(state: Dictionary, enemy: Node, elapsed: float) -> void:
 	state["phase_left"] = float(config["warning"])
 	state["direction"] = direction
 	state["start"] = enemy.position
-	state["target"] = AbilityRules.ability_target(enemy, player, direction, config)
 	state["hit_done"] = false
 	last_warning_start = elapsed
 	audio.play_sfx("ui_select", -8.0, 1.15)
@@ -129,7 +128,6 @@ func _advance_warning(state: Dictionary, enemy: Node, delta: float, elapsed: flo
 		_advance_idle(enemy, delta, elapsed)
 		if float(state["phase_left"]) > float(config["lock_time"]) + 0.0001:
 			state["direction"] = enemy.position.direction_to(player.position)
-			state["target"] = player.position
 	else:
 		enemy.advance_motion(Vector2.ZERO, 0.0, delta, elapsed)
 	state["phase_left"] = float(state["phase_left"]) - delta
@@ -144,42 +142,22 @@ func _start_execution(state: Dictionary, enemy: Node, elapsed: float) -> void:
 			state["phase"] = "executing"
 			state["remaining"] = float(config["distance"])
 			enemy.contact_enabled = false
-		"slime_jump":
-			state["phase"] = "executing"
-			state["phase_left"] = float(config["execute_time"])
-			state["phase_total"] = float(config["execute_time"])
-			state["start"] = enemy.position
-			enemy.contact_enabled = false
 		"bat_bolt":
 			projectile_system.spawn_bolt(enemy, enemy.position, state["direction"], config, enemy.ability_damage_multiplier)
-			_enter_recovery(state, enemy, elapsed)
-		"brute_slam":
-			if AbilityRules.player_in_sector(enemy.position, state["direction"], player.position, config):
-				_emit_hit(enemy, config)
 			_enter_recovery(state, enemy, elapsed)
 
 
 func _advance_execution(state: Dictionary, enemy: Node, delta: float, elapsed: float) -> void:
 	var config := AbilityCatalog.ability(state["ability_id"])
-	if state["ability_id"] == "green_grub_roll":
-		var before: Vector2 = enemy.position
-		var movement_delta := minf(delta, float(state["remaining"]) / float(config["speed"]))
-		var movement: Vector2 = enemy.advance_motion(state["direction"], float(config["speed"]), movement_delta, elapsed)
-		state["remaining"] = float(state["remaining"]) - movement.length()
-		if not state["hit_done"] and AbilityRules.segment_hits_circle(before, enemy.position, player.position, enemy.radius + 21.0):
-			state["hit_done"] = true
-			_emit_hit(enemy, config)
-		if float(state["remaining"]) <= 0.01:
-			_enter_recovery(state, enemy, elapsed)
-	else:
-		enemy.advance_motion(Vector2.ZERO, 0.0, delta, elapsed)
-		state["phase_left"] = float(state["phase_left"]) - delta
-		var progress: float = 1.0 - maxf(0.0, float(state["phase_left"])) / float(state["phase_total"])
-		enemy.position = Vector2(state["start"]).lerp(Vector2(state["target"]), progress)
-		if float(state["phase_left"]) <= 0.0:
-			if enemy.position.distance_to(player.position) <= float(config["radius"]) + 21.0:
-				_emit_hit(enemy, config)
-			_enter_recovery(state, enemy, elapsed)
+	var before: Vector2 = enemy.position
+	var movement_delta := minf(delta, float(state["remaining"]) / float(config["speed"]))
+	var movement: Vector2 = enemy.advance_motion(state["direction"], float(config["speed"]), movement_delta, elapsed)
+	state["remaining"] = float(state["remaining"]) - movement.length()
+	if not state["hit_done"] and AbilityRules.segment_hits_circle(before, enemy.position, player.position, enemy.radius + 21.0):
+		state["hit_done"] = true
+		_emit_hit(enemy, config)
+	if float(state["remaining"]) <= 0.01:
+		_enter_recovery(state, enemy, elapsed)
 
 
 func _advance_recovery(state: Dictionary, enemy: Node, delta: float, elapsed: float) -> void:
@@ -226,6 +204,9 @@ func _elite_slot_reserved(elapsed: float, warning_count: int) -> bool:
 		return false
 	for enemy in enemy_system.snapshot():
 		if enemy.is_elite and _is_visible(enemy.position):
+			var ability_id := AbilityCatalog.ability_for_enemy(enemy.kind)
+			if ability_id.is_empty() or not stage_director.current_stage().enabled_ability_ids.has(ability_id):
+				continue
 			var state := _state_for(enemy)
 			if state["phase"] == "idle" and elapsed >= float(state["cooldown_until"]):
 				return true

@@ -7,6 +7,7 @@ const HeroProgression = preload("res://scripts/profile/hero_progression.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const RunRecords = preload("res://scripts/run_records.gd")
 const RunSession = preload("res://scripts/run/run_session.gd")
+const ProfileSchema = preload("res://scripts/profile/profile_schema.gd")
 
 var failed := false
 var cleanup_paths: Array[String] = []
@@ -25,7 +26,7 @@ func _initialize() -> void:
 	for path in cleanup_paths:
 		DirAccess.remove_absolute(path)
 	if not failed:
-		print("PROGRESSION_OK schema=3 migration=true levels=10 skill_points=9 reset=free skills=6 snapshot=true")
+		print("PROGRESSION_OK schema=4 migration=true levels=10 skill_points=9 reset=free skills=6 snapshot=true")
 	quit(1 if failed else 0)
 
 
@@ -41,6 +42,9 @@ func _test_rewards_and_training() -> void:
 		records.record_level_run("star_warden", level.level_id, true, false, 1, 1, 90.0, level.reward)
 	var snapshot := records.progression_snapshot("star_warden")
 	_require(snapshot["level"] == 10 and snapshot["total_skill_points"] == 9, "九次通关没有达到十级或获得九点技能点")
+	_require(not records.train_skill("star_warden", "star_lance")["success"], "未发现技能被永久培养")
+	for skill_id in HeroCatalog.hero("star_warden")["skills"]:
+		records.discover_content("skills", skill_id)
 	for skill_id in ["star_lance", "star_lance", "star_lance", "sun_orbit", "sun_orbit"]:
 		_require(records.train_skill("star_warden", skill_id)["success"], "合法技能训练失败")
 	_require(not records.train_skill("star_warden", "frost_tide")["success"], "超预算技能训练成功")
@@ -65,7 +69,7 @@ func _test_schema_migration_and_repair() -> void:
 	_require(migrated.progression_snapshot("star_warden")["mastery_xp"] == 200, "旧通关次数没有迁移为熟练度")
 	var migrated_file := ConfigFile.new()
 	migrated_file.load(legacy_path)
-	_require(migrated_file.get_value("meta", "schema_version", 0) == 3, "旧存档没有立即写回 schema 3")
+	_require(migrated_file.get_value("meta", "schema_version", 0) == ProfileSchema.VERSION, "旧存档没有立即写回最新 schema")
 	_require(not str(migrated_file.get_value("meta", "profile_id", "")).is_empty(), "迁移后没有稳定档案标识")
 
 	var broken_path := _new_test_path("over_budget")
@@ -163,9 +167,12 @@ func _trained_session(host: Node2D, effects: Node2D, hero_id: String, skill_id: 
 	session.configure(hero_id, LevelCatalog.first(), records, audio, effects, _random_streams(seed_value))
 	var default_skill_id: String = session.skills.active_skill_ids[0]
 	for active_skill_id in session.skills.active_skill_ids:
-		_require(session.skills.levels[active_skill_id] == (1 if active_skill_id == default_skill_id else 0), "永久训练提前解锁或提升了局内技能")
-	for active_skill_id in session.skills.active_skill_ids:
-		session.skills.levels[active_skill_id] = 1 if active_skill_id == skill_id else 0
+		if not str(active_skill_id).is_empty():
+			_require(session.skills.levels[active_skill_id] == (1 if active_skill_id == default_skill_id else 0), "永久训练提前解锁或提升了局内技能")
+	session.build_state.skill_slots = [skill_id, "", ""]
+	session.build_state.skill_levels.clear()
+	session.build_state.skill_levels[skill_id] = 1
+	session.skills.sync_after_upgrade(skill_id)
 	return session
 
 

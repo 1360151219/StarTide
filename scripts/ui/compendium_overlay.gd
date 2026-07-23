@@ -4,12 +4,20 @@ const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const SafeArea = preload("res://scripts/ui/safe_area.gd")
 const CompendiumCatalog = preload("res://scripts/compendium_catalog.gd")
+const CATEGORIES := [
+	{"id": "heroes", "name": "英雄"},
+	{"id": "enemies", "name": "怪物"},
+	{"id": "pickups", "name": "道具"},
+	{"id": "skills", "name": "技能"},
+	{"id": "relics", "name": "遗物"},
+]
 
 var list: VBoxContainer
 var tab_buttons: Dictionary = {}
 var safe_area: Control
 var content: Control
 var scroll: ScrollContainer
+var records: RefCounted
 
 
 func _ready() -> void:
@@ -45,6 +53,11 @@ func _ready() -> void:
 	scroll.add_child(list)
 
 
+func configure(run_records: RefCounted) -> void:
+	records = run_records
+	_refresh_tab_labels()
+
+
 func open(category := "heroes") -> void:
 	visible = true
 	show_category(category)
@@ -55,14 +68,17 @@ func close() -> void:
 
 
 func show_category(category: String) -> void:
+	_refresh_tab_labels()
 	for category_id in tab_buttons:
 		var selected: bool = category_id == category
 		var button: Button = tab_buttons[category_id]
 		UiFactory.apply_glass_button(button, selected, UiFactory.GOLD if selected else UiFactory.STROKE)
 	for child in list.get_children():
+		list.remove_child(child)
 		child.queue_free()
 	for entry in CompendiumCatalog.entries(category):
-		list.add_child(_make_card(entry))
+		var discovered: bool = category == "heroes" or records == null or records.is_content_discovered(category, entry["id"])
+		list.add_child(_make_card(entry, discovered))
 
 
 func _build_header() -> void:
@@ -81,43 +97,74 @@ func _build_header() -> void:
 
 
 func _build_tabs() -> void:
-	var categories := [{"id": "heroes", "name": "英雄"}, {"id": "enemies", "name": "怪物"}, {"id": "pickups", "name": "道具"}, {"id": "skills", "name": "技能"}]
-	for index in range(categories.size()):
-		var category: Dictionary = categories[index]
+	var gap := 7.0
+	var tab_width := (504.0 - gap * (CATEGORIES.size() - 1)) / CATEGORIES.size()
+	for index in range(CATEGORIES.size()):
+		var category: Dictionary = CATEGORIES[index]
 		var tab := Button.new()
-		tab.position = Vector2(20 + index * 126, 112)
-		tab.size = Vector2(116, 54)
+		tab.position = Vector2(20 + index * (tab_width + gap), 112)
+		tab.size = Vector2(tab_width, 54)
 		tab.text = category["name"]
-		tab.add_theme_font_size_override("font_size", 19)
+		tab.add_theme_font_size_override("font_size", 16)
 		tab.pressed.connect(show_category.bind(category["id"]))
 		content.add_child(tab)
 		tab_buttons[category["id"]] = tab
 
 
-func _make_card(entry: Dictionary) -> Panel:
+func _refresh_tab_labels() -> void:
+	for category in CATEGORIES:
+		var category_id: String = category["id"]
+		if not tab_buttons.has(category_id):
+			continue
+		var entries := CompendiumCatalog.entries(category_id)
+		var total := entries.size()
+		var discovered := 0
+		for entry in entries:
+			discovered += int(category_id == "heroes" or records == null or records.is_content_discovered(category_id, entry["id"]))
+		tab_buttons[category_id].text = "%s %d/%d" % [category["name"], discovered, total]
+
+
+func _make_card(entry: Dictionary, discovered: bool) -> Panel:
 	var card := Panel.new()
 	var height: float = entry.get("card_height", 178.0)
 	card.custom_minimum_size = Vector2(478, height)
-	card.add_theme_stylebox_override("panel", UiFactory.panel_style(UiFactory.GLASS, 18.0, entry["accent"]))
+	card.set_meta("content_id", entry["id"])
+	card.set_meta("discovered", discovered)
+	var accent: Color = entry["accent"] if discovered else Color("60737a")
+	card.add_theme_stylebox_override("panel", UiFactory.panel_style(UiFactory.GLASS, 18.0, accent))
 	var icon := TextureRect.new()
 	icon.position = Vector2(16, 18)
 	icon.size = Vector2(132, 140)
 	icon.texture = entry["texture"]
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.modulate = Color.WHITE if discovered else Color(0.08, 0.13, 0.15, 0.78)
 	card.add_child(icon)
-	var name_label := UiFactory.label(entry["name"], 24, UiFactory.PALE)
+	var name_label := UiFactory.label(entry["name"] if discovered else "？？？", 24, UiFactory.PALE)
 	name_label.position = Vector2(164, 17)
 	name_label.size = Vector2(292, 34)
 	card.add_child(name_label)
-	var subtitle := UiFactory.label(entry["subtitle"], 15, entry["accent"])
+	var subtitle := UiFactory.label(entry["subtitle"] if discovered else "尚未发现", 15, accent)
 	subtitle.position = Vector2(164, 52)
 	subtitle.size = Vector2(292, 28)
 	card.add_child(subtitle)
-	var description := UiFactory.label(entry["description"], 14 if height > 200.0 else 15, UiFactory.PALE_MUTED)
+	var description_text := _entry_description(entry, discovered)
+	var description := UiFactory.label(description_text, 14 if height > 200.0 else 15, UiFactory.PALE_MUTED)
 	description.position = Vector2(164, 84)
 	description.size = Vector2(292, height - 96.0)
 	description.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	description.clip_text = true
 	card.add_child(description)
 	return card
+
+
+func _entry_description(entry: Dictionary, discovered: bool) -> String:
+	if not discovered:
+		return "在远征中首次发现后，\n即可解锁完整图鉴资料。"
+	var text := str(entry["description"])
+	for branch in entry.get("branches", []):
+		if records == null or records.is_content_discovered("skill_branches", branch["id"]):
+			text += "\n分支 · %s：%s" % [branch["name"], branch["description"]]
+		else:
+			text += "\n分支 · ？？？：在局内选择后解锁"
+	return text

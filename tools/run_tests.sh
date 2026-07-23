@@ -31,6 +31,7 @@ run_and_check() {
 
 run_and_check editor "" --editor --quit
 run_and_check levels LEVELS_OK --script res://tools/test_level_catalog.gd
+run_and_check content_pools CONTENT_POOLS_OK --script res://tools/test_content_pools.gd
 run_and_check stages STAGES_OK --script res://tools/test_stage_director.gd
 run_and_check spawner SPAWNER_OK --script res://tools/test_enemy_spawner.gd
 run_and_check enemy_abilities ENEMY_ABILITIES_OK --script res://tools/test_enemy_abilities.gd
@@ -39,6 +40,8 @@ run_and_check victory VICTORY_OK --script res://tools/test_victory_conditions.gd
 run_and_check records RECORDS_OK --script res://tools/test_run_records.gd
 run_and_check progression PROGRESSION_OK --script res://tools/test_hero_progression.gd
 run_and_check heroes HEROES_OK --script res://tools/test_hero_systems.gd
+run_and_check run_build RUN_BUILD_OK --script res://tools/test_run_build.gd
+run_and_check content_runtime CONTENT_RUNTIME_OK --script res://tools/test_content_runtime.gd
 run_and_check balance BALANCE_OK --script res://tools/test_balance_contracts.gd
 run_and_check start_ui START_UI_OK --script res://tools/test_start_ui.gd
 run_and_check campaign CAMPAIGN_OK --script res://tools/smoke_campaign.gd
@@ -50,4 +53,4 @@ if [ "$FAILED" -ne 0 ]; then
   exit 1
 fi
 
-printf 'ALL_TESTS_OK suites=15 responsive_profiles=4 enemy_abilities=4 engine_errors=false\n'
+printf 'ALL_TESTS_OK suites=18 responsive_profiles=4 enemy_abilities=2 engine_errors=false\n'

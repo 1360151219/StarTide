@@ -3,6 +3,7 @@ extends SceneTree
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const LevelBalance = preload("res://scripts/levels/level_balance.gd")
 const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
+const EnemyAbilityCatalog = preload("res://scripts/enemy_ability_catalog.gd")
 
 var failed := false
 
@@ -93,11 +94,13 @@ func _test_rest_duration() -> void:
 func _test_ability_pressure() -> void:
 	var level := _synthetic_level(10.0)
 	level.enemy_ability_budget = EnemyAbilityBudgetConfig.new()
-	var stage := _synthetic_stage(0.0, 0.0, {"slime": 1.0})
+	var stage := _synthetic_stage(0.0, 0.0, {"green_grub": 1.0})
 	level.stages = [stage]
 	var base := LevelBalance.stage_pressure(level, 0)
-	stage.enabled_ability_ids = PackedStringArray(["slime_jump"])
-	_require(is_equal_approx(LevelBalance.stage_pressure(level, 0), base * 1.15), "技能威胁没有按怪物类型计入压力")
+	stage.enabled_ability_ids = PackedStringArray(["green_grub_roll"])
+	_require(is_equal_approx(LevelBalance.stage_pressure(level, 0), base * 1.10), "技能威胁没有按怪物类型计入压力")
+	_require(is_equal_approx(EnemyAbilityCatalog.threat_multiplier("slime"), 1.0), "无技能史莱姆仍有技能威胁倍率")
+	_require(is_equal_approx(EnemyAbilityCatalog.threat_multiplier("brute"), 1.0), "无技能巨怪仍有技能威胁倍率")
 
 
 func _synthetic_level(duration: float) -> LevelConfig:

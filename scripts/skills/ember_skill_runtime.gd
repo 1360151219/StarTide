@@ -2,7 +2,7 @@ extends Node
 
 signal skill_released(skill_id: String)
 
-const HeroCatalog = preload("res://scripts/hero_catalog.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 
 var player: Node2D
 var enemies: Node2D
@@ -12,12 +12,13 @@ var audio: Node
 var rng: RandomNumberGenerator
 var levels: Dictionary
 var skill_modifiers: Dictionary
+var build_state: RefCounted
 var volley_timer := 0.25
 var meteor_timer := 1.0
 var phoenix_timer := 1.0
 
 
-func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Node2D, combat_effects: Node2D, audio_manager: Node, random: RandomNumberGenerator, skill_levels: Dictionary, permanent_modifiers: Dictionary = {}) -> void:
+func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Node2D, combat_effects: Node2D, audio_manager: Node, random: RandomNumberGenerator, skill_levels: Dictionary, permanent_modifiers: Dictionary, build: RefCounted) -> void:
 	player = player_node
 	enemies = enemy_system
 	projectiles = projectile_system
@@ -26,6 +27,7 @@ func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Nod
 	rng = random
 	levels = skill_levels
 	skill_modifiers = permanent_modifiers
+	build_state = build
 
 
 func advance(skill_delta: float, _real_delta: float, _elapsed: float) -> void:
@@ -45,7 +47,7 @@ func cooldown_progress(skill_id: String) -> float:
 	var skill_level: int = levels.get(skill_id, 0)
 	if skill_level <= 0:
 		return 0.0
-	var data: Dictionary = HeroCatalog.skill(skill_id)["runtime"]
+	var data: Dictionary = SkillCatalog.skill(skill_id)["runtime"]
 	var timer := volley_timer
 	if skill_id == "meteor_rain":
 		timer = meteor_timer
@@ -62,18 +64,21 @@ func _update_ember_volley(delta: float) -> void:
 	volley_timer -= delta
 	if volley_timer > 0.0:
 		return
-	var data: Dictionary = HeroCatalog.skill("ember_volley")["runtime"]
+	var data: Dictionary = SkillCatalog.skill("ember_volley")["runtime"]
 	volley_timer = data["cooldown"][skill_level] * _multiplier("ember_volley", "cooldown_multiplier")
 	var target: Node = enemies.nearest_enemy(player.position)
 	if target == null:
 		return
 	var base_angle: float = player.position.direction_to(target.position).angle()
-	for index in range(data["count"][skill_level]):
-		var spread: float = (index - (data["count"][skill_level] - 1) * 0.5) * data["spread"][skill_level]
+	var count := int(_stat("ember_volley", "count", data["count"][skill_level]))
+	var spread_step := float(_stat("ember_volley", "spread", data["spread"][skill_level]))
+	for index in range(count):
+		var spread: float = (index - (count - 1) * 0.5) * spread_step
 		projectiles.spawn_projectile({
 			"position": player.position, "angle": base_angle + spread, "speed": data["speed"][skill_level],
 			"damage": data["damage"][skill_level] * _multiplier("ember_volley", "damage_multiplier"), "radius": data["radius"][skill_level],
-			"pierce": data["pierce"][skill_level], "blast_radius": data["blast_radius"][skill_level] * _multiplier("ember_volley", "range_multiplier"),
+			"pierce": int(_stat("ember_volley", "pierce", data["pierce"][skill_level])),
+			"blast_radius": data["blast_radius"][skill_level] * _multiplier("ember_volley", "range_multiplier") * _branch_multiplier("ember_volley", "blast_radius_multiplier"),
 			"visual_kind": "ember_arrow",
 		})
 	skill_released.emit("ember_volley")
@@ -87,19 +92,25 @@ func _update_meteor_rain(delta: float) -> void:
 	meteor_timer -= delta
 	if meteor_timer > 0.0:
 		return
-	var data: Dictionary = HeroCatalog.skill("meteor_rain")["runtime"]
+	var data: Dictionary = SkillCatalog.skill("meteor_rain")["runtime"]
 	meteor_timer = data["cooldown"][skill_level] * _multiplier("meteor_rain", "cooldown_multiplier")
 	skill_released.emit("meteor_rain")
 	audio.play_sfx("skill_meteor_rain", 1.0, rng.randf_range(0.96, 1.03))
-	var candidates: Array[Vector2] = []
+	var candidates: Array[Node] = []
 	for enemy in enemies.snapshot():
 		if is_instance_valid(enemy):
-			candidates.append(enemy.position)
-	_shuffle(candidates)
-	for index in range(mini(data["count"][skill_level], candidates.size())):
-		var radius: float = data["radius"][skill_level] * _multiplier("meteor_rain", "range_multiplier")
-		enemies.damage_area(candidates[index], radius, data["damage"][skill_level] * _multiplier("meteor_rain", "damage_multiplier"))
-		effects.add_effect(candidates[index], radius, Color("ff7a35"), 0.72, "meteor")
+			candidates.append(enemy)
+	var targeting := str(_stat("meteor_rain", "targeting", "random"))
+	if targeting == "elite_first":
+		candidates.sort_custom(_higher_threat_first)
+	else:
+		_shuffle(candidates)
+	var count := int(_stat("meteor_rain", "count", data["count"][skill_level]))
+	for index in range(mini(count, candidates.size())):
+		var target_position: Vector2 = candidates[index].position
+		var radius: float = data["radius"][skill_level] * _multiplier("meteor_rain", "range_multiplier") * _branch_multiplier("meteor_rain", "radius_multiplier")
+		enemies.damage_area(target_position, radius, data["damage"][skill_level] * _multiplier("meteor_rain", "damage_multiplier"))
+		effects.add_effect(target_position, radius, Color("ff7a35"), 0.72, "meteor")
 
 
 func _update_phoenix_heart(delta: float) -> void:
@@ -109,24 +120,41 @@ func _update_phoenix_heart(delta: float) -> void:
 	phoenix_timer -= delta
 	if phoenix_timer > 0.0:
 		return
-	var data: Dictionary = HeroCatalog.skill("phoenix_heart")["runtime"]
+	var data: Dictionary = SkillCatalog.skill("phoenix_heart")["runtime"]
 	phoenix_timer = data["cooldown"][skill_level] * _multiplier("phoenix_heart", "cooldown_multiplier")
 	skill_released.emit("phoenix_heart")
 	audio.play_sfx("skill_phoenix_heart", 0.0, rng.randf_range(0.97, 1.03))
-	var radius: float = data["radius"][skill_level] * _multiplier("phoenix_heart", "range_multiplier")
+	var radius: float = data["radius"][skill_level] * _multiplier("phoenix_heart", "range_multiplier") * _branch_multiplier("phoenix_heart", "radius_multiplier")
 	player.heal(data["healing"][skill_level] * _multiplier("phoenix_heart", "healing_multiplier"))
 	enemies.damage_area(player.position, radius, data["damage"][skill_level] * _multiplier("phoenix_heart", "damage_multiplier"))
 	effects.add_effect(player.position, radius, Color("ff9b3d"), 0.55, "phoenix")
 
 
-func _shuffle(values: Array[Vector2]) -> void:
+func _shuffle(values: Array) -> void:
 	for index in range(values.size() - 1, 0, -1):
 		var swap_index := rng.randi_range(0, index)
-		var value := values[index]
+		var value: Variant = values[index]
 		values[index] = values[swap_index]
 		values[swap_index] = value
 
 
 func _multiplier(skill_id: String, field: String) -> float:
 	var modifiers: Dictionary = skill_modifiers.get(skill_id, {})
-	return float(modifiers.get(field, 1.0))
+	var result := float(modifiers.get(field, 1.0))
+	if ["damage_multiplier", "cooldown_multiplier", "hit_interval_multiplier", "range_multiplier"].has(field):
+		result *= build_state.modifier(field)
+	return result * _branch_multiplier(skill_id, field)
+
+
+func _branch_multiplier(skill_id: String, field: String) -> float:
+	return float(build_state.branch_overrides(skill_id).get(field, 1.0))
+
+
+func _stat(skill_id: String, field: String, base_value):
+	return build_state.branch_overrides(skill_id).get(field, base_value)
+
+
+func _higher_threat_first(left: Node, right: Node) -> bool:
+	if left.is_elite != right.is_elite:
+		return left.is_elite
+	return left.health > right.health

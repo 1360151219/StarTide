@@ -44,7 +44,11 @@ func _on_process_frame() -> void:
 		game.start_screen.compendium.show_category("skills")
 	elif frame_count == 56:
 		_capture("compendium_skills.png")
+	elif frame_count == 58:
+		game.start_screen.compendium.show_category("relics")
 	elif frame_count == 62:
+		_capture("compendium_relics.png")
+	elif frame_count == 64:
 		game.start_screen.compendium.close()
 		game.start_screen._show_hero_selection()
 	elif frame_count == 68:
@@ -75,7 +79,13 @@ func _on_process_frame() -> void:
 	elif frame_count == 130:
 		_capture("ultimate_ember.png")
 	elif frame_count == 134:
-		game.result_overlay.show_result("远征完成", "坚持 90 秒\n击败 42\n英雄等级 4", "首次通关 · 星潮徽记\n英雄熟练度 +120", true)
+		game.result_overlay.show_result(
+			"远征完成",
+			"坚持 90 秒\n击败 42\n英雄等级 4",
+			"首次通关 · 星潮徽记\n英雄熟练度 +120",
+			true,
+			"技能：烬羽连矢 III·群羽纷飞 / 陨星雨 II·天罚坠击\n遗物：聚能棱晶 II / 流光羽 I · 重抽 0"
+		)
 	elif frame_count == 140:
 		if _capture("result_victory.png"):
 			print("CAPTURE_OK set=previews")

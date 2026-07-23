@@ -201,8 +201,10 @@ func _random_streams(seed_value: int) -> Dictionary:
 
 
 func _select_only_skill(session: Node, selected_skill_id: String) -> void:
-	for skill_id in session.skills.active_skill_ids:
-		session.skills.levels[skill_id] = 3 if skill_id == selected_skill_id else 0
+	session.build_state.skill_slots = [selected_skill_id, "", ""]
+	session.build_state.skill_levels.clear()
+	session.build_state.skill_levels[selected_skill_id] = 3
+	session.skills.sync_after_upgrade(selected_skill_id)
 
 
 func _durable_enemy(session: Node, position: Vector2, enemy: Node = null) -> Node:

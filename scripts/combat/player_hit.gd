@@ -3,9 +3,7 @@ extends RefCounted
 
 const CONTACT := "contact"
 const GRUB_ROLL := "grub_roll"
-const SLIME_JUMP := "slime_jump"
 const BAT_BOLT := "bat_bolt"
-const BRUTE_SLAM := "brute_slam"
 
 var damage := 0.0
 var source: Node

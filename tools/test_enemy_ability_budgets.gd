@@ -12,8 +12,10 @@ var failed := false
 func _initialize() -> void:
 	var far_lanes := _create_session(701)
 	_spawn_ring(far_lanes, "green_grub", 260.0)
+	var skillless_elite: Node = far_lanes.enemies.spawn_enemy("brute", far_lanes.level.elite, 0.0)
+	skillless_elite.position = Vector2(300, 300)
 	_start_warnings(far_lanes)
-	_require(_warning_count(far_lanes) == 4, "未覆盖玩家的预警被危险区预算错误限制")
+	_require(_warning_count(far_lanes) == 4, "无技能精英错误占用名额，或未覆盖玩家的预警被预算限制")
 	far_lanes.free()
 	var aimed_lines := _create_session(702)
 	_spawn_ring(aimed_lines, "bat", 250.0)
@@ -48,16 +50,17 @@ func _spawn_ring(session: Node, enemy_id: String, distance: float) -> void:
 
 func _test_executing_areas_block_warning() -> void:
 	var session := _create_session(703)
-	var first: Node = session.enemies.spawn_enemy("slime", null, 0.0)
-	var second: Node = session.enemies.spawn_enemy("slime", null, 0.0)
+	var first: Node = session.enemies.spawn_enemy("green_grub", null, 0.0)
+	var second: Node = session.enemies.spawn_enemy("green_grub", null, 0.0)
 	var bat: Node = session.enemies.spawn_enemy("bat", null, 0.0)
 	first.position = Vector2(100, 0)
 	second.position = Vector2(0, 100)
 	bat.position = Vector2(250, 0)
 	session.enemy_abilities.advance(0.0, 0.0)
 	for elapsed in [1.26, 1.62, 1.98]:
-		session.enemy_abilities.advance(0.0, elapsed)
-	session.enemy_abilities.advance(0.8, 2.42)
+		session.enemy_abilities.advance(0.0, elapsed + 8.0)
+	session.enemy_abilities.advance(0.8, 10.42)
+	session.enemy_abilities.advance(0.0, 10.78)
 	var bat_state: Dictionary = session.enemy_abilities.states[bat.get_instance_id()]
 	_require(bat_state["phase"] == "idle", "执行中的危险区没有阻止第三个覆盖玩家预警")
 	session.free()
@@ -68,14 +71,14 @@ func _test_offscreen_cancel_and_pause_freeze() -> void:
 	var bat: Node = session.enemies.spawn_enemy("bat", null, 0.0)
 	bat.position = Vector2(250, 0)
 	session.enemy_abilities.advance(0.0, 0.0)
-	session.enemy_abilities.advance(0.0, 1.26)
+	session.enemy_abilities.advance(0.0, 9.26)
 	session.player.position = Vector2(-1000, 0)
-	session.enemy_abilities.advance(0.1, 1.36)
+	session.enemy_abilities.advance(0.1, 9.36)
 	_require(session.enemy_abilities.states[bat.get_instance_id()]["phase"] == "idle", "怪物离屏后预警没有取消")
 	_require(session.enemy_projectiles.projectiles.is_empty(), "离屏取消的预警仍发射了弹体")
 	var animation_before: float = session.enemy_abilities.telegraphs.animation_time
 	session.pause()
-	session.enemy_abilities.advance(1.0, 2.36)
+	session.enemy_abilities.advance(1.0, 10.36)
 	_require(session.enemy_abilities.telegraphs.animation_time == animation_before, "暂停期间预警动画仍在推进")
 	session.free()
 
@@ -83,7 +86,7 @@ func _test_offscreen_cancel_and_pause_freeze() -> void:
 func _start_warnings(session: Node) -> void:
 	session.enemy_abilities.advance(0.0, 0.0)
 	for index in range(4):
-		var elapsed := 1.26 + index * 0.36
+		var elapsed := 9.26 + index * 0.36
 		session.state.elapsed = elapsed
 		session.enemy_abilities.advance(0.0, elapsed)
 

@@ -3,17 +3,6 @@ extends RefCounted
 const AbilityCatalog = preload("res://scripts/enemy_ability_catalog.gd")
 
 
-static func ability_target(enemy: Node, player: Node2D, direction: Vector2, config: Dictionary) -> Vector2:
-	if config["shape"] == "circle":
-		return enemy.position + direction * minf(enemy.position.distance_to(player.position), float(config["jump_distance"]))
-	return player.position
-
-
-static func player_in_sector(origin: Vector2, direction: Vector2, player_position: Vector2, config: Dictionary) -> bool:
-	var to_player := origin.direction_to(player_position)
-	return origin.distance_to(player_position) <= float(config["length"]) + 21.0 and absf(direction.angle_to(to_player)) <= float(config["half_angle"])
-
-
 static func segment_hits_circle(start: Vector2, finish: Vector2, center: Vector2, radius: float) -> bool:
 	var segment := finish - start
 	var divisor := maxf(segment.length_squared(), 0.0001)
@@ -34,8 +23,7 @@ static func phase_count(states: Dictionary, include_executing: bool) -> int:
 
 static func warning_covers_player(enemy: Node, player: Node2D, config: Dictionary) -> bool:
 	var direction: Vector2 = enemy.position.direction_to(player.position)
-	var target := ability_target(enemy, player, direction, config)
-	return telegraph_covers_point(enemy.position, direction, target, player.position, config)
+	return telegraph_covers_point(enemy.position, direction, player.position, config)
 
 
 static func player_danger_count(states: Dictionary, player_position: Vector2) -> int:
@@ -48,20 +36,16 @@ static func player_danger_count(states: Dictionary, player_position: Vector2) ->
 		var config: Dictionary = AbilityCatalog.ability(state["ability_id"]).duplicate()
 		if state["phase"] == "executing" and state["ability_id"] == "green_grub_roll":
 			config["distance"] = state["remaining"]
-		count += int(telegraph_covers_point(state["enemy"].position, state["direction"], state["target"], player_position, config))
+		count += int(telegraph_covers_point(state["enemy"].position, state["direction"], player_position, config))
 	return count
 
 
-static func telegraph_covers_point(source: Vector2, direction: Vector2, target: Vector2, point: Vector2, config: Dictionary) -> bool:
+static func telegraph_covers_point(source: Vector2, direction: Vector2, point: Vector2, config: Dictionary) -> bool:
 	match config["shape"]:
 		"lane":
 			return segment_hits_circle(source, source + direction * float(config["distance"]), point, float(config["lane_width"]) * 0.5 + 21.0)
-		"circle":
-			return target.distance_to(point) <= float(config["radius"]) + 21.0
 		"dashed_line":
 			return segment_hits_circle(source, source + direction * float(config["projectile_distance"]), point, 32.0)
-		"sector":
-			return player_in_sector(source, direction, point, config)
 	return false
 
 

@@ -4,6 +4,7 @@ signal start_requested(hero_id: String, level_id: String)
 
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
+const LevelPresentationCatalog = preload("res://scripts/levels/level_presentation_catalog.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
@@ -50,6 +51,7 @@ func configure(run_records: RefCounted, audio_manager: Node) -> void:
 	_build_hero_view(design_frame)
 	compendium = CompendiumOverlay.new()
 	add_child(compendium)
+	compendium.configure(records)
 	_show_lobby()
 	select_level(selected_level_id)
 	select_hero(selected_hero_id)
@@ -70,7 +72,7 @@ func select_level(level_id: String) -> void:
 	if is_instance_valid(level_selector) and level_selector.selected_level_id != level_id:
 		level_selector.select_level(level_id, false)
 	var unlocked: bool = records.is_level_unlocked(level_id)
-	level_preview.show_level(level, records.level_summary(level_id), unlocked)
+	level_preview.show_level(level, LevelPresentationCatalog.by_id(level_id), records.level_summary(level_id), unlocked)
 	selected_level_label.text = "%s  ·  %s" % [level.display_name, level.subtitle]
 	start_button.set_caption("踏入星门" if unlocked else "完成上一关后解锁", unlocked)
 
@@ -138,6 +140,7 @@ func _build_lobby(parent: Control) -> void:
 	level_selector.configure(LevelCatalog.all(), records, selected_level_id)
 	selected_level_id = level_selector.selected_level_id
 	level_selector.level_selected.connect(_on_level_selected)
+	level_preview.swipe_requested.connect(level_selector.move_by)
 	start_button = HomePrimaryButton.new()
 	start_button.position = Vector2(58, 718)
 	start_button.size = Vector2(424, 82)
