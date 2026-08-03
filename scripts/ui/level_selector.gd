@@ -3,23 +3,28 @@ extends Control
 signal level_selected(level_id: String)
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const LevelPresentationCatalog = preload("res://scripts/levels/level_presentation_catalog.gd")
 const SwipeGesture = preload("res://scripts/ui/swipe_gesture.gd")
+const Widgets = preload("res://scripts/ui/level_selector_widgets.gd")
+const ExpeditionBrief = preload("res://scripts/ui/expedition_brief.gd")
 const SLOT_OFFSETS := [-1, 0, 1]
-const CARD_SIZE := Vector2(160, 160)
-const CARD_CENTER_X := 172.0
-const CARD_STEP := 344.0
+const CARD_CENTER_X := 80.0
+const CARD_STEP := 384.0
+const MAX_VISIBLE_DOTS := 7
+const BRIEF_X := 61.5
 
 var records: RefCounted
 var levels: Array[LevelConfig] = []
 var selected_level_id := ""
 var current_index := 0
 var page_buttons: Array[TextureButton] = []
-var title_labels: Array[Label] = []
+var page_dots: Array[Button] = []
 var left_button: Button
 var right_button: Button
 var page_label: Label
 var detail_label: Label
+var information_plate: Control
+var expedition_brief: Control
+var dots_row: HBoxContainer
 var _built := false
 var swipe_gesture := SwipeGesture.new()
 var _transition_tween: Tween
@@ -33,11 +38,13 @@ func configure(level_configs: Array[LevelConfig], run_records: RefCounted, initi
 	if levels.is_empty():
 		selected_level_id = ""
 		current_index = 0
+		_rebuild_dots()
 		refresh()
 		return
 	var requested_index := _index_of(initial_level_id)
 	current_index = requested_index if requested_index >= 0 and records.is_level_unlocked(initial_level_id) else 0
 	selected_level_id = levels[current_index].level_id
+	_rebuild_dots()
 	refresh()
 
 
@@ -80,65 +87,40 @@ func is_selected_unlocked() -> bool:
 
 func _build() -> void:
 	_built = true
-	size = Vector2(504, 194)
+	size = Vector2(504, 138)
 	clip_contents = true
 	focus_mode = Control.FOCUS_ALL
 	for slot_index in range(SLOT_OFFSETS.size()):
-		_build_page(slot_index)
-	left_button = _build_arrow("◀", Vector2(8, 52))
+		page_buttons.append(Widgets.add_page(self, slot_index, _on_page_pressed, _handle_pointer_input))
+	var chrome := Widgets.add_chrome(self)
+	page_label = chrome["page_label"]
+	page_label.visible = false
+	dots_row = chrome["dots"]
+	expedition_brief = ExpeditionBrief.new()
+	expedition_brief._ensure_built()
+	expedition_brief.position = Vector2(BRIEF_X, 0)
+	expedition_brief.z_index = 3
+	add_child(expedition_brief)
+	information_plate = expedition_brief
+	detail_label = expedition_brief.current_power_label
+	left_button = Widgets.add_arrow(self, "‹", Vector2(2, 22))
+	left_button.modulate.a = 0.0
 	left_button.pressed.connect(move_by.bind(-1))
-	right_button = _build_arrow("▶", Vector2(442, 52))
+	right_button = Widgets.add_arrow(self, "›", Vector2(452, 22))
+	right_button.modulate.a = 0.0
 	right_button.pressed.connect(move_by.bind(1))
-	page_label = UiFactory.label("", 13, Color("fff0b4"))
-	page_label.position = Vector2(172, 151)
-	page_label.size = Vector2(160, 20)
-	page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	page_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	page_label.z_index = 6
-	add_child(page_label)
-	detail_label = UiFactory.label("", 13, Color("e9f8ef"))
-	detail_label.position = Vector2(4, 173)
-	detail_label.size = Vector2(496, 21)
-	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	detail_label.clip_text = true
-	detail_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	detail_label.z_index = 6
-	add_child(detail_label)
 	gui_input.connect(_handle_pointer_input)
 
 
-func _build_page(slot_index: int) -> void:
-	var button := TextureButton.new()
-	button.size = CARD_SIZE
-	button.pivot_offset = CARD_SIZE * 0.5
-	button.ignore_texture_size = true
-	button.stretch_mode = TextureButton.STRETCH_SCALE
-	button.focus_mode = Control.FOCUS_ALL
-	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.pressed.connect(_on_page_pressed.bind(slot_index))
-	button.gui_input.connect(_handle_pointer_input)
-	add_child(button)
-	page_buttons.append(button)
-	var title := UiFactory.label("", 14, Color("2b2f2f"))
-	title.position = Vector2(26, 127)
-	title.size = Vector2(108, 22)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.clip_text = true
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(title)
-	title_labels.append(title)
-
-
-func _build_arrow(caption: String, at: Vector2) -> Button:
-	var button := Button.new()
-	button.position = at
-	button.size = Vector2(54, 54)
-	button.text = caption
-	button.add_theme_font_size_override("font_size", 22)
-	button.z_index = 7
-	UiFactory.apply_glass_button(button, false, UiFactory.GOLD)
-	add_child(button)
-	return button
+func _rebuild_dots() -> void:
+	if not is_instance_valid(dots_row):
+		return
+	for dot in page_dots:
+		dot.queue_free()
+	page_dots.clear()
+	var dot_count := mini(levels.size(), MAX_VISIBLE_DOTS)
+	for slot_index in range(dot_count):
+		page_dots.append(Widgets.add_dot(dots_row, slot_index, _on_dot_pressed))
 
 
 func _render_slots() -> void:
@@ -153,15 +135,9 @@ func _render_slots() -> void:
 			button.set_meta("level_id", "")
 			continue
 		var level := levels[level_index]
-		var presentation := LevelPresentationCatalog.by_id(level.level_id)
 		button.visible = offset == 0
 		button.focus_mode = Control.FOCUS_ALL if offset == 0 else Control.FOCUS_NONE
 		button.set_meta("level_id", level.level_id)
-		button.texture_normal = presentation.medallion_texture if presentation != null else null
-		button.texture_hover = button.texture_normal
-		button.texture_pressed = button.texture_normal
-		button.self_modulate = Color.WHITE if offset == 0 else Color(0.74, 0.8, 0.82, 0.9)
-		title_labels[slot_index].text = level.display_name
 		button.tooltip_text = "%s · %s" % [level.display_name, level.subtitle]
 
 
@@ -171,32 +147,48 @@ func _update_navigation() -> void:
 	right_button.disabled = not has_levels or current_index >= levels.size() - 1
 	if not has_levels:
 		page_label.text = "暂无关卡"
-		detail_label.text = ""
+		detail_label.text = "当前战力  0"
+		_update_dots()
 		return
 	var selected := levels[current_index]
 	var unlocked: bool = records.is_level_unlocked(selected.level_id)
 	page_label.text = "第 %d / %d 关" % [current_index + 1, levels.size()]
-	var progress_text: String = records.level_summary(selected.level_id)
-	if unlocked:
-		detail_label.text = "%s  ·  首通奖励：%s" % [progress_text, selected.reward.display_name]
-	else:
-		detail_label.text = "◇ 尚未解锁  ·  首通奖励：%s" % selected.reward.display_name
-	detail_label.add_theme_color_override("font_color", Color("e9f8ef") if unlocked else Color("ffe59a"))
+	var active_snapshot: Dictionary = records.get_permanent_snapshot(records.get_active_hero_id())
+	var current_power := int(active_snapshot.get("power", {}).get("total", 0))
+	var cleared: bool = records.has_cleared_level(selected.level_id)
+	expedition_brief.configure(selected, current_power, unlocked, cleared)
+	_update_dots()
+
+
+func _update_dots() -> void:
+	if page_dots.is_empty():
+		return
+	var window_start := clampi(current_index - floori(page_dots.size() * 0.5), 0, maxi(0, levels.size() - page_dots.size()))
+	for slot_index in range(page_dots.size()):
+		var level_index := window_start + slot_index
+		var dot := page_dots[slot_index]
+		var selected := level_index == current_index
+		dot.set_meta("level_index", level_index)
+		dot.text = "●" if selected else "○"
+		dot.add_theme_font_size_override("font_size", 17 if selected else 19)
+		dot.add_theme_color_override(
+			"font_color",
+			UiFactory.GOLD if selected else Color("72d8cf")
+		)
+		dot.accessibility_name = "第%d关%s" % [level_index + 1, "，当前选择" if selected else ""]
 
 
 func _animate_slots(direction: int) -> void:
 	if not is_inside_tree():
 		return
-	var target_positions: Array[Vector2] = []
-	for slot_index in range(page_buttons.size()):
-		var button := page_buttons[slot_index]
-		target_positions.append(button.position)
-		button.position.x += direction * CARD_STEP
-		button.visible = slot_index == 1 or slot_index == (0 if direction > 0 else 2)
+	information_plate.position.x = BRIEF_X + direction * 18.0
+	information_plate.modulate.a = 0.45
+	dots_row.modulate.a = 0.45
 	_transition_tween = create_tween().set_parallel(true)
 	_transition_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	for slot_index in range(page_buttons.size()):
-		_transition_tween.tween_property(page_buttons[slot_index], "position", target_positions[slot_index], 0.2)
+	_transition_tween.tween_property(information_plate, "position:x", BRIEF_X, 0.22)
+	_transition_tween.tween_property(information_plate, "modulate:a", 1.0, 0.2)
+	_transition_tween.tween_property(dots_row, "modulate:a", 1.0, 0.18)
 	_transition_tween.chain().tween_callback(_finish_transition)
 
 
@@ -217,6 +209,15 @@ func _on_page_pressed(slot_index: int) -> void:
 	var level_id: String = page_buttons[slot_index].get_meta("level_id", "")
 	if not level_id.is_empty() and level_id != selected_level_id:
 		select_level(level_id)
+
+
+func _on_dot_pressed(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= page_dots.size():
+		return
+	var level_index := int(page_dots[slot_index].get_meta("level_index", -1))
+	if level_index < 0 or level_index >= levels.size() or level_index == current_index:
+		return
+	select_level(levels[level_index].level_id)
 
 
 func _handle_pointer_input(event: InputEvent) -> void:

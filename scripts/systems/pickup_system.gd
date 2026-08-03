@@ -18,9 +18,10 @@ var pickups: Array[Node] = []
 var magnet_until := 0.0
 var haste_until := 0.0
 var drop_counts: Dictionary = {}
+var permanent_pickup_radius_multiplier := 1.0
 
 
-func configure(level_config: LevelConfig, state: RefCounted, build: RefCounted, player_node: Node2D, enemy_system: Node2D, random: RandomNumberGenerator, audio_manager: Node) -> void:
+func configure(level_config: LevelConfig, state: RefCounted, build: RefCounted, player_node: Node2D, enemy_system: Node2D, random: RandomNumberGenerator, audio_manager: Node, progression: Dictionary = {}) -> void:
 	level = level_config
 	run_state = state
 	build_state = build
@@ -31,6 +32,7 @@ func configure(level_config: LevelConfig, state: RefCounted, build: RefCounted, 
 	magnet_until = 0.0
 	haste_until = 0.0
 	drop_counts.clear()
+	permanent_pickup_radius_multiplier = maxf(1.0, float(progression.get("pickup_radius_multiplier", 1.0)))
 
 
 func drop_for_enemy(enemy: Node) -> void:
@@ -75,7 +77,8 @@ func advance(delta: float, elapsed: float) -> void:
 		haste_until = 0.0
 		player.set_temporary_speed_multiplier(1.0)
 	var active := elapsed < magnet_until
-	var normal_radius: float = level.loot.normal_pickup_radius * build_state.modifier("pickup_radius_multiplier")
+	var normal_radius: float = level.loot.normal_pickup_radius * permanent_pickup_radius_multiplier
+	normal_radius *= build_state.modifier("pickup_radius_multiplier")
 	var pickup_radius: float = level.loot.magnet_pickup_radius if active else normal_radius
 	for pickup in pickups.duplicate():
 		if not is_instance_valid(pickup):

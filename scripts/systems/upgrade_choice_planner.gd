@@ -90,24 +90,26 @@ func _choice_groups(build_state: RefCounted, skill_pool_ids, relic_pool_ids, hea
 			third_choices.append(ChoiceFactory.recovery())
 		for third_choice in third_choices:
 			_append_group(groups, seen, [pair[0], pair[1], third_choice])
-	if not groups.is_empty():
-		return groups
 	var regular_candidates := regular_skills + relics + utilities
 	if regular_candidates.size() < 3 and not _has_kind(regular_candidates, [ChoiceFactory.UTILITY_RECOVERY]):
 		regular_candidates.append(ChoiceFactory.recovery())
+	var regular_groups: Array = []
+	var regular_seen: Dictionary = {}
 	for first in range(regular_candidates.size()):
 		for second in range(first + 1, regular_candidates.size()):
 			for third in range(second + 1, regular_candidates.size()):
 				var group := [regular_candidates[first], regular_candidates[second], regular_candidates[third]]
 				if _has_kind(group, [ChoiceFactory.SKILL_UNLOCK, ChoiceFactory.SKILL_UPGRADE]) and _has_kind(group, [ChoiceFactory.RELIC_UPGRADE]):
-					_append_group(groups, seen, group)
-	if groups.is_empty() and regular_candidates.size() >= 3:
+					_append_group(regular_groups, regular_seen, group)
+	if regular_groups.is_empty() and regular_candidates.size() >= 3:
 		for first in range(regular_candidates.size()):
 			for second in range(first + 1, regular_candidates.size()):
 				for third in range(second + 1, regular_candidates.size()):
-					_append_group(groups, seen, [regular_candidates[first], regular_candidates[second], regular_candidates[third]])
-	if groups.is_empty() and not regular_candidates.is_empty():
-		_append_group(groups, seen, regular_candidates)
+					_append_group(regular_groups, regular_seen, [regular_candidates[first], regular_candidates[second], regular_candidates[third]])
+	if regular_groups.is_empty() and groups.is_empty() and not regular_candidates.is_empty():
+		_append_group(regular_groups, regular_seen, regular_candidates)
+	for group in regular_groups:
+		_append_group(groups, seen, group)
 	return groups
 
 

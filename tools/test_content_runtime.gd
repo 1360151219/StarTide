@@ -29,6 +29,11 @@ func _test_runtime_pools_and_discovery() -> void:
 	var first_offer := str(session.build_state.last_offer_key)
 	_require(session.reroll_upgrade(), "会话层免费重抽失败")
 	_require(session.build_state.rerolls_remaining == 0 and str(session.build_state.last_offer_key) != first_offer, "重抽次数或候选去重错误")
+	session.free()
+	session = _session_with_choice("level_01", records, "skill_branch", 840)
+	_require(session != null, "随机候选池无法生成技能分支")
+	if session == null:
+		return
 	var branch_choice := _choice_of_kind(session, "skill_branch")
 	_require(not branch_choice.is_empty() and session.select_upgrade(branch_choice["choice_key"]), "技能分支无法通过会话应用")
 	_require(session.build_state.skill_levels["star_lance"] == 2, "技能分支没有提升到 II 级")
@@ -110,6 +115,16 @@ func _choice_of_kind(session: Node, kind: String) -> Dictionary:
 		if str(choice["kind"]) == kind:
 			return choice
 	return {}
+
+
+func _session_with_choice(level_id: String, records: RefCounted, kind: String, first_seed: int) -> Node:
+	for seed_value in range(first_seed, first_seed + 128):
+		var session := _create_session(level_id, records, seed_value)
+		session.add_experience(36)
+		if not _choice_of_kind(session, kind).is_empty():
+			return session
+		session.free()
+	return null
 
 
 func _create_session(level_id: String, records: RefCounted, seed_value: int) -> Node:

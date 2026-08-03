@@ -4,6 +4,7 @@ extends Resource
 @export var level_id := ""
 @export var order := 1
 @export_range(1, 10, 1) var difficulty_rating := 1
+@export_range(1, 100000, 1) var recommended_power := 1000
 @export var display_name := ""
 @export var subtitle := ""
 @export_multiline var description := ""
@@ -11,6 +12,8 @@ extends Resource
 @export var duration := 90.0
 @export var initial_enemy_count := 5
 @export var max_enemies := 80
+@export_range(0, 100, 1) var max_ranged_enemies := 8
+@export_range(0.0, 15.0, 0.5) var opening_tutorial_grace := 0.0
 @export var difficulty: DifficultyConfig
 @export var loot: LootConfig
 @export var content_pool: LevelContentPoolConfig
@@ -42,12 +45,16 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 		errors.append("关卡顺序必须大于 0")
 	if difficulty_rating <= 0:
 		errors.append("难度评级必须大于 0")
+	if recommended_power <= 0:
+		errors.append("推荐战力必须大于 0")
 	if display_name.is_empty():
 		errors.append("关卡名称不能为空")
 	if duration <= 0.0:
 		errors.append("关卡时长必须大于 0")
 	if initial_enemy_count < 0 or max_enemies <= 0 or initial_enemy_count > max_enemies:
 		errors.append("初始怪物数或场上上限无效")
+	if max_ranged_enemies < 0 or max_ranged_enemies > max_enemies:
+		errors.append("远程怪物场上上限无效")
 	if map == null:
 		errors.append("地图配置不能为空")
 	else:

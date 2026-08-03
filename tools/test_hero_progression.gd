@@ -26,7 +26,7 @@ func _initialize() -> void:
 	for path in cleanup_paths:
 		DirAccess.remove_absolute(path)
 	if not failed:
-		print("PROGRESSION_OK schema=4 migration=true levels=10 skill_points=9 reset=free skills=6 snapshot=true")
+		print("PROGRESSION_OK schema=6 migration=true levels=10 skill_points=9 reset=free skills=6 snapshot=true")
 	quit(1 if failed else 0)
 
 
@@ -35,9 +35,11 @@ func _test_rewards_and_training() -> void:
 	var records := RunRecords.new(test_path)
 	var level := LevelCatalog.first()
 	var no_reward := records.record_level_run("ember_ranger", level.level_id, false, false, 0, 1, 29.9, level.reward)
-	_require(no_reward["progression_reward"]["mastery_xp_gained"] == 0, "30 秒内失败仍获得熟练度")
+	_require(no_reward["progression_reward"]["hero_xp_gained"] == 10, "30 秒内有效失败没有获得保底英雄经验")
+	var mid_reward := records.record_level_run("ember_ranger", level.level_id, false, false, 0, 1, 30.0, level.reward)
+	_require(mid_reward["progression_reward"]["hero_xp_gained"] == 20, "30 秒失败经验边界错误")
 	var failure_reward := records.record_level_run("ember_ranger", level.level_id, false, false, 0, 1, 90.0, level.reward)
-	_require(failure_reward["progression_reward"]["mastery_xp_gained"] == 30, "失败熟练度没有按存活时间封顶")
+	_require(failure_reward["progression_reward"]["hero_xp_gained"] == 30, "失败英雄经验没有按存活时间封顶")
 	for _index in range(9):
 		records.record_level_run("star_warden", level.level_id, true, false, 1, 1, 90.0, level.reward)
 	var snapshot := records.progression_snapshot("star_warden")
@@ -66,7 +68,7 @@ func _test_schema_migration_and_repair() -> void:
 	legacy.set_value("hero/star_warden", "wins", 2)
 	legacy.save(legacy_path)
 	var migrated := RunRecords.new(legacy_path)
-	_require(migrated.progression_snapshot("star_warden")["mastery_xp"] == 200, "旧通关次数没有迁移为熟练度")
+	_require(migrated.progression_snapshot("star_warden")["hero_xp"] == 200, "旧通关次数没有迁移为英雄经验")
 	var migrated_file := ConfigFile.new()
 	migrated_file.load(legacy_path)
 	_require(migrated_file.get_value("meta", "schema_version", 0) == ProfileSchema.VERSION, "旧存档没有立即写回最新 schema")
@@ -159,7 +161,7 @@ func _trained_session(host: Node2D, effects: Node2D, hero_id: String, skill_id: 
 	var training := {}
 	for active_skill_id in HeroCatalog.hero(hero_id)["skills"]:
 		training[active_skill_id] = 3 if active_skill_id == skill_id else 0
-	records.hero_progressions[hero_id] = {"mastery_xp": 900, "training": training}
+	records.hero_progressions[hero_id] = {"hero_xp": 900, "training": training}
 	var session := RunSession.new()
 	host.add_child(session)
 	var audio := AudioStub.new()

@@ -6,6 +6,7 @@ const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const LevelPresentationCatalog = preload("res://scripts/levels/level_presentation_catalog.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
+const HomeHeader = preload("res://scripts/ui/home_header.gd")
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
 const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
@@ -35,6 +36,7 @@ var screen_background: TextureRect
 var design_frame: Control
 var lobby_view: Control
 var hero_view: Control
+var title_label: Label
 var subtitle_label: Label
 var selected_level_label: Label
 
@@ -59,6 +61,8 @@ func configure(run_records: RefCounted, audio_manager: Node) -> void:
 
 func select_hero(hero_id: String) -> void:
 	selected_hero_id = hero_id
+	if is_instance_valid(level_preview):
+		level_preview.set_preview_hero(hero_id)
 	if is_instance_valid(hero_selector):
 		hero_selector.select_hero(hero_id, false)
 	confirm_button.text = "使用%s出发" % HeroCatalog.hero(hero_id)["name"]
@@ -111,19 +115,13 @@ func _build_background() -> Control:
 
 func _build_header(parent: Control) -> void:
 	audio_settings = AudioSettingsPanel.new()
-	audio_settings.position = Vector2(386, 18)
+	audio_settings.position = Vector2(395, 18)
 	parent.add_child(audio_settings)
 	audio_settings.configure(audio, true)
-	var title := UiFactory.label("星潮守望者", 43, Color("fff1b8"))
-	title.position = Vector2(20, 58)
-	title.size = Vector2(500, 54)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	parent.add_child(title)
-	subtitle_label = UiFactory.label("远征大厅  ·  选择今天要守护的世界", 16, Color("d8f7ef"))
-	subtitle_label.position = Vector2(20, 110)
-	subtitle_label.size = Vector2(500, 30)
-	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	parent.add_child(subtitle_label)
+	var header := HomeHeader.new()
+	parent.add_child(header)
+	title_label = header.title_label
+	subtitle_label = header.subtitle_label
 
 
 func _build_lobby(parent: Control) -> void:
@@ -131,29 +129,22 @@ func _build_lobby(parent: Control) -> void:
 	parent.add_child(lobby_view)
 	ScreenLayout.fill(lobby_view)
 	level_preview = LevelPreview.new()
-	level_preview.position = Vector2(18, 136)
-	level_preview.size = Vector2(504, 390)
+	level_preview.position = Vector2(18, 168)
+	level_preview.size = Vector2(504, 474)
 	lobby_view.add_child(level_preview)
 	level_selector = LevelSelector.new()
-	level_selector.position = Vector2(18, 520)
+	level_selector.position = Vector2(18, 640)
 	lobby_view.add_child(level_selector)
 	level_selector.configure(LevelCatalog.all(), records, selected_level_id)
 	selected_level_id = level_selector.selected_level_id
 	level_selector.level_selected.connect(_on_level_selected)
 	level_preview.swipe_requested.connect(level_selector.move_by)
 	start_button = HomePrimaryButton.new()
-	start_button.position = Vector2(58, 718)
-	start_button.size = Vector2(424, 82)
+	start_button.position = Vector2(111, 746)
+	start_button.size = Vector2(318, 122)
 	lobby_view.add_child(start_button)
 	start_button.set_caption("踏入星门", true)
 	start_button.pressed.connect(_show_hero_selection)
-	var compendium_button := _make_button(lobby_view, "✦  星潮图鉴", Vector2(126, 820), Vector2(288, 52), false)
-	compendium_button.pressed.connect(open_compendium)
-	var hint := UiFactory.label("选择远征地后，再挑选一位守望者", 14, Color("deeee5"))
-	hint.position = Vector2(20, 888)
-	hint.size = Vector2(500, 32)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lobby_view.add_child(hint)
 
 
 func _build_hero_view(parent: Control) -> void:

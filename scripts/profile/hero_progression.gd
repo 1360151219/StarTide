@@ -4,7 +4,8 @@ const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const MAX_LEVEL := 10
 const XP_PER_LEVEL := 100
-const MAX_MASTERY_XP := (MAX_LEVEL - 1) * XP_PER_LEVEL
+const MAX_HERO_XP := (MAX_LEVEL - 1) * XP_PER_LEVEL
+const MAX_MASTERY_XP := MAX_HERO_XP
 const MAX_TRAINING_LEVEL := 3
 const TRAINING_COSTS := [1, 2, 3]
 
@@ -13,12 +14,13 @@ static func default_progress(hero_id: String) -> Dictionary:
 	var training := {}
 	for skill_id in _skill_ids(hero_id):
 		training[skill_id] = 0
-	return {"mastery_xp": 0, "training": training}
+	return {"hero_xp": 0, "training": training}
 
 
 static func sanitize(hero_id: String, raw_progress: Dictionary) -> Dictionary:
 	var progress := default_progress(hero_id)
-	progress["mastery_xp"] = clampi(int(raw_progress.get("mastery_xp", 0)), 0, MAX_MASTERY_XP)
+	var raw_xp: Variant = raw_progress.get("hero_xp", raw_progress.get("mastery_xp", 0))
+	progress["hero_xp"] = clampi(int(raw_xp), 0, MAX_HERO_XP)
 	var raw_training: Dictionary = raw_progress.get("training", {})
 	for skill_id in _skill_ids(hero_id):
 		progress["training"][skill_id] = clampi(int(raw_training.get(skill_id, 0)), 0, MAX_TRAINING_LEVEL)
@@ -28,8 +30,8 @@ static func sanitize(hero_id: String, raw_progress: Dictionary) -> Dictionary:
 
 static func snapshot(hero_id: String, raw_progress: Dictionary) -> Dictionary:
 	var progress := sanitize(hero_id, raw_progress)
-	var mastery_xp: int = progress["mastery_xp"]
-	var hero_level := level_for_xp(mastery_xp)
+	var hero_xp: int = progress["hero_xp"]
+	var hero_level := level_for_xp(hero_xp)
 	var total_points := hero_level - 1
 	var spent_points := spent_skill_points(progress["training"])
 	var skill_rows: Array = []
@@ -49,10 +51,11 @@ static func snapshot(hero_id: String, raw_progress: Dictionary) -> Dictionary:
 		modifiers[skill_id] = _skill_modifiers(skill_id, training_level, hero_level)
 	return {
 		"hero_id": hero_id,
-		"mastery_xp": mastery_xp,
+		"hero_xp": hero_xp,
+		"mastery_xp": hero_xp,
 		"level": hero_level,
 		"max_level": MAX_LEVEL,
-		"level_progress": XP_PER_LEVEL if hero_level >= MAX_LEVEL else mastery_xp % XP_PER_LEVEL,
+		"level_progress": XP_PER_LEVEL if hero_level >= MAX_LEVEL else hero_xp % XP_PER_LEVEL,
 		"level_progress_max": XP_PER_LEVEL,
 		"total_skill_points": total_points,
 		"spent_skill_points": spent_points,
@@ -67,16 +70,19 @@ static func snapshot(hero_id: String, raw_progress: Dictionary) -> Dictionary:
 
 static func award_run(hero_id: String, raw_progress: Dictionary, won: bool, survival_seconds: float) -> Dictionary:
 	var before := snapshot(hero_id, raw_progress)
-	var requested_xp := 100 if won else mini(30, floori(maxf(0.0, survival_seconds) / 30.0) * 10)
+	var requested_xp := 100 if won else mini(30, 10 + floori(maxf(0.0, survival_seconds) / 30.0) * 10)
 	var progress := sanitize(hero_id, raw_progress)
-	progress["mastery_xp"] = mini(MAX_MASTERY_XP, int(progress["mastery_xp"]) + requested_xp)
+	progress["hero_xp"] = mini(MAX_HERO_XP, int(progress["hero_xp"]) + requested_xp)
 	var after := snapshot(hero_id, progress)
 	return {
 		"progress": progress,
 		"reward": {
-			"mastery_xp_gained": int(after["mastery_xp"]) - int(before["mastery_xp"]),
-			"previous_mastery_xp": before["mastery_xp"],
-			"mastery_xp": after["mastery_xp"],
+			"hero_xp_gained": int(after["hero_xp"]) - int(before["hero_xp"]),
+			"previous_hero_xp": before["hero_xp"],
+			"hero_xp": after["hero_xp"],
+			"mastery_xp_gained": int(after["hero_xp"]) - int(before["hero_xp"]),
+			"previous_mastery_xp": before["hero_xp"],
+			"mastery_xp": after["hero_xp"],
 			"previous_level": before["level"],
 			"level": after["level"],
 			"levels_gained": int(after["level"]) - int(before["level"]),
@@ -111,8 +117,8 @@ static func reset_training(hero_id: String, raw_progress: Dictionary) -> Diction
 	return {"success": true, "reason": "技能训练已免费重置", "progress": progress}
 
 
-static func level_for_xp(mastery_xp: int) -> int:
-	return mini(MAX_LEVEL, 1 + maxi(0, mastery_xp) / XP_PER_LEVEL)
+static func level_for_xp(hero_xp: int) -> int:
+	return mini(MAX_LEVEL, 1 + maxi(0, hero_xp) / XP_PER_LEVEL)
 
 
 static func training_cost(target_level: int) -> int:
@@ -130,7 +136,7 @@ static func spent_skill_points(training: Dictionary) -> int:
 
 
 static func _repair_training_budget(hero_id: String, progress: Dictionary) -> void:
-	var available_budget := level_for_xp(progress["mastery_xp"]) - 1
+	var available_budget := level_for_xp(progress["hero_xp"]) - 1
 	var skill_ids := _skill_ids(hero_id)
 	while spent_skill_points(progress["training"]) > available_budget:
 		for index in range(skill_ids.size() - 1, -1, -1):

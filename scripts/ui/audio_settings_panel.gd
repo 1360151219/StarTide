@@ -20,9 +20,10 @@ func configure(audio_manager: Node, compact := false) -> void:
 	compact_mode = compact
 	z_index = 30
 	if compact_mode:
-		size = Vector2(136, 48)
+		size = Vector2(118, 37)
 		_build_launcher()
-		settings_card = _build_card(Vector2(-256, 58), Vector2(392, 236), true)
+		settings_card = _build_card(Vector2(-256, 50), Vector2(392, 236), true)
+		settings_card.z_index = 100
 		settings_card.visible = false
 	else:
 		size = Vector2(356, 220)
@@ -47,9 +48,9 @@ func refresh() -> void:
 		var muted: bool = not audio.music_enabled and not audio.sfx_enabled
 		launcher_button.text = "♬  已静音" if muted else "♫  声音"
 		launcher_button.add_theme_color_override("font_color", Color("d1d7d2") if muted else Color("fff1b8"))
-		launcher_button.add_theme_stylebox_override("normal", UiFactory.button_style(Color(0.025, 0.14, 0.19, 0.9), UiFactory.CORAL if muted else Color("d6b35a")))
-		launcher_button.add_theme_stylebox_override("hover", UiFactory.button_style(Color(0.03, 0.27, 0.3, 0.96), Color("ffe28a")))
-		launcher_button.add_theme_stylebox_override("pressed", UiFactory.button_style(Color(0.02, 0.1, 0.14, 0.98), Color("b99645")))
+		launcher_button.add_theme_stylebox_override("normal", _launcher_style(Color(0.025, 0.14, 0.19, 0.9), UiFactory.CORAL if muted else Color("d6b35a")))
+		launcher_button.add_theme_stylebox_override("hover", _launcher_style(Color(0.03, 0.27, 0.3, 0.96), Color("ffe28a")))
+		launcher_button.add_theme_stylebox_override("pressed", _launcher_style(Color(0.02, 0.1, 0.14, 0.98), Color("b99645")))
 
 
 func open_popup() -> void:
@@ -65,10 +66,18 @@ func close_popup() -> void:
 func _build_launcher() -> void:
 	launcher_button = Button.new()
 	launcher_button.size = size
+	launcher_button.add_theme_font_override("font", UiFactory.home_serif(500))
 	launcher_button.add_theme_font_size_override("font_size", 16)
 	launcher_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	launcher_button.pressed.connect(_toggle_popup)
 	add_child(launcher_button)
+
+
+func _launcher_style(background: Color, border: Color) -> StyleBoxFlat:
+	var style := UiFactory.button_style(background, border)
+	style.shadow_size = 2
+	style.shadow_offset = Vector2(0, 1)
+	return style
 
 
 func _build_card(at: Vector2, card_size: Vector2, closable: bool) -> Panel:

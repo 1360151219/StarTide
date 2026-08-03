@@ -34,12 +34,27 @@ func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D
 
 func spawn_initial() -> void:
 	for _index in range(level.initial_enemy_count):
-		spawn_enemy(spawner.roll_enemy_id(), null, 0.0)
+		_spawn_next_enemy(0.0)
 
 
 func advance_spawning(delta: float, elapsed: float) -> void:
 	for _index in range(spawner.next_spawn_count(delta, elapsed, enemies.size())):
-		spawn_enemy(spawner.roll_enemy_id(), null, elapsed)
+		_spawn_next_enemy(elapsed)
+
+
+func active_ranged_count() -> int:
+	var count := 0
+	for enemy in enemies:
+		if is_instance_valid(enemy) and EnemyCatalog.is_ranged(enemy.kind):
+			count += 1
+	return count
+
+
+func _spawn_next_enemy(elapsed: float) -> Node:
+	var enemy_id := spawner.roll_enemy_id(active_ranged_count())
+	if enemy_id.is_empty():
+		return null
+	return spawn_enemy(enemy_id, null, elapsed)
 
 
 func spawn_enemy(enemy_id: String, elite_config: EliteConfig = null, elapsed := 0.0) -> Node:
@@ -59,12 +74,23 @@ func spawn_enemy(enemy_id: String, elite_config: EliteConfig = null, elapsed := 
 
 
 func spawn_elite(config: EliteConfig, elapsed: float) -> Node:
+	if EnemyCatalog.is_ranged(config.enemy_id):
+		while active_ranged_count() >= level.max_ranged_enemies and _remove_non_elite_ranged():
+			pass
 	if enemies.size() >= level.max_enemies:
 		for candidate in enemies.duplicate():
 			if not candidate.is_elite:
 				remove_enemy(candidate)
 				break
 	return spawn_enemy(config.enemy_id, config, elapsed)
+
+
+func _remove_non_elite_ranged() -> bool:
+	for candidate in enemies.duplicate():
+		if is_instance_valid(candidate) and not candidate.is_elite and EnemyCatalog.is_ranged(candidate.kind):
+			remove_enemy(candidate)
+			return true
+	return false
 
 
 func advance_movement(delta: float, elapsed: float) -> void:

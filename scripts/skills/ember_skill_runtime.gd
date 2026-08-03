@@ -75,7 +75,8 @@ func _update_ember_volley(delta: float) -> void:
 	for index in range(count):
 		var spread: float = (index - (count - 1) * 0.5) * spread_step
 		projectiles.spawn_projectile({
-			"position": player.position, "angle": base_angle + spread, "speed": data["speed"][skill_level],
+			"position": player.position, "angle": base_angle + spread,
+			"speed": data["speed"][skill_level] * _multiplier("ember_volley", "projectile_speed_multiplier"),
 			"damage": data["damage"][skill_level] * _multiplier("ember_volley", "damage_multiplier"), "radius": data["radius"][skill_level],
 			"pierce": int(_stat("ember_volley", "pierce", data["pierce"][skill_level])),
 			"blast_radius": data["blast_radius"][skill_level] * _multiplier("ember_volley", "range_multiplier") * _branch_multiplier("ember_volley", "blast_radius_multiplier"),

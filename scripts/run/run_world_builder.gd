@@ -42,7 +42,7 @@ func build(parent: Node2D, state: RefCounted, build_state: RefCounted, level: Le
 	projectiles.configure(enemies, effects, audio, random_streams["skill"])
 	var pickups := PickupSystem.new()
 	parent.add_child(pickups)
-	pickups.configure(level, state, build_state, player, enemies, random_streams["loot"], audio)
+	pickups.configure(level, state, build_state, player, enemies, random_streams["loot"], audio, progression)
 	var skills := SkillController.new()
 	skills.z_index = 3850
 	parent.add_child(skills)

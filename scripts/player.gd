@@ -1,15 +1,6 @@
 extends Node2D
 
-const HERO_TEXTURES := {
-	"star_warden": {
-		"front": preload("res://assets/art/characters/star_tide_warden.png"),
-		"side": preload("res://assets/art/characters/star_tide_warden_side.png"),
-	},
-	"ember_ranger": {
-		"front": preload("res://assets/art/characters/emberwing_ranger.png"),
-		"side": preload("res://assets/art/characters/emberwing_ranger_side.png"),
-	},
-}
+const HeroRigScene = preload("res://scenes/presentation/hero_rig_2d.tscn")
 
 var hero_id := "star_warden"
 var max_health := 100.0
@@ -23,32 +14,38 @@ var facing := Vector2.DOWN
 var hurt_flash := 0.0
 var animation_time := 0.0
 var movement_amount := 0.0
-var side_blend := 0.0
 var horizontal_facing := -1
-var turn_progress := 1.0
 var passive_active := false
 var map: MapConfig
+var hero_rig: HeroRig2D
+
+
+func _ready() -> void:
+	_ensure_hero_rig()
 
 
 func _process(delta: float) -> void:
 	animation_time += delta
 	hurt_flash = maxf(0.0, hurt_flash - delta)
-	var target_side_blend := 1.0 if absf(facing.x) > 0.28 and movement_amount > 0.05 else 0.0
-	side_blend = move_toward(side_blend, target_side_blend, delta * 7.0)
-	turn_progress = minf(1.0, turn_progress + delta * 8.0)
+	if is_instance_valid(hero_rig):
+		hero_rig.set_motion(facing, movement_amount)
+		hero_rig.set_hurt_active(hurt_flash > 0.0)
 	queue_redraw()
 
 
 func configure(selected_hero_id: String, hero_data: Dictionary, map_config: MapConfig, progression: Dictionary = {}) -> void:
+	_ensure_hero_rig()
 	hero_id = selected_hero_id
 	map = map_config
 	base_max_health = hero_data["max_health"] * float(progression.get("health_multiplier", 1.0))
 	max_health = base_max_health
 	health = max_health
-	base_speed = hero_data["speed"]
+	base_speed = hero_data["speed"] * float(progression.get("move_speed_multiplier", 1.0))
 	build_speed_bonus = 0.0
 	temporary_speed_multiplier = 1.0
 	_refresh_speed()
+	hero_rig.configure(hero_id, 96.0)
+	hero_rig.play_state("idle", true)
 	queue_redraw()
 
 
@@ -61,6 +58,14 @@ func apply_build_modifiers(build_state: RefCounted) -> void:
 	max_health = base_max_health + build_state.modifier("max_health_flat")
 	health = minf(health, max_health)
 	set_build_speed_bonus(build_state.modifier("move_speed_multiplier") - 1.0)
+
+
+func apply_acquire_effects(effects: Dictionary) -> void:
+	if not effects.has("heal"):
+		return
+	if effects.has("full_health_max") and is_equal_approx(health, max_health):
+		max_health += float(effects["full_health_max"])
+	heal(float(effects["heal"]))
 
 
 func set_temporary_speed_multiplier(multiplier: float) -> void:
@@ -82,7 +87,6 @@ func move(direction: Vector2, delta: float) -> Vector2:
 			var next_facing := -1 if facing.x < 0.0 else 1
 			if next_facing != horizontal_facing:
 				horizontal_facing = next_facing
-				turn_progress = 0.0
 		position += facing * speed * delta
 	position.x = clampf(position.x, bounds.position.x + 24.0, bounds.end.x - 24.0)
 	position.y = clampf(position.y, bounds.position.y + 24.0, bounds.end.y - 24.0)
@@ -93,6 +97,8 @@ func move(direction: Vector2, delta: float) -> Vector2:
 func take_damage(amount: float) -> bool:
 	health = maxf(0.0, health - amount)
 	hurt_flash = 0.14
+	if is_instance_valid(hero_rig):
+		hero_rig.trigger_hit()
 	return health <= 0.0
 
 
@@ -100,9 +106,17 @@ func heal(amount: float) -> void:
 	health = minf(max_health, health + amount)
 
 
+func trigger_cast_animation() -> void:
+	if is_instance_valid(hero_rig):
+		hero_rig.trigger_cast()
+
+
+func trigger_victory_animation() -> void:
+	if is_instance_valid(hero_rig):
+		hero_rig.trigger_victory()
+
+
 func _draw() -> void:
-	var bob := sin(animation_time * 7.0) * 1.8 * movement_amount
-	var texture_color := Color.WHITE if hurt_flash <= 0.0 else Color("ffd6dc")
 	# 阴影独立于角色贴图，移动时仍然牢牢贴在地面上。
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.42))
 	draw_circle(Vector2(3, 60), 32.0, Color(0.01, 0.02, 0.07, 0.48))
@@ -118,24 +132,11 @@ func _draw() -> void:
 		for index in range(3):
 			var wind_radius := 34.0 + index * 7.0
 			draw_arc(Vector2.ZERO, wind_radius, animation_time * 2.5 + index, animation_time * 2.5 + index + PI * 0.9, 22, Color(1.0, 0.46 + index * 0.1, 0.18, 0.72 - index * 0.12), 2.8)
-	var textures: Dictionary = HERO_TEXTURES[hero_id]
-	var front_texture: Texture2D = textures["front"]
-	var side_texture: Texture2D = textures["side"]
-	var front_size := _texture_size_for_height(front_texture, 96.0)
-	var side_size := _texture_size_for_height(side_texture, 96.0)
-	if side_blend < 1.0:
-		var front_color := texture_color
-		front_color.a *= 1.0 - side_blend
-		draw_texture_rect(front_texture, Rect2(-front_size.x * 0.5, -64.0 + bob, front_size.x, front_size.y), false, front_color)
-	if side_blend > 0.0:
-		var side_color := texture_color
-		side_color.a *= side_blend
-		var turn_width := lerpf(0.18, 1.0, sin(turn_progress * PI * 0.5))
-		var flip := 1.0 if horizontal_facing < 0 else -1.0
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2(flip * turn_width, 1.0))
-		draw_texture_rect(side_texture, Rect2(-side_size.x * 0.5, -64.0 + bob, side_size.x, side_size.y), false, side_color)
-		draw_set_transform(Vector2.ZERO)
 
 
-func _texture_size_for_height(texture: Texture2D, height: float) -> Vector2:
-	return Vector2(height * texture.get_width() / texture.get_height(), height)
+func _ensure_hero_rig() -> void:
+	if is_instance_valid(hero_rig):
+		return
+	hero_rig = HeroRigScene.instantiate()
+	hero_rig.position = Vector2(0, 31)
+	add_child(hero_rig)

@@ -102,7 +102,7 @@ func _build_card(card: Panel, hero_id: String) -> void:
 
 func _growth_summary(hero_id: String) -> String:
 	if not records.has_method("progression_snapshot"):
-		return "Lv.1 · 熟练度待提升"
+		return "Lv.1 · 英雄经验待提升"
 	var snapshot: Dictionary = records.progression_snapshot(hero_id)
 	return "Lv.%d · 熟练 %d/%d · 技能点 %d" % [
 		int(snapshot.get("level", 1)),

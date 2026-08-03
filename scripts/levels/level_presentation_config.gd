@@ -2,7 +2,6 @@ class_name LevelPresentationConfig
 extends Resource
 
 @export var level_id := ""
-@export var medallion_texture: Texture2D
 @export var preview_texture: Texture2D
 @export var preview_region := Rect2()
 @export var featured_enemy_ids := PackedStringArray()
@@ -15,8 +14,6 @@ func validation_errors(valid_level_ids: PackedStringArray, valid_enemy_ids: Pack
 		errors.append("level_id 不能为空")
 	elif not valid_level_ids.has(level_id):
 		errors.append("引用了不存在的关卡：%s" % level_id)
-	if medallion_texture == null:
-		errors.append("关卡徽章不能为空")
 	if preview_texture == null:
 		errors.append("动态预览图不能为空")
 	if featured_enemy_ids.is_empty():

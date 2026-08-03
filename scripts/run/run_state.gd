@@ -2,6 +2,9 @@ extends RefCounted
 
 const EXPERIENCE_BASE := 36
 const EXPERIENCE_STEP := 28
+const END_COMPLETED := "completed"
+const END_DEFEATED := "defeated"
+const END_OBJECTIVE_TIMEOUT := "objective_timeout"
 
 var hero_id := "star_warden"
 var level_id := "level_01"
@@ -14,6 +17,7 @@ var pending_upgrades := 0
 var paused := false
 var finished := false
 var victory := false
+var end_reason := ""
 var elite_spawned := false
 var elite_defeated := false
 
@@ -30,6 +34,7 @@ func reset(selected_hero_id: String, selected_level_id: String) -> void:
 	paused = false
 	finished = false
 	victory = false
+	end_reason = ""
 	elite_spawned = false
 	elite_defeated = false
 

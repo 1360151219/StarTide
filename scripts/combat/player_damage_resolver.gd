@@ -48,6 +48,14 @@ func apply(hit: PlayerHit, elapsed: float, finished: bool) -> bool:
 	return true
 
 
+func grant_invulnerability(elapsed: float, duration: float) -> void:
+	invulnerable_until = maxf(invulnerable_until, elapsed + maxf(0.0, duration))
+
+
+func is_invulnerable(elapsed: float) -> bool:
+	return elapsed < invulnerable_until
+
+
 func _apply_displacement(hit: PlayerHit) -> void:
 	if hit.can_knockback_source():
 		var distance := 36.0 if hit.source.kind == "brute" else 25.0

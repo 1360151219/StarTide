@@ -14,6 +14,7 @@ const PlayerDamageResolver = preload("res://scripts/combat/player_damage_resolve
 const RunBuildState = preload("res://scripts/run/run_build_state.gd")
 const RunContentResolver = preload("res://scripts/run/run_content_resolver.gd")
 const UpgradeSystem = preload("res://scripts/systems/upgrade_system.gd")
+const RunSafetyController = preload("res://scripts/run/run_safety_controller.gd")
 
 var state := RunState.new()
 var level: LevelConfig
@@ -36,7 +37,7 @@ var skill_pool_ids := PackedStringArray()
 var relic_pool_ids := PackedStringArray()
 var elite_enemy: Node
 var damage_resolver := PlayerDamageResolver.new()
-
+var safety := RunSafetyController.new()
 
 func configure(hero_id: String, level_config: LevelConfig, run_records: RefCounted, audio_manager: Node, combat_effects: Node2D, random_streams: Dictionary) -> void:
 	level = level_config
@@ -63,6 +64,7 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	passives = nodes["passives"]
 	upgrades = nodes["upgrades"]
 	damage_resolver.configure(player, level, passives, effects, audio)
+	safety.reset()
 	damage_resolver.hit_feedback_requested.connect(player_hit_feedback_requested.emit)
 	enemies.enemy_defeated.connect(_on_enemy_defeated)
 	enemies.enemy_spawned.connect(_on_enemy_spawned)
@@ -77,7 +79,6 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	stage_banner_requested.emit("%s · %s" % [level.display_name, stage.display_name], RunResultService.new().victory_hint(level), 2.6)
 	state_changed.emit()
 
-
 func advance(delta: float, direction: Vector2) -> void:
 	if state.finished or state.paused:
 		return
@@ -88,6 +89,9 @@ func advance(delta: float, direction: Vector2) -> void:
 	effects.advance(delta)
 	var movement: Vector2 = player.move(direction, delta)
 	var skill_delta: float = passives.advance(movement, delta, state.elapsed)
+	if not safety.combat_ready(direction, state.elapsed, level):
+		state_changed.emit()
+		return
 	enemies.advance_spawning(delta, state.elapsed)
 	enemy_abilities.advance(delta, state.elapsed)
 	if state.finished:
@@ -107,7 +111,6 @@ func advance(delta: float, direction: Vector2) -> void:
 	pickups.advance(delta, state.elapsed)
 	state_changed.emit()
 
-
 func pause() -> void:
 	if not state.finished:
 		state.paused = true
@@ -116,7 +119,6 @@ func pause() -> void:
 func resume() -> void:
 	if not state.finished:
 		state.paused = false
-
 
 func select_upgrade(choice_key: String) -> bool:
 	var result: Dictionary = upgrades.apply_structured_choice(choice_key, build_state)
@@ -132,16 +134,15 @@ func select_upgrade(choice_key: String) -> bool:
 	elif str(choice["kind"]) == UpgradeSystem.RELIC_UPGRADE:
 		records.discover_content("relics", content_id)
 	player.apply_build_modifiers(build_state)
-	if result["effects"].has("heal"):
-		player.heal(float(result["effects"]["heal"]))
+	player.apply_acquire_effects(result["effects"])
 	state.pending_upgrades -= 1
 	if state.pending_upgrades > 0:
 		_request_upgrade()
 	else:
+		safety.prepare_upgrade_resume(state.elapsed, damage_resolver)
 		state.paused = false
 	state_changed.emit()
 	return true
-
 
 func reroll_upgrade() -> bool:
 	if state.finished or state.pending_upgrades <= 0:
@@ -175,13 +176,13 @@ func _update_stage_events() -> void:
 func _handle_enemy_contacts() -> void:
 	damage_resolver.apply_contacts(enemies, state)
 	if damage_resolver.player_defeated:
-		_finish(false)
+		_finish(false, RunState.END_DEFEATED)
 
 
 func _apply_player_hit(hit: PlayerHit) -> bool:
 	var applied := damage_resolver.apply(hit, state.elapsed, state.finished)
 	if damage_resolver.player_defeated:
-		_finish(false)
+		_finish(false, RunState.END_DEFEATED)
 	return applied
 
 
@@ -197,7 +198,7 @@ func _on_enemy_defeated(enemy: Node) -> void:
 	state.pending_upgrades += level.elite.bonus_upgrade_count
 	stage_banner_requested.emit("精英击破", "额外赐福 %d 次 · 重抽 +1 · 磁场 %d 秒" % [level.elite.bonus_upgrade_count, level.elite.magnet_duration], 2.6)
 	if level.victory.mode == VictoryConfig.DEFEAT_ELITE:
-		_finish(true)
+		_finish(true, RunState.END_COMPLETED)
 	elif state.pending_upgrades > 0:
 		_request_upgrade()
 
@@ -225,19 +226,22 @@ func _request_upgrade() -> void:
 
 func _resolve_time_boundary() -> bool:
 	if level.victory.is_victory(state.elapsed, level.duration, state.elite_defeated):
-		_finish(true)
+		_finish(true, RunState.END_COMPLETED)
 		return true
 	if level.victory.is_timeout_failure(state.elapsed, level.duration, state.elite_defeated):
-		_finish(false)
+		_finish(false, RunState.END_OBJECTIVE_TIMEOUT)
 		return true
 	return false
 
 
-func _finish(won: bool) -> void:
+func _finish(won: bool, end_reason: String) -> void:
 	if state.finished:
 		return
 	state.finished = true
 	state.victory = won
+	state.end_reason = end_reason
+	if won and player.has_method("trigger_victory_animation"):
+		player.trigger_victory_animation()
 	state.paused = true
 	enemy_abilities.clear_all()
 	enemy_projectiles.clear_all()

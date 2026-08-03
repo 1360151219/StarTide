@@ -1,7 +1,7 @@
 # 《星潮守望者》架构说明
 
 > 适用版本：Godot 4.7 / 三关 MVP v2
-> 更新日期：2026-07-23
+> 更新日期：2026-07-26
 
 ## 1. 架构目标
 
@@ -17,10 +17,11 @@
 ```text
 main.tscn
   └─ game.gd（组合根）
-      ├─ StartScreen
-      │   ├─ LevelSelector（固定 3 个复用页）→ SwipeGesture
-      │   ├─ LevelPreview → LevelPresentationCatalog
-      │   └─ HeroSelector / HeroTrainingPanel / Compendium
+      ├─ FrontendShell
+      │   ├─ StartPage：LevelSelector（固定 3 个复用页）/ LevelPreview
+      │   ├─ CharacterPage：状态 / 装备 / 技能
+      │   ├─ BottomBar（开始 / 角色）
+      │   └─ Compendium / AudioSettings
       ├─ HUD / Pause / Upgrade / Result
       ├─ AudioManager / CombatEffects / CombatFeedback
       └─ RunSession
@@ -39,8 +40,15 @@ main.tscn
 
 RunRecords
   ├─ ContentDiscoveryService
+  ├─ EquipmentInventory / EquipmentRewardService
+  ├─ HeroStatResolver → PowerRatingService
   └─ ProfileRepository
-      └─ LocalProfileRepository（schema 4）
+      └─ LocalProfileRepository（schema 6）
+
+HeroRig2D
+  ├─ HeroSpriteCatalog → 每英雄 6 张完整 Q 版姿势
+  ├─ AnimatedSprite2D → 7 个稳定动作状态
+  └─ VisualRoot → 统一脚底原点、呼吸和跑步起伏
 
 LevelCatalog
   └─ levels/*.tres
@@ -76,8 +84,9 @@ LevelPresentationCatalog
 | 英雄技能 | `scripts/skills/`、`projectile_system.gd` | 技能冷却、弹道、范围伤害和技能视觉 |
 | 局内升级 | `skill_catalog.gd`、`relic_catalog.gd`、`upgrade_*` | 6 技能、12 分支、6 遗物、合法候选、严格应用和确定性重抽 |
 | 道具目录 | `pickup_catalog.gd`、`pickup_system.gd` | 5 种道具效果、关卡掉落预算、单次判定与拾取运行时 |
-| 永久成长与发现 | `scripts/profile/`、`run_records.gd` | schema 4、熟练度、训练、五类发现数据和旧档迁移 |
-| 表现层 | `scripts/presentation/`、`scripts/ui/` | 三套生态、预警、HUD、反馈和覆盖层 |
+| 永久成长与发现 | `scripts/profile/`、`run_records.gd` | schema 6、英雄经验、训练、装备品质/等级、战力、五类发现和旧档迁移 |
+| 角色帧动画 | `hero_rig_2d.gd`、`hero_sprite_catalog.gd`、`hero_rig_2d.tscn` | 单一完整角色绘制节点、统一脚底基线、7 状态、左右镜像和暂停冻结 |
+| 表现层 | `scripts/presentation/`、`scripts/ui/` | 三套生态、FrontendShell、BottomBar、角色中心、HUD、反馈和覆盖层 |
 | 数据目录 | `hero_catalog.gd`、`enemy_catalog.gd`、`skill_catalog.gd`、`relic_catalog.gd`、`pickup_catalog.gd` | 静态数值、素材和稳定 ID |
 
 ## 4. 关卡配置
@@ -201,14 +210,21 @@ idle/站位
 `RunRecords` 对外提供：
 
 - `progression_snapshot(hero_id)`
+- `get_permanent_snapshot(hero_id)`
+- `get_active_hero_id()` / `set_active_hero(hero_id)`
 - `train_skill(hero_id, skill_id)`
 - `reset_skill_training(hero_id)`
+- `equipment_inventory_snapshot()` / `equipment_loadout_snapshot(hero_id)`
+- `equip_item(hero_id, instance_id)` / `unequip_item(hero_id, slot_id)`
+- `upgrade_equipment(target_instance_id, material_instance_id)` / `set_equipment_locked(instance_id, locked)`
 - `discover_content(category, content_id)`
 - `discovered_content_ids(category)`
 
-`LocalProfileRepository` 保存 schema 4：稳定 `profile_id`、`revision`、英雄/关卡战绩、解锁、熟练度、技能训练，以及怪物、道具、技能、技能分支和遗物五类发现数据。新档从空发现集开始；schema 3 旧档迁移时保留原本公开的 4 种怪物、3 种旧道具和 6 项技能，分支与遗物仍为空。旧档还会按历史通关次数迁移熟练度，并修复负数、越级与超预算数据。
+`LocalProfileRepository` 保存 schema 6：稳定 `profile_id`、`revision`、英雄/关卡战绩、解锁、英雄经验、技能训练、当前英雄、装备背包/装配、奖励收据，以及五类发现数据。schema 4 的 `mastery_xp` 迁移为 `hero_xp`；schema 5 装备补齐实例品质和等级；schema 3 继续按历史通关次数补齐经验并迁移公开内容。加载时还会修复负数、越级、超预算训练、未知装备、非法品质/等级、错误槽位和重复装配。
 
-开局只读取一次成长快照，经 `RunSession → RunWorldBuilder → Player/SkillController` 注入。本局中途修改档案不会改变正在进行的战斗。
+`HeroStatResolver` 将等级、训练和装备解析为同一不可变永久快照；`PowerRatingService` 从这份快照对应的真实修正派生战力。开局只读取一次，经 `RunSession → RunWorldBuilder → Player/SkillController/PickupSystem` 注入。本局中途修改档案不会改变正在进行的战斗。
+
+永久装备与单局遗物分别由 `EquipmentInventory` 和 `RunBuildState` 管理。新档与旧档迁移通过稳定奖励收据获得三件新手装备；三关首通奖励也使用稳定实例 ID，重复结算不会重复发放。每次胜利由 `EquipmentDropService` 独立生成 1～4 件随机品质装备；同名消耗升级与材料保护只修改装备实例。发放成功前不会写入固定奖励收据，异常冲突解除后的后续通关会自动补发。
 
 ## 9. 局内构筑与升级候选
 
@@ -256,13 +272,17 @@ idle/站位
 ./tools/run_visual_tests.sh
 ```
 
-当前统一入口执行 18 套测试，并拒绝脚本解析错误、测试标识缺失或重复。除原有关卡、阶段、刷怪、怪物技能、几何预算、敌弹、胜负、成长、战役、声音、比例和架构测试外，新增：
+当前统一入口执行 26 套测试，并拒绝脚本解析错误、测试标识缺失或重复。除关卡、阶段、刷怪、怪物技能、敌弹、胜负、成长、战役、声音、比例和架构测试外，还包括：
 
 - `test_content_pools.gd`：三关怪物/掉落池、技能/遗物继承、首次出现和零权重占位。
 - `test_run_build.gd`：6 技能、12 分支、6 遗物、3/4 槽位、输出上限、严格候选和确定性重抽。
 - `test_content_runtime.gd`：实际发现事件、跨关重玩、加速/范围伤害道具、拾取范围遗物和分支运行时。
+- `test_power_equipment.gd`：战力黄金值、装备互斥、奖励幂等、属性快照和 schema 4→6。
+- `test_equipment_progression.gd`：1～4 件保证掉落、75/20/5 品质权重、品质倍率/等级上限和同名消耗升级。
+- `test_hero_rig.gd`：两名英雄、单一完整绘制组件、7 个动画状态、512 像素透明画布、统一脚底基线、镜像、暂停和整图回退。
+- `test_hero_rig_tuner.gd`：2 名英雄、7 个动作、96/188/360 三档尺寸、播放暂停、从首帧重播和稳定接口边界。
 
-`test_run_records.gd` 同时覆盖 schema 4 新档、schema 3 迁移、发现隔离和未发现技能禁止局外训练。`test_start_ui.gd` 使用 12 个测试关卡验证轮播仍固定复用 3 个页面节点。
+`test_run_records.gd` 同时覆盖 schema 6、schema 3/4/5 迁移、发现隔离和未发现技能禁止局外训练。`test_start_ui.gd` 使用 12 个测试关卡验证轮播固定复用 3 个页面节点，并覆盖 BottomBar、角色中心、当前英雄和战力同步。
 
 `tools/check_architecture.gd` 检查：
 
@@ -276,5 +296,7 @@ idle/站位
 - 新增关卡：新增 `LevelConfig` 资源、展示清单项和内容池声明，再加入 `LevelCatalog`，不修改 `game.gd` 或创建新的大厅卡片类。
 - 新增技能：只在 `SkillCatalog` 声明数值、两条分支和运行时键，再由目标关卡内容池声明首次出现。
 - 新增遗物或道具：分别扩展 `RelicCatalog` / `PickupCatalog`，由关卡资源控制首次进入候选或掉落。
+- 新增永久装备：扩展 `EquipmentCatalog`，通过 `EquipmentRewardCatalog` 声明稳定奖励，不把永久装备加入单局遗物。
+- 新增英雄：提供目录、三项技能和 6 张约定命名的完整姿势帧，复用 `HeroRig2D`，不复制状态机。
 - 新增存储后端：实现 `ProfileRepository`，不让战斗系统直接依赖云端 SDK。
 - 新增敌方弹种：扩展 `EnemyProjectileSystem`，不向英雄弹体加入阵营分支。

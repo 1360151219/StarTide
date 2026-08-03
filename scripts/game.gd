@@ -6,7 +6,7 @@ const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const RunRecords = preload("res://scripts/run_records.gd")
 const RunSession = preload("res://scripts/run/run_session.gd")
 const CombatFeedback = preload("res://scripts/presentation/combat_feedback.gd")
-const StartScreen = preload("res://scripts/ui/start_screen.gd")
+const FrontendShell = preload("res://scripts/ui/frontend_shell.gd")
 const GameHud = preload("res://scripts/ui/game_hud.gd")
 const PauseOverlay = preload("res://scripts/ui/pause_overlay.gd")
 const UpgradeOverlay = preload("res://scripts/ui/upgrade_overlay.gd")
@@ -49,6 +49,7 @@ func _process(delta: float) -> void:
 	feedback.advance(delta, session.state.elapsed)
 	var keyboard := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var direction: Vector2 = (keyboard + hud.movement_vector()).limit_length(1.0)
+	hud.observe_movement(direction)
 	session.advance(delta, direction)
 
 
@@ -70,7 +71,7 @@ func start_run(hero_id: String, level_id: String) -> void:
 	add_child(session)
 	_connect_session()
 	session.configure(hero_id, level, run_records, audio_manager, combat_effects, random_streams)
-	hud.configure(session.skills.active_skill_ids)
+	hud.configure(session.skills.active_skill_ids, level.opening_tutorial_grace)
 	hud.visible = true
 	start_screen.visible = false
 	feedback.configure(session.camera, hud.damage_flash)
@@ -121,7 +122,7 @@ func _show_result(presentation: Dictionary) -> void:
 	pause_overlay.visible = false
 	upgrade_overlay.visible = false
 	audio_manager.set_music_ducked(true)
-	result_overlay.show_result(presentation["heading"], presentation["body"], presentation["reward_text"], presentation["won"], presentation["build_text"])
+	result_overlay.show_result(presentation)
 
 
 func _pause_game() -> void:
@@ -149,7 +150,7 @@ func _replay_same_run() -> void:
 
 
 func _build_ui() -> void:
-	start_screen = StartScreen.new()
+	start_screen = FrontendShell.new()
 	add_child(start_screen)
 	start_screen.configure(run_records, audio_manager)
 	start_screen.start_requested.connect(start_run)

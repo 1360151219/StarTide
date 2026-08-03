@@ -6,6 +6,7 @@ const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 var stage_label: Label
 var passive_label: Label
 var item_label: Label
+var status_panel: Panel
 var elite_panel: Panel
 var elite_name: Label
 var elite_health: ProgressBar
@@ -18,6 +19,12 @@ var banner_time := 0.0
 func _ready() -> void:
 	ScreenLayout.fill(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	status_panel = Panel.new()
+	status_panel.position = Vector2(18, 86)
+	status_panel.size = Vector2(504, 64)
+	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	status_panel.add_theme_stylebox_override("panel", UiFactory.panel_style(Color(0.018, 0.1, 0.15, 0.72), 14.0, Color(UiFactory.CYAN, 0.32)))
+	add_child(status_panel)
 	stage_label = UiFactory.label("", 15, UiFactory.CREAM)
 	stage_label.position = Vector2(24, 91)
 	stage_label.size = Vector2(180, 28)
@@ -48,7 +55,7 @@ func refresh(stage: StageConfig, passive_text: String, passive_color: Color, mag
 	stage_label.text = stage.display_name
 	passive_label.text = passive_text
 	passive_label.add_theme_color_override("font_color", passive_color)
-	item_label.visible = magnet_seconds > 0
+	item_label.visible = magnet_seconds > 0 and banner_time <= 0.0
 	item_label.text = "★ 星引磁场  %ds" % magnet_seconds
 	if is_instance_valid(elite):
 		elite_panel.visible = true
@@ -65,16 +72,23 @@ func show_banner(title: String, subtitle: String, duration: float) -> void:
 	banner_time = minf(duration, 1.5)
 	banner.modulate.a = 1.0
 	banner.visible = true
+	status_panel.visible = false
 	stage_label.visible = false
 	passive_label.visible = false
+	item_label.visible = false
 
 
 func advance(delta: float) -> void:
 	if banner_time <= 0.0:
 		banner.visible = false
+		status_panel.visible = true
 		stage_label.visible = true
 		passive_label.visible = true
 		return
+	status_panel.visible = false
+	stage_label.visible = false
+	passive_label.visible = false
+	item_label.visible = false
 	banner_time = maxf(0.0, banner_time - delta)
 	banner.modulate.a = clampf(banner_time / 0.45, 0.0, 1.0)
 

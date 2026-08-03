@@ -32,7 +32,7 @@ func _on_process_frame() -> void:
 		_test_victory(game)
 	if frame_count == 22:
 		if not failed:
-			print("SMOKE_OK levels=3 menu=two_step carousel=3 preview=animated session=modular pause=stable upgrade=true victory=true unlock=true audio=14 volume_sync=true")
+			print("SMOKE_OK levels=3 menu=bottom_bar carousel=3 preview=animated session=modular pause=stable upgrade=true victory=true unlock=true audio=14 volume_sync=true")
 		quit(1 if failed else 0)
 
 
@@ -57,16 +57,22 @@ func _test_start_screen(game: Node) -> void:
 	_require(game.start_screen.level_selector.left_button.disabled, "第一关左侧轮播按钮仍可用")
 	_require(not game.start_screen.level_selector.right_button.disabled, "后续关卡无法通过轮播预览")
 	_require(game.start_screen.level_preview.animation_player.is_playing(), "关卡动态预览没有播放")
+	_require(game.start_screen.bottom_bar.buttons.size() == 3, "绘本底栏没有提供三个主入口")
 	game.start_screen.level_selector.right_button.pressed.emit()
 	_require(game.start_screen.selected_level_id == "level_02" and game.start_screen.start_button.disabled, "未解锁关卡预览没有阻止进入")
 	game.start_screen.level_selector.left_button.pressed.emit()
-	game.start_screen.start_button.pressed.emit()
-	_require(game.start_screen.hero_view.visible and not game.start_screen.lobby_view.visible, "点击进入游戏后没有显示英雄选择")
+	game.start_screen.bottom_bar.buttons["character"].pressed.emit()
+	_require(game.start_screen.character_page.visible and not game.start_screen.lobby_view.visible, "角色菜单没有显示角色配置页")
 	_require(not game.start_screen.level_preview.animation_player.is_playing(), "离开关卡大厅后预览仍在播放")
-	game.start_screen._show_lobby()
-	game.start_screen.open_compendium("skills")
+	game.start_screen.character_page.select_hero("ember_ranger")
+	_require(game.run_records.get_active_hero_id() == "ember_ranger", "角色页没有更新出战英雄")
+	game.start_screen.bottom_bar.buttons["start"].pressed.emit()
+	_require(game.start_screen.lobby_view.visible and not game.start_screen.character_page.visible, "底部导航无法返回开始页")
+	game.start_screen.bottom_bar.buttons["compendium"].pressed.emit()
+	game.start_screen.compendium.show_category("skills")
 	_require(game.start_screen.compendium.visible and game.start_screen.compendium.list.get_child_count() == 6, "技能图鉴不完整")
-	game.start_screen.compendium.close()
+	_require(game.start_screen.bottom_bar.current_page == "compendium" and game.start_screen.bottom_bar.visible, "图鉴没有作为第三主导航显示")
+	game.start_screen.bottom_bar.buttons["start"].pressed.emit()
 	var touch := InputEventScreenTouch.new()
 	touch.index = 7
 	touch.pressed = true
@@ -105,6 +111,8 @@ func _finish_pause_and_upgrade(game: Node) -> void:
 	_require(not game.audio_manager.music_ducked, "继续游戏后背景音乐没有恢复")
 	game.session.add_experience(40)
 	_require(game.upgrade_overlay.visible and game.upgrade_overlay.buttons.size() == 3, "升级三选一没有出现")
+	for card in game.upgrade_overlay.choice_cards:
+		_require(not card.visible or card.metric_count() in [1, 2, 3], "升级卡没有使用图形化属性指标")
 	_require(game.audio_manager.music_ducked, "升级选择时背景音乐没有降噪")
 	_require(not game.upgrade_overlay.reroll_button.disabled and game.session.build_state.rerolls_remaining == 1, "本局免费重抽没有显示")
 	game.upgrade_overlay.reroll_button.pressed.emit()
@@ -120,6 +128,10 @@ func _test_victory(game: Node) -> void:
 	game.session.advance(game.session.level.duration, Vector2.ZERO)
 	_require(game.session.state.finished and game.session.state.victory, "第一关 90 秒胜利未生效")
 	_require(game.result_overlay.visible, "胜利结算没有出现")
+	_require(game.result_overlay.hero_preview.visible and game.result_overlay.hero_rig.hero_id == "star_warden", "结算页没有展示本局英雄")
+	_require(game.result_overlay.hero_rig.current_state == "victory", "胜利结算没有触发骨骼胜利动画")
+	var reward_tooltips: PackedStringArray = game.result_overlay.reward_strip.tile_tooltips()
+	_require("\n".join(reward_tooltips).contains("风弦短弓") and game.result_overlay.reward_strip.tile_count() >= 3, "首次通关结算没有用图标展示固定装备与随机掉落")
 	_require(game.run_records.is_level_unlocked("level_02"), "第一关通关没有解锁第二关")
 
 

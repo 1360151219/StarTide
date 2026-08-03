@@ -18,9 +18,9 @@ func _initialize() -> void:
 	_require(errors.is_empty(), "关卡配置校验失败：%s" % "；".join(errors))
 	var pressures: Array[float] = []
 	var expected := [
-		{"id": "level_01", "duration": 90.0, "stages": 3, "victory": VictoryConfig.SURVIVE_DURATION, "elite_time": 60.0},
-		{"id": "level_02", "duration": 105.0, "stages": 3, "victory": VictoryConfig.SURVIVE_AND_DEFEAT_ELITE, "elite_time": 70.0},
-		{"id": "level_03", "duration": 120.0, "stages": 4, "victory": VictoryConfig.SURVIVE_AND_DEFEAT_ELITE, "elite_time": 90.0},
+		{"id": "level_01", "duration": 90.0, "stages": 3, "victory": VictoryConfig.SURVIVE_DURATION, "elite_time": 60.0, "power": 1000, "ranged_cap": 0},
+		{"id": "level_02", "duration": 105.0, "stages": 3, "victory": VictoryConfig.SURVIVE_AND_DEFEAT_ELITE, "elite_time": 70.0, "power": 1100, "ranged_cap": 8},
+		{"id": "level_03", "duration": 120.0, "stages": 4, "victory": VictoryConfig.SURVIVE_AND_DEFEAT_ELITE, "elite_time": 90.0, "power": 1250, "ranged_cap": 10},
 	]
 	for index in range(levels.size()):
 		var level := levels[index]
@@ -28,6 +28,8 @@ func _initialize() -> void:
 		_require(level.level_id == target["id"] and level.duration == target["duration"], "第 %d 关 ID 或时长不符合策划基线" % (index + 1))
 		_require(level.stages.size() == target["stages"] and level.victory.mode == target["victory"], "%s 阶段数或胜利模式错误" % level.display_name)
 		_require(level.elite.spawn_time == target["elite_time"], "%s 精英时间错误" % level.display_name)
+		_require(level.recommended_power == target["power"], "%s 推荐战力错误" % level.display_name)
+		_require(level.max_ranged_enemies == target["ranged_cap"], "%s 远程怪物上限错误" % level.display_name)
 		_require(level.order == index + 1, "关卡顺序不连续")
 		_require(level.stage_index_at(0.0) == 0, "首阶段索引错误")
 		_require(level.stage_index_at(level.duration - 0.01) == level.stages.size() - 1, "末阶段索引错误")

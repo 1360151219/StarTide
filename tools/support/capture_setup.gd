@@ -12,7 +12,9 @@ static func isolate_records(game: Node) -> void:
 	game.start_screen.level_selector.records = records
 	game.start_screen.level_selector.selected_level_id = first_level_id
 	game.start_screen.selected_level_id = first_level_id
-	game.start_screen.select_hero(records.last_hero_id)
+	if is_instance_valid(game.start_screen.character_page):
+		game.start_screen.character_page.configure(records, records.get_active_hero_id())
+	game.start_screen.select_hero(records.get_active_hero_id())
 	game.start_screen.select_level(first_level_id)
 	game.start_screen.refresh_progress()
 

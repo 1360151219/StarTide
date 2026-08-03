@@ -106,8 +106,8 @@ func _initialize() -> void:
 	_write_schema3_profile(schema3_test_path)
 	var schema3_reloaded = RunRecords.new(schema3_test_path)
 	var schema3_progress: Dictionary = schema3_reloaded.hero_progressions["star_warden"]
-	if schema3_progress["mastery_xp"] != 450 or schema3_progress["training"]["star_lance"] != 2 or schema3_progress["training"]["sun_orbit"] != 1:
-		push_error("RECORDS_FAILED: schema 3 升级到 schema 4 时英雄成长或训练丢失")
+	if schema3_progress["hero_xp"] != 450 or schema3_progress["training"]["star_lance"] != 2 or schema3_progress["training"]["sun_orbit"] != 1:
+		push_error("RECORDS_FAILED: schema 3 升级到 schema 6 时英雄成长或训练丢失")
 		_finish(1)
 		return
 	if schema3_reloaded.discovered_content_count("enemies") != 4 or schema3_reloaded.discovered_content_count("skills") != 6:

@@ -17,6 +17,7 @@ func _initialize() -> void:
 			var spawner := _spawner(level, director, level.order * 997 + index)
 			_require(director.current_stage() == level.stages[index], "%s 没有通过阶段导演进入目标阶段" % level.display_name)
 			_test_stage_weights(level, index, spawner)
+			_test_ranged_cap(level, index, spawner)
 			var stage := level.stages[index]
 			_require(is_equal_approx(stage.spawn_interval_at(stage.start_time, level.stage_end_time(index)), stage.spawn_interval_start), "%s 阶段起始间隔错误" % stage.display_name)
 			_require(is_equal_approx(stage.spawn_interval_at(level.stage_end_time(index), level.stage_end_time(index)), stage.spawn_interval_end), "%s 阶段结束间隔错误" % stage.display_name)
@@ -26,8 +27,9 @@ func _initialize() -> void:
 		_test_expanded_viewport_clearance(level, _spawner(level, initial_director, level.order * 2997))
 		_test_determinism(level)
 	_test_spawn_timing()
+	_test_first_level_opening_budget()
 	if not failed:
-		print("SPAWNER_OK levels=3 weights=true intervals=true timing=true rest=true cap=true extra=true distances=true viewport_clearance=true deterministic=true")
+		print("SPAWNER_OK levels=3 weights=true intervals=true timing=true rest=true cap=true ranged_cap=true extra=true distances=true viewport_clearance=true deterministic=true")
 	quit(1 if failed else 0)
 
 
@@ -42,6 +44,22 @@ func _test_stage_weights(level: LevelConfig, index: int, spawner: RefCounted) ->
 		var actual: float = float(counts[enemy_id]) / samples
 		var expected: float = level.stages[index].enemy_weights.get(enemy_id, 0.0)
 		_require(absf(actual - expected) <= 0.035, "%s 的 %s 权重偏差过大" % [level.stages[index].display_name, enemy_id])
+
+
+func _test_ranged_cap(level: LevelConfig, index: int, spawner: RefCounted) -> void:
+	var stage: StageConfig = level.stages[index]
+	var has_ranged_weight := false
+	for enemy_id in EnemyCatalog.ids():
+		has_ranged_weight = has_ranged_weight or (EnemyCatalog.is_ranged(enemy_id) and float(stage.enemy_weights.get(enemy_id, 0.0)) > 0.0)
+	if not has_ranged_weight:
+		return
+	var saw_ranged_below_cap := false
+	for _sample in range(512):
+		var available_id: String = spawner.roll_enemy_id(maxi(0, level.max_ranged_enemies - 1))
+		saw_ranged_below_cap = saw_ranged_below_cap or EnemyCatalog.is_ranged(available_id)
+		var capped_id: String = spawner.roll_enemy_id(level.max_ranged_enemies)
+		_require(not capped_id.is_empty() and not EnemyCatalog.is_ranged(capped_id), "%s 达到远程上限后仍刷新远程怪" % stage.display_name)
+	_require(saw_ranged_below_cap, "%s 在远程上限前无法刷新远程怪" % stage.display_name)
 
 
 func _test_spawn_positions(level: LevelConfig, spawner: RefCounted) -> void:
@@ -114,6 +132,23 @@ func _test_spawn_timing() -> void:
 	var extra_spawner := _spawner(synthetic, synthetic_director, 42)
 	extra_spawner.spawn_timer = 0.0
 	_require(extra_spawner.next_spawn_count(0.0, 0.0, 0) == 2, "100%% 额外刷新没有生成两只怪物")
+
+
+func _test_first_level_opening_budget() -> void:
+	var level := LevelCatalog.first()
+	var stage := level.stages[0]
+	_require(level.initial_enemy_count == 3, "第一关新手阶段初始怪物数回退")
+	_require(is_equal_approx(stage.spawn_interval_start, 1.3) and is_equal_approx(stage.spawn_interval_end, 0.95), "第一关新手阶段刷新曲线回退")
+	var director := StageDirector.new()
+	director.configure(level)
+	var spawner := _spawner(level, director, 119)
+	var count := level.initial_enemy_count
+	var elapsed := 0.0
+	while elapsed < 17.0:
+		var delta := minf(1.0 / 60.0, 17.0 - elapsed)
+		elapsed += delta
+		count += spawner.next_spawn_count(delta, elapsed, count)
+	_require(count <= 18, "第一关 17 秒怪物生成预算过高：%d" % count)
 
 
 func _spawner(level: LevelConfig, director: RefCounted, seed_value: int) -> RefCounted:

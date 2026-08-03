@@ -9,11 +9,13 @@ var levels: Dictionary = {}
 var build_state: RefCounted
 var runtime: Node
 var visuals: Node2D
+var player: Node2D
 var flash_until: Dictionary = {}
 var current_elapsed := 0.0
 
 
 func configure(hero_id: String, build: RefCounted, player: Node2D, enemies: Node2D, projectiles: Node2D, effects: Node2D, audio: Node, rng: RandomNumberGenerator, progression: Dictionary = {}) -> void:
+	self.player = player
 	build_state = build
 	_sync_state()
 	runtime = StarRuntime.new() if hero_id == "star_warden" else EmberRuntime.new()
@@ -61,3 +63,5 @@ func _sync_state() -> void:
 
 func _on_skill_released(skill_id: String) -> void:
 	flash_until[skill_id] = current_elapsed + 0.16
+	if player.has_method("trigger_cast_animation"):
+		player.trigger_cast_animation()

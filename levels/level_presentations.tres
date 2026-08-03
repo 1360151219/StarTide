@@ -1,35 +1,29 @@
-[gd_resource type="Resource" script_class="LevelPresentationManifest" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="LevelPresentationManifest" format=3 uid="uid://ctvo6d6suj8qv"]
 
-[ext_resource type="Script" path="res://scripts/levels/level_presentation_manifest.gd" id="1_manifest"]
-[ext_resource type="Script" path="res://scripts/levels/level_presentation_config.gd" id="2_entry"]
-[ext_resource type="Texture2D" path="res://assets/art/ui/home/biome_meadow_medallion.png" id="3_meadow"]
-[ext_resource type="Texture2D" path="res://assets/art/ui/home/biome_oasis_medallion.png" id="4_oasis"]
-[ext_resource type="Texture2D" path="res://assets/art/ui/home/biome_volcano_medallion.png" id="5_volcano"]
+[ext_resource type="Script" uid="uid://cjdyjjldff8em" path="res://scripts/levels/level_presentation_manifest.gd" id="1_manifest"]
+[ext_resource type="Script" uid="uid://cgmngy8rbufxl" path="res://scripts/levels/level_presentation_config.gd" id="2_entry"]
+[ext_resource type="Texture2D" path="res://assets/art/ui/home/biome_meadow_background.png" id="3_meadow"]
+[ext_resource type="Texture2D" path="res://assets/art/ui/home/biome_oasis_background.png" id="4_oasis"]
+[ext_resource type="Texture2D" path="res://assets/art/ui/home/biome_volcano_background.png" id="5_volcano"]
 
 [sub_resource type="Resource" id="Meadow"]
 script = ExtResource("2_entry")
 level_id = "level_01"
-medallion_texture = ExtResource("3_meadow")
 preview_texture = ExtResource("3_meadow")
-preview_region = Rect2(78, 62, 356, 356)
 featured_enemy_ids = PackedStringArray("green_grub", "slime")
 preview_tint = Color(0.890196, 0.941176, 0.862745, 1)
 
 [sub_resource type="Resource" id="Oasis"]
 script = ExtResource("2_entry")
 level_id = "level_02"
-medallion_texture = ExtResource("4_oasis")
 preview_texture = ExtResource("4_oasis")
-preview_region = Rect2(78, 62, 356, 356)
 featured_enemy_ids = PackedStringArray("bat", "slime")
 preview_tint = Color(0.94902, 0.894118, 0.784314, 1)
 
 [sub_resource type="Resource" id="Volcano"]
 script = ExtResource("2_entry")
 level_id = "level_03"
-medallion_texture = ExtResource("5_volcano")
 preview_texture = ExtResource("5_volcano")
-preview_region = Rect2(78, 62, 356, 356)
 featured_enemy_ids = PackedStringArray("brute", "bat")
 preview_tint = Color(0.905882, 0.752941, 0.705882, 1)
 

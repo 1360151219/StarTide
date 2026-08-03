@@ -43,7 +43,7 @@ func refresh() -> void:
 	title_label.text = "%s · 技能培养" % hero["name"]
 	if not records.has_method("progression_snapshot"):
 		progress_label.text = "成长档案正在初始化"
-		status_label.text = "完成一局后即可获得熟练度与技能点"
+		status_label.text = "完成一局后即可获得英雄经验与技能点"
 		for button in skill_buttons:
 			button.disabled = true
 		return

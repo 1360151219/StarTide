@@ -72,7 +72,7 @@ static func recovery() -> Dictionary:
 		"target_level": 0,
 		"branch_id": "",
 		"title": "应急修复",
-		"description": "恢复 45 点生命。",
+		"description": "恢复 45 点生命；满生命时最大生命 +10。",
 	}
 
 

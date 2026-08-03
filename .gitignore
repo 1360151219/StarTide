@@ -14,6 +14,21 @@
 Thumbs.db
 *.log
 /preview/
+__pycache__/
+*.py[cod]
+
+# Local editor integration
+/addons/godot_ai/
+/godot-ai-LICENSE.txt
+
+# Design workspaces and non-runtime art sources
+/design/.gdignore
+/design/ui_psd/
+/design/ui_reviews/
+/assets/generated/heroes/
+/assets/generated/hero_chibi/source/
+/assets/generated/equipment/source/
+/assets/generated/ui/source/
 
 
 # Generated export output

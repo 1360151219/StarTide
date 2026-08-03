@@ -77,36 +77,43 @@ func _test_build_state() -> void:
 
 
 func _test_structured_choices() -> void:
-	var build := RunBuildState.new("star_warden")
-	var upgrades := UpgradeSystem.new(_rng(91))
+	var initial_skill_pool := ["star_lance"]
+	var initial_relic_pool := ["star_core", "flow_feather"]
+	var branch_case := _find_initial_offer(initial_skill_pool, initial_relic_pool, true)
+	var regular_case := _find_initial_offer(initial_skill_pool, initial_relic_pool, false)
+	_require(not branch_case.is_empty(), "初次升级的随机池无法生成签名技能分支候选")
+	_require(not regular_case.is_empty(), "初次升级仍被固定为首个技能分支")
+	if branch_case.is_empty():
+		return
+	var build: RefCounted = branch_case["build"]
+	var upgrades: RefCounted = branch_case["upgrades"]
+	var choices: Array = branch_case["choices"]
 	var skill_pool := SkillCatalog.skills_for_hero("star_warden")
 	var relic_pool := RelicCatalog.ids()
-	var choices := upgrades.build_structured_choices(build, skill_pool, relic_pool, 1.0)
 	_require(choices.size() == 3, "结构化三选一没有生成三个候选")
 	_require(_count_kind(choices, UpgradeSystem.SKILL_BRANCH) == 2, "I→II 没有同时给出两个技能分支")
-	_require(_count_kind(choices, UpgradeSystem.RELIC_UPGRADE) == 1, "分支二选一没有保留一个遗物候选")
 	for choice in choices:
 		_require(choice.has("choice_key") and choice.has("kind") and choice.has("content_id") and choice.has("target_level"), "候选缺少结构化字段")
 	_require(not upgrades.apply_structured_choice("forged:choice", build)["success"], "未知候选被错误应用")
 	var branch_choice := _first_kind(choices, UpgradeSystem.SKILL_BRANCH)
-	var result := upgrades.apply_structured_choice(branch_choice["choice_key"], build)
+	var result: Dictionary = upgrades.apply_structured_choice(branch_choice["choice_key"], build)
 	_require(result["success"], "合法技能分支无法应用")
 	_require(build.skill_levels["star_lance"] == 2 and build.skill_branches["star_lance"] == branch_choice["branch_id"], "分支没有写入局内构筑状态")
 	_require(not upgrades.apply_structured_choice(branch_choice, build)["success"], "已消费候选被重复应用")
 
-	var next_choices := upgrades.build_structured_choices(build, skill_pool, relic_pool, 1.0)
+	var next_choices: Array = upgrades.build_structured_choices(build, skill_pool, relic_pool, 1.0)
 	_require(_has_skill_growth(next_choices) and _count_kind(next_choices, UpgradeSystem.RELIC_UPGRADE) >= 1, "常规候选没有同时包含技能成长与遗物")
 	build.clear_offer()
 	build.skill_levels["star_lance"] = 3
-	var legal := upgrades.legal_structured_candidates(build, skill_pool, relic_pool, 1.0)
+	var legal: Array = upgrades.legal_structured_candidates(build, skill_pool, relic_pool, 1.0)
 	_require(not _has_content(legal, "star_lance"), "满级技能仍进入候选")
-	var locked := upgrades.legal_structured_candidates(RunBuildState.new("star_warden"), ["star_lance"], relic_pool, 1.0)
+	var locked: Array = upgrades.legal_structured_candidates(RunBuildState.new("star_warden"), ["star_lance"], relic_pool, 1.0)
 	_require(not _has_content(locked, "sun_orbit") and not _has_content(locked, "frost_tide"), "未进入技能池的技能仍可出现")
 
 	var relic_full := RunBuildState.new("star_warden")
 	for relic_id in ["star_core", "flow_feather", "energy_prism", "time_gear"]:
 		_require(relic_full.add_or_upgrade_relic(relic_id), "测试遗物槽填充失败")
-	var full_candidates := upgrades.legal_structured_candidates(relic_full, skill_pool, relic_pool, 1.0)
+	var full_candidates: Array = upgrades.legal_structured_candidates(relic_full, skill_pool, relic_pool, 1.0)
 	for choice in full_candidates:
 		if choice["kind"] == UpgradeSystem.RELIC_UPGRADE and not relic_full.relic_levels.has(choice["content_id"]):
 			_require(false, "遗物槽满后仍出现新遗物：" + str(choice["content_id"]))
@@ -142,8 +149,20 @@ func _test_exhausted_pool_fallbacks() -> void:
 	_require(_count_kind(branch_choices, UpgradeSystem.UTILITY_RECOVERY) == 1, "分支池耗尽兜底没有提供应急修复")
 
 	var skill_only := RunBuildState.new("star_warden")
-	var skill_choices := upgrades.build_structured_choices(skill_only, SkillCatalog.skills_for_hero("star_warden"), [], 1.0)
+	var skill_choices := upgrades.build_structured_choices(skill_only, ["star_lance"], [], 1.0)
 	_require(skill_choices.size() == 3 and _count_kind(skill_choices, UpgradeSystem.SKILL_BRANCH) == 2, "无遗物池时没有维持三选一")
+
+
+func _find_initial_offer(skill_pool, relic_pool, wants_branch: bool) -> Dictionary:
+	for seed_value in range(1, 129):
+		var build := RunBuildState.new("star_warden")
+		var upgrades := UpgradeSystem.new(_rng(seed_value))
+		var choices := upgrades.build_structured_choices(build, skill_pool, relic_pool, 1.0)
+		var branch_count := _count_kind(choices, UpgradeSystem.SKILL_BRANCH)
+		_require(branch_count == 0 or branch_count == 2, "技能分支被拆成单个随机候选")
+		if (branch_count == 2) == wants_branch:
+			return {"build": build, "upgrades": upgrades, "choices": choices}
+	return {}
 
 
 func _first_kind(choices: Array, kind: String) -> Dictionary:

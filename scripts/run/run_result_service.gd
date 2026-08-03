@@ -1,10 +1,9 @@
 extends RefCounted
 
-const HeroCatalog = preload("res://scripts/hero_catalog.gd")
-const BuildSummary = preload("res://scripts/run/build_summary.gd")
+const RunState = preload("res://scripts/run/run_state.gd")
 
 
-func finalize(records: RefCounted, state: RefCounted, level: LevelConfig, passives: RefCounted, build_state: RefCounted) -> Dictionary:
+func finalize(records: RefCounted, state: RefCounted, level: LevelConfig, _passives: RefCounted, build_state: RefCounted) -> Dictionary:
 	var result: Dictionary = records.record_level_run(
 		state.hero_id, state.level_id, state.victory, state.elite_defeated,
 		state.kills, state.player_level, state.elapsed, level.reward
@@ -12,14 +11,25 @@ func finalize(records: RefCounted, state: RefCounted, level: LevelConfig, passiv
 	var discoveries: Array[Dictionary] = records.new_content_discoveries()
 	return {
 		"heading": _heading(state, level),
-		"body": _body(state, level, passives, result),
-		"reward_text": _reward_text(level, result, state.victory, discoveries.size()),
-		"build_text": BuildSummary.text(build_state),
+		"outcome_hint": _outcome_hint(state, level),
 		"won": state.victory,
 		"hero_id": state.hero_id,
 		"level_id": state.level_id,
+		"duration_text": _format_time(state.elapsed),
+		"kills": state.kills,
+		"player_level": state.player_level,
+		"elite_defeated": state.elite_defeated,
+		"new_record": bool(result["new_record"]),
+		"best_kills": int(result["record"]["best_kills"]),
+		"first_clear": bool(result["first_clear"]),
+		"first_clear_hint": _first_clear_hint(level, bool(result["first_clear"])),
+		"newly_unlocked": str(result["newly_unlocked"]),
 		"progression_reward": result["progression_reward"],
+		"equipment_reward": result["equipment_reward"],
+		"random_equipment_reward": result["random_equipment_reward"],
+		"discovery_count": discoveries.size(),
 		"discoveries": discoveries,
+		"build_snapshot": build_state.snapshot(),
 	}
 
 
@@ -31,29 +41,19 @@ func _heading(state: RefCounted, level: LevelConfig) -> String:
 	return level.victory.normal_heading
 
 
-func _body(state: RefCounted, level: LevelConfig, passives: RefCounted, result: Dictionary) -> String:
-	var hero_name: String = HeroCatalog.hero(state.hero_id)["name"]
-	var outcome := "挑战成功" if state.victory else "挑战失败"
-	var record_line := "新纪录" if result["new_record"] else "个人最佳 · 击败 %d" % result["record"]["best_kills"]
-	return "%s · %s\n%s · %s\n用时 %s · 击败 %d · 等级 %d\n精英 %s\n%s\n%s" % [
-		level.display_name, hero_name, outcome, victory_hint(level), _format_time(state.elapsed),
-		state.kills, state.player_level, "已击败" if state.elite_defeated else "未击败",
-		passives.result_text(), record_line,
-	]
+func _outcome_hint(state: RefCounted, level: LevelConfig) -> String:
+	if state.victory:
+		return "%s · %s" % [level.display_name, "精英已击破" if state.elite_defeated else "星门已守住"]
+	if state.end_reason == RunState.END_OBJECTIVE_TIMEOUT:
+		return "时间结束 · 目标尚未完成"
+	var remaining := maxf(0.0, level.duration - state.elapsed)
+	return "%s · 还差 %s" % [victory_hint(level), _format_time(remaining)]
 
 
-func _reward_text(level: LevelConfig, result: Dictionary, won: bool, discovery_count: int) -> String:
-	var progression: Dictionary = result["progression_reward"]
-	var growth_line := "英雄熟练度 +%d · 当前 Lv.%d" % [progression["mastery_xp_gained"], progression["level"]]
-	if progression["levels_gained"] > 0:
-		growth_line += " · 技能点 +%d" % progression["skill_points_gained"]
-	if discovery_count > 0:
-		growth_line += "\n本局新发现 %d 项 · 已加入图鉴" % discovery_count
-	if not won:
-		return "本次未获得关卡通关奖励\n" + growth_line
-	if result["first_clear"]:
-		return "首次通关 · %s\n%s\n%s" % [level.reward.display_name, level.reward.description, growth_line]
-	return "重复通关 · 永久奖励已领取\n" + growth_line
+func _first_clear_hint(level: LevelConfig, first_clear: bool) -> String:
+	if not first_clear or level.reward == null:
+		return ""
+	return "%s · %s" % [level.reward.display_name, level.reward.description]
 
 
 func victory_hint(level: LevelConfig) -> String:

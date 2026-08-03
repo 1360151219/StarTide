@@ -20,6 +20,7 @@ const SKILLS := {
 		"branches": {
 			"star_lance_fan": {
 				"name": "星雨齐射", "description": "增加弹体与扇面宽度，强化群体覆盖。",
+				"visual_tags": ["多弹", "广域"],
 				"level_overrides": {
 					2: {"count": 3, "damage_multiplier": 0.78, "spread": 0.18},
 					3: {"count": 4, "damage_multiplier": 0.74, "spread": 0.22},
@@ -27,6 +28,7 @@ const SKILLS := {
 			},
 			"star_lance_pierce": {
 				"name": "贯星长枪", "description": "减少散射，换取更高伤害与贯穿能力。",
+				"visual_tags": ["高伤", "贯穿"],
 				"level_overrides": {
 					2: {"count": 1, "damage_multiplier": 1.35, "pierce": 1},
 					3: {"count": 1, "damage_multiplier": 1.45, "pierce": 1},
@@ -52,6 +54,7 @@ const SKILLS := {
 		"branches": {
 			"sun_orbit_swarm": {
 				"name": "群星环列", "description": "召唤更多小型日轮，提高覆盖密度。",
+				"visual_tags": ["多体", "覆盖"],
 				"level_overrides": {
 					2: {"count": 3, "damage_multiplier": 0.86, "spin_speed_multiplier": 1.08},
 					3: {"count": 5, "damage_multiplier": 0.78, "spin_speed_multiplier": 1.18},
@@ -59,6 +62,7 @@ const SKILLS := {
 			},
 			"sun_orbit_giant": {
 				"name": "巨日守御", "description": "凝聚少量巨型日轮，强化单次接触伤害。",
+				"visual_tags": ["巨型", "高伤"],
 				"level_overrides": {
 					2: {"count": 1, "orb_radius_multiplier": 1.42, "damage_multiplier": 1.55},
 					3: {"count": 2, "orb_radius_multiplier": 1.58, "damage_multiplier": 1.72},
@@ -84,6 +88,7 @@ const SKILLS := {
 		"branches": {
 			"frost_tide_field": {
 				"name": "永冻冰原", "description": "扩大霜潮范围并延长减速时间。",
+				"visual_tags": ["广域", "长控"],
 				"level_overrides": {
 					2: {"radius_multiplier": 1.22, "slow_duration_multiplier": 1.22},
 					3: {"radius_multiplier": 1.35, "slow_duration_multiplier": 1.38},
@@ -91,6 +96,7 @@ const SKILLS := {
 			},
 			"frost_tide_shatter": {
 				"name": "碎星寒潮", "description": "牺牲单次伤害和范围，换取高频寒潮。",
+				"visual_tags": ["高频", "连控"],
 				"level_overrides": {
 					2: {"radius_multiplier": 0.84, "damage_multiplier": 0.86, "cooldown_multiplier": 0.86},
 					3: {"radius_multiplier": 0.82, "damage_multiplier": 0.82, "cooldown_multiplier": 0.82},
@@ -117,6 +123,7 @@ const SKILLS := {
 		"branches": {
 			"ember_volley_flock": {
 				"name": "群羽纷飞", "description": "增加箭矢数量与扇面，清理成群敌人。",
+				"visual_tags": ["多箭", "群攻"],
 				"level_overrides": {
 					2: {"count": 3, "damage_multiplier": 0.72, "spread": 0.2},
 					3: {"count": 5, "damage_multiplier": 0.58, "spread": 0.24},
@@ -124,6 +131,7 @@ const SKILLS := {
 			},
 			"ember_volley_blast": {
 				"name": "爆心炽矢", "description": "集中火力，强化箭矢伤害与爆炸范围。",
+				"visual_tags": ["爆伤", "集中"],
 				"level_overrides": {
 					2: {"count": 1, "damage_multiplier": 1.38, "blast_radius_multiplier": 1.28},
 					3: {"count": 2, "damage_multiplier": 1.45, "blast_radius_multiplier": 1.42},
@@ -148,6 +156,7 @@ const SKILLS := {
 		"branches": {
 			"meteor_rain_scatter": {
 				"name": "流星群落", "description": "增加落点数量，分散轰击更多敌群。",
+				"visual_tags": ["多落点", "群攻"],
 				"level_overrides": {
 					2: {"count": 3, "damage_multiplier": 0.72, "radius_multiplier": 0.92},
 					3: {"count": 5, "damage_multiplier": 0.64, "radius_multiplier": 0.88},
@@ -155,6 +164,7 @@ const SKILLS := {
 			},
 			"meteor_rain_focus": {
 				"name": "天罚坠击", "description": "集中陨星轰击高威胁目标，强化单点爆发。",
+				"visual_tags": ["精英优先", "爆发"],
 				"level_overrides": {
 					2: {"count": 1, "damage_multiplier": 1.72, "targeting": "elite_first"},
 					3: {"count": 2, "damage_multiplier": 1.65, "targeting": "elite_first"},
@@ -179,6 +189,7 @@ const SKILLS := {
 		"branches": {
 			"phoenix_heart_rebirth": {
 				"name": "涅槃余烬", "description": "降低单次治疗与伤害，换取更高释放频率。",
+				"visual_tags": ["高频", "续航"],
 				"level_overrides": {
 					2: {"healing_multiplier": 0.92, "damage_multiplier": 0.8, "cooldown_multiplier": 0.92},
 					3: {"healing_multiplier": 0.9, "damage_multiplier": 0.75, "cooldown_multiplier": 0.88},
@@ -186,6 +197,7 @@ const SKILLS := {
 			},
 			"phoenix_heart_inferno": {
 				"name": "焚天炎翼", "description": "牺牲部分治疗，扩大火环并提高伤害。",
+				"visual_tags": ["广域", "高伤"],
 				"level_overrides": {
 					2: {"healing_multiplier": 0.72, "damage_multiplier": 1.05, "radius_multiplier": 1.18},
 					3: {"healing_multiplier": 0.68, "damage_multiplier": 1.0, "radius_multiplier": 1.32},
@@ -195,10 +207,8 @@ const SKILLS := {
 	},
 }
 
-
 static func ids() -> PackedStringArray:
 	return PackedStringArray(SKILLS.keys())
-
 
 static func has(skill_id: String) -> bool:
 	return SKILLS.has(skill_id)

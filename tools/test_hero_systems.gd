@@ -5,6 +5,8 @@ const CombatEffects = preload("res://scripts/combat_effects.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const RunRecords = preload("res://scripts/run_records.gd")
 const RunSession = preload("res://scripts/run/run_session.gd")
+const PlayerEntity = preload("res://scripts/player.gd")
+const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 
 var failed := false
 
@@ -24,6 +26,7 @@ func _initialize() -> void:
 	_test_phoenix_heart(host, effects)
 	_test_projectile_resolution(host, effects)
 	_test_frame_stops_on_upgrade(host, effects)
+	_test_permanent_move_speed()
 	host.free()
 	if not failed:
 		print("HEROES_OK heroes=2 skills=6 isolated=true passives=2 turning=both effects=true slows=stacked projectiles=swept frame_stop=true")
@@ -48,6 +51,7 @@ func _test_star_lance(host: Node2D, effects: Node2D) -> void:
 	session.skills.runtime.bolt_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
 	_require(session.projectiles.projectiles.size() == 3, "星陨万华没有生成三枚星枪")
+	_require(session.player.hero_rig.current_state == "cast", "技能真实释放没有触发施法骨骼动画")
 	session.free()
 
 
@@ -97,11 +101,13 @@ func _test_ember_passive_and_turning(host: Node2D, effects: Node2D) -> void:
 func _test_ember_volley(host: Node2D, effects: Node2D) -> void:
 	var session := _create_session(host, effects, "ember_ranger", 24)
 	_select_only_skill(session, "ember_volley")
+	session.skills.runtime.skill_modifiers["ember_volley"]["projectile_speed_multiplier"] = 1.25
 	session.skills.runtime.volley_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
 	_require(session.projectiles.projectiles.size() == 3, "百鸟朝阳没有生成三枚爆裂箭")
 	for projectile in session.projectiles.projectiles:
 		_require(projectile.blast_radius == 74.0 and projectile.pierce == 0, "百鸟朝阳终极参数没有应用")
+		_require(is_equal_approx(projectile.velocity.length(), 737.5), "烬羽投射物没有应用永久弹速")
 	session.free()
 
 
@@ -169,6 +175,7 @@ func _test_frame_stops_on_upgrade(host: Node2D, effects: Node2D) -> void:
 	elite.health = 1.0
 	elite.is_elite = true
 	session.elite_enemy = elite
+	session.safety.opening_movement_observed = true
 	var projectile = session.projectiles.spawn_projectile({
 		"position": Vector2.ZERO, "angle": 0.0, "speed": 100.0, "damage": 1.0,
 		"radius": 2.0, "pierce": 0, "visual_kind": "star_lance",
@@ -180,6 +187,13 @@ func _test_frame_stops_on_upgrade(host: Node2D, effects: Node2D) -> void:
 	_require(projectile.position == Vector2.ZERO, "升级暂停触发后本帧投射物仍然推进")
 	_require(session.state.experience == 0 and session.pickups.pickups.size() >= 1, "升级暂停触发后本帧仍然收集掉落")
 	session.free()
+
+
+func _test_permanent_move_speed() -> void:
+	var player := PlayerEntity.new()
+	player.configure("star_warden", HeroCatalog.hero("star_warden"), LevelCatalog.first().map, {"move_speed_multiplier": 1.12})
+	_require(is_equal_approx(player.base_speed, 257.6), "永久装备移速没有进入战斗属性")
+	player.free()
 
 
 func _create_session(host: Node2D, effects: Node2D, hero_id: String, seed_value: int) -> Node:

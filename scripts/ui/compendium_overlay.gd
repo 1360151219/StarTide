@@ -1,9 +1,12 @@
 extends ColorRect
 
-const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const SafeArea = preload("res://scripts/ui/safe_area.gd")
 const CompendiumCatalog = preload("res://scripts/compendium_catalog.gd")
+const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
+const CompendiumCard = preload("res://scripts/ui/compendium_card.gd")
+const CollectionView = preload("res://scripts/ui/compendium_collection_view.gd")
+const DetailView = preload("res://scripts/ui/compendium_detail_view.gd")
 const CATEGORIES := [
 	{"id": "heroes", "name": "英雄"},
 	{"id": "enemies", "name": "怪物"},
@@ -12,17 +15,30 @@ const CATEGORIES := [
 	{"id": "relics", "name": "遗物"},
 ]
 
-var list: VBoxContainer
+var list: GridContainer
 var tab_buttons: Dictionary = {}
 var safe_area: Control
 var content: Control
 var scroll: ScrollContainer
 var records: RefCounted
+var progress_label: Label
+var detail_layer: Control
+var detail_icon: TextureRect
+var detail_title: Label
+var detail_subtitle: Label
+var detail_description: RichTextLabel
+var detail_hint: Label
+var current_category := "heroes"
+var pressed_card: Panel
+var pressed_position := Vector2.ZERO
+var collection_view: Control
+var detail_view: Control
+var navigation_mode := false
 
 
 func _ready() -> void:
 	ScreenLayout.fill(self)
-	color = Color(0.008, 0.045, 0.075, 0.96)
+	color = Color(0.02, 0.08, 0.1, 0.28)
 	z_index = 80
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
@@ -36,21 +52,8 @@ func _ready() -> void:
 	content.offset_left = -270.0
 	content.offset_right = 270.0
 	safe_area.add_child(content)
-	_build_header()
-	_build_tabs()
-	scroll = ScrollContainer.new()
-	scroll.anchor_right = 1.0
-	scroll.anchor_bottom = 1.0
-	scroll.offset_left = 20.0
-	scroll.offset_top = 184.0
-	scroll.offset_right = -20.0
-	scroll.offset_bottom = -32.0
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	content.add_child(scroll)
-	list = VBoxContainer.new()
-	list.custom_minimum_size = Vector2(478, 0)
-	list.add_theme_constant_override("separation", 14)
-	scroll.add_child(list)
+	_build_collection_view()
+	_build_detail_view()
 
 
 func configure(run_records: RefCounted) -> void:
@@ -64,51 +67,74 @@ func open(category := "heroes") -> void:
 
 
 func close() -> void:
+	_close_detail()
 	visible = false
 
 
+func set_navigation_mode(enabled: bool) -> void:
+	navigation_mode = enabled
+	mouse_filter = Control.MOUSE_FILTER_IGNORE if enabled else Control.MOUSE_FILTER_STOP
+	if is_instance_valid(collection_view):
+		collection_view.set_navigation_mode(enabled)
+	if is_instance_valid(detail_view):
+		detail_view.set_navigation_mode(enabled)
+
+
+func set_navigation_reserve(reserve: float) -> void:
+	if is_instance_valid(collection_view):
+		collection_view.set_navigation_reserve(reserve)
+	if is_instance_valid(detail_view):
+		detail_view.set_navigation_reserve(reserve)
+
+
+func close_detail_if_open() -> bool:
+	if not is_instance_valid(detail_view) or not detail_view.visible:
+		return false
+	_close_detail()
+	return true
+
+
 func show_category(category: String) -> void:
+	current_category = category
+	_close_detail()
 	_refresh_tab_labels()
-	for category_id in tab_buttons:
-		var selected: bool = category_id == category
-		var button: Button = tab_buttons[category_id]
-		UiFactory.apply_glass_button(button, selected, UiFactory.GOLD if selected else UiFactory.STROKE)
-	for child in list.get_children():
-		list.remove_child(child)
-		child.queue_free()
-	for entry in CompendiumCatalog.entries(category):
-		var discovered: bool = category == "heroes" or records == null or records.is_content_discovered(category, entry["id"])
-		list.add_child(_make_card(entry, discovered))
+	collection_view.set_selected_tab(category)
+	collection_view.clear_cards()
+	var entries := CompendiumCatalog.entries(category)
+	var discovered_count := 0
+	for entry in entries:
+		var discovered := _is_discovered(category, entry)
+		discovered_count += int(discovered)
+		collection_view.add_card(_make_card(category, entry, discovered))
+	collection_view.set_progress(discovered_count, entries.size())
+	scroll.scroll_vertical = 0
 
 
-func _build_header() -> void:
-	var title := UiFactory.label("星潮图鉴", 38, UiFactory.PALE)
-	title.position = Vector2(28, 34)
-	title.size = Vector2(360, 54)
-	content.add_child(title)
-	var close_button := Button.new()
-	close_button.position = Vector2(440, 28)
-	close_button.size = Vector2(72, 60)
-	close_button.text = "×"
-	close_button.add_theme_font_size_override("font_size", 30)
-	UiFactory.apply_glass_button(close_button, false, UiFactory.GOLD)
-	close_button.pressed.connect(close)
-	content.add_child(close_button)
+func _build_collection_view() -> void:
+	collection_view = CollectionView.new()
+	collection_view.build(CATEGORIES)
+	collection_view.close_requested.connect(close)
+	collection_view.category_requested.connect(show_category)
+	content.add_child(collection_view)
+	collection_view.set_navigation_mode(navigation_mode)
+	list = collection_view.list
+	tab_buttons = collection_view.tab_buttons
+	scroll = collection_view.scroll
+	progress_label = collection_view.progress_label
 
 
-func _build_tabs() -> void:
-	var gap := 7.0
-	var tab_width := (504.0 - gap * (CATEGORIES.size() - 1)) / CATEGORIES.size()
-	for index in range(CATEGORIES.size()):
-		var category: Dictionary = CATEGORIES[index]
-		var tab := Button.new()
-		tab.position = Vector2(20 + index * (tab_width + gap), 112)
-		tab.size = Vector2(tab_width, 54)
-		tab.text = category["name"]
-		tab.add_theme_font_size_override("font_size", 16)
-		tab.pressed.connect(show_category.bind(category["id"]))
-		content.add_child(tab)
-		tab_buttons[category["id"]] = tab
+func _build_detail_view() -> void:
+	detail_view = DetailView.new()
+	detail_view.build()
+	detail_view.close_requested.connect(_close_detail)
+	content.add_child(detail_view)
+	detail_view.set_navigation_mode(navigation_mode)
+	detail_layer = detail_view
+	detail_icon = detail_view.detail_icon
+	detail_title = detail_view.detail_title
+	detail_subtitle = detail_view.detail_subtitle
+	detail_description = detail_view.detail_description
+	detail_hint = detail_view.detail_hint
 
 
 func _refresh_tab_labels() -> void:
@@ -120,51 +146,70 @@ func _refresh_tab_labels() -> void:
 		var total := entries.size()
 		var discovered := 0
 		for entry in entries:
-			discovered += int(category_id == "heroes" or records == null or records.is_content_discovered(category_id, entry["id"]))
-		tab_buttons[category_id].text = "%s %d/%d" % [category["name"], discovered, total]
+			discovered += int(_is_discovered(category_id, entry))
+		collection_view.set_tab_label(category_id, category["name"], discovered, total)
 
 
-func _make_card(entry: Dictionary, discovered: bool) -> Panel:
-	var card := Panel.new()
-	var height: float = entry.get("card_height", 178.0)
-	card.custom_minimum_size = Vector2(478, height)
-	card.set_meta("content_id", entry["id"])
-	card.set_meta("discovered", discovered)
-	var accent: Color = entry["accent"] if discovered else Color("60737a")
-	card.add_theme_stylebox_override("panel", UiFactory.panel_style(UiFactory.GLASS, 18.0, accent))
-	var icon := TextureRect.new()
-	icon.position = Vector2(16, 18)
-	icon.size = Vector2(132, 140)
-	icon.texture = entry["texture"]
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.modulate = Color.WHITE if discovered else Color(0.08, 0.13, 0.15, 0.78)
-	card.add_child(icon)
-	var name_label := UiFactory.label(entry["name"] if discovered else "？？？", 24, UiFactory.PALE)
-	name_label.position = Vector2(164, 17)
-	name_label.size = Vector2(292, 34)
-	card.add_child(name_label)
-	var subtitle := UiFactory.label(entry["subtitle"] if discovered else "尚未发现", 15, accent)
-	subtitle.position = Vector2(164, 52)
-	subtitle.size = Vector2(292, 28)
-	card.add_child(subtitle)
-	var description_text := _entry_description(entry, discovered)
-	var description := UiFactory.label(description_text, 14 if height > 200.0 else 15, UiFactory.PALE_MUTED)
-	description.position = Vector2(164, 84)
-	description.size = Vector2(292, height - 96.0)
-	description.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-	description.clip_text = true
-	card.add_child(description)
+func _make_card(category: String, entry: Dictionary, discovered: bool) -> Panel:
+	var card := CompendiumCard.new()
+	card.configure(
+		category,
+		entry,
+		discovered,
+		_card_subtitle(category, entry, discovered),
+		_entry_description(entry, discovered)
+	)
+	card.activated.connect(_open_detail)
 	return card
+
+
+func _open_detail(category: String, entry: Dictionary, discovered: bool) -> void:
+	var accent: Color = entry["accent"] if discovered else Color("82948b")
+	var hint := "已收入星潮图鉴" if discovered else _unlock_hint(category, str(entry["id"]))
+	detail_view.present(entry, discovered, accent, _entry_description(entry, discovered), hint)
+
+
+func _close_detail() -> void:
+	if is_instance_valid(detail_layer):
+		detail_view.hide_detail()
+	pressed_card = null
 
 
 func _entry_description(entry: Dictionary, discovered: bool) -> String:
 	if not discovered:
-		return "在远征中首次发现后，\n即可解锁完整图鉴资料。"
+		return "先在对应远征中找到它，完整名称、效果与故事就会记录在这里。\n\n%s" % _unlock_hint(current_category, str(entry["id"]))
 	var text := str(entry["description"])
 	for branch in entry.get("branches", []):
 		if records == null or records.is_content_discovered("skill_branches", branch["id"]):
-			text += "\n分支 · %s：%s" % [branch["name"], branch["description"]]
+			text += "\n\n分支 · %s\n%s" % [branch["name"], branch["description"]]
 		else:
-			text += "\n分支 · ？？？：在局内选择后解锁"
+			text += "\n\n分支 · ？？？\n在局内选择后解锁"
 	return text
+
+
+func _card_subtitle(category: String, entry: Dictionary, discovered: bool) -> String:
+	if discovered:
+		return str(entry["subtitle"])
+	return _unlock_hint(category, str(entry["id"]))
+
+
+func _unlock_hint(category: String, content_id: String) -> String:
+	var level_id := LevelCatalog.debut_level_id(category, content_id)
+	var level := LevelCatalog.by_id(level_id)
+	if level != null:
+		return "线索：前往%s" % level.display_name
+	match category:
+		"heroes":
+			return "线索：英雄会随旅程加入"
+		"skills":
+			return "线索：升级时选择它"
+		"relics":
+			return "线索：远征中获得遗物"
+		"pickups":
+			return "线索：留意战场掉落"
+		_:
+			return "线索：继续完成远征"
+
+
+func _is_discovered(category: String, entry: Dictionary) -> bool:
+	return category == "heroes" or records == null or records.is_content_discovered(category, entry["id"])

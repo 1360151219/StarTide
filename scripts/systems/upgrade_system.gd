@@ -69,7 +69,7 @@ func apply_structured_choice(raw_choice, build_state: RefCounted) -> Dictionary:
 			effects = RelicCatalog.relic(content_id)["acquire_effects"].duplicate(true)
 	elif kind == UTILITY_RECOVERY:
 		applied = true
-		effects = {"heal": 45.0}
+		effects = {"heal": 45.0, "full_health_max": 10.0}
 	if not applied:
 		return {"success": false, "reason": "构筑状态已变化，无法应用该候选", "effects": {}}
 	build_state.clear_offer()
