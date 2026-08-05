@@ -23,6 +23,7 @@ func spawn_bolt(source: Node, origin: Vector2, direction: Vector2, config: Dicti
 	projectile.position = origin
 	projectile.velocity = direction.normalized() * float(config["projectile_speed"])
 	projectile.damage = float(config["damage"]) * damage_multiplier
+	projectile.hit_type = str(config["hit_type"])
 	projectile.radius = float(config["projectile_radius"])
 	projectile.max_distance = float(config["projectile_distance"])
 	add_child(projectile)
@@ -39,7 +40,7 @@ func advance(delta: float) -> void:
 			continue
 		var expired: bool = projectile.advance(delta)
 		if projectile.intersects_circle(player.position, projectile.radius + 21.0):
-			var hit := PlayerHitData.create(projectile.damage, projectile.source, PlayerHitData.BAT_BOLT, projectile.position)
+			var hit := PlayerHitData.create(projectile.damage, projectile.source, projectile.hit_type, projectile.position)
 			player_hit_requested.emit(hit)
 			_remove(projectile)
 		elif expired:

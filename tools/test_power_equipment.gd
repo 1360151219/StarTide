@@ -2,9 +2,8 @@ extends SceneTree
 
 const EquipmentCatalog = preload("res://scripts/equipment_catalog.gd")
 const EquipmentInventory = preload("res://scripts/profile/equipment_inventory.gd")
-const EquipmentRewardCatalog = preload("res://scripts/profile/equipment_reward_catalog.gd")
-const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
+const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const ProfileSchema = preload("res://scripts/profile/profile_schema.gd")
 const RunRecords = preload("res://scripts/run_records.gd")
 
@@ -27,8 +26,8 @@ func _initialize() -> void:
 
 func _test_catalog_and_inventory_repair() -> void:
 	_require(EquipmentCatalog.validation_errors().is_empty(), "装备目录配置无效")
-	_require(EquipmentRewardCatalog.validation_errors().is_empty(), "装备奖励目录配置无效")
-	_require(EquipmentCatalog.ids().size() == 6 and EquipmentCatalog.SLOTS.size() == 3 and EquipmentCatalog.RARITIES.size() == 3, "装备、槽位或品质数量错误")
+	_require(LevelCatalog.validation_errors().is_empty(), "战役装备奖励配置无效")
+	_require(not EquipmentCatalog.ids().is_empty() and EquipmentCatalog.SLOTS.size() == 3 and EquipmentCatalog.RARITIES.size() == 3, "装备目录、槽位或品质配置错误")
 	var items := {
 		"shared": {"definition_id": "apprentice_starwand", "enhance_level": 99},
 		"wrong_slot": {"definition_id": "meadow_guard", "enhance_level": -8},
@@ -105,7 +104,7 @@ func _test_missing_starter_repair() -> void:
 	var damaged := ConfigFile.new()
 	damaged.set_value("meta", "schema_version", ProfileSchema.VERSION)
 	damaged.set_value("meta", "profile_id", "missing-starter")
-	damaged.set_value("rewards", "granted_ids", PackedStringArray([EquipmentRewardCatalog.STARTER_REWARD_ID]))
+	damaged.set_value("rewards", "granted_ids", PackedStringArray([LevelCatalog.starter_equipment_reward().reward_id]))
 	damaged.save(path)
 	var repaired := RunRecords.new(path)
 	_require(repaired.equipment_inventory_snapshot().size() == 3, "已领取标记存在时没有修复缺失的新手装备")
@@ -118,13 +117,13 @@ func _test_first_clear_reward() -> void:
 	var records := RunRecords.new(path)
 	records.equipment_drop_rng.seed = 3107
 	var level := LevelCatalog.first()
-	var first := records.record_level_run("star_warden", level.level_id, true, false, 1, 1, level.duration, level.reward)
+	var first := records.record_level_run("star_warden", level, true, false, 1, 1, level.duration)
 	_require(first["equipment_reward"]["granted"], "首次通关没有发放固定装备奖励")
 	_require(first["equipment_reward"]["item_names"] == PackedStringArray(["风弦短弓"]), "首通装备名称没有进入结算数据")
 	var first_drop_count := int(first["random_equipment_reward"]["count"])
 	_require(first_drop_count >= 1 and first_drop_count <= 4, "首次通关没有保证掉落一到四件随机装备")
 	_require(records.equipment_inventory_snapshot().size() == 4 + first_drop_count, "首通固定装备或随机装备没有进入背包")
-	var repeated := records.record_level_run("star_warden", level.level_id, true, false, 1, 1, level.duration, level.reward)
+	var repeated := records.record_level_run("star_warden", level, true, false, 1, 1, level.duration)
 	var repeated_drop_count := int(repeated["random_equipment_reward"]["count"])
 	_require(not repeated["first_clear"] and records.equipment_inventory_snapshot().size() == 4 + first_drop_count + repeated_drop_count, "重复通关没有只追加随机装备")
 	var reloaded := RunRecords.new(path)
@@ -132,10 +131,10 @@ func _test_first_clear_reward() -> void:
 	var retry_path := _new_test_path("first_clear_equipment_retry")
 	var retry_records := RunRecords.new(retry_path)
 	retry_records.equipment.grant("clear-level-01-weapon", "meadow_guard")
-	var conflicted := retry_records.record_level_run("star_warden", level.level_id, true, false, 1, 1, level.duration, level.reward)
+	var conflicted := retry_records.record_level_run("star_warden", level, true, false, 1, 1, level.duration)
 	_require(not conflicted["equipment_reward"]["success"], "冲突的首通装备实例没有阻止错误发放")
 	retry_records.equipment.items.erase("clear-level-01-weapon")
-	var recovered := retry_records.record_level_run("star_warden", level.level_id, true, false, 1, 1, level.duration, level.reward)
+	var recovered := retry_records.record_level_run("star_warden", level, true, false, 1, 1, level.duration)
 	_require(not recovered["first_clear"] and recovered["equipment_reward"]["granted"], "首通装备失败后没有在后续通关自动补发")
 
 

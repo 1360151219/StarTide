@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="ContentManifestConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/content/content_manifest_config.gd" id="1_manifest"]
+[ext_resource type="Script" path="res://scripts/content/content_entry_config.gd" id="2_entry"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/green_grub.png" id="3_grub_front"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/green_grub_side.png" id="4_grub_side"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/starblight_slime.png" id="5_slime_front"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/starblight_slime_side.png" id="6_slime_side"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/duskwing_bat.png" id="7_bat_front"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/duskwing_bat_side.png" id="8_bat_side"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/meteor_brute.png" id="9_brute_front"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/meteor_brute_side.png" id="10_brute_side"]
+
+[sub_resource type="Resource" id="GreenGrub"]
+script = ExtResource("2_entry")
+content_id = "green_grub"
+data = {
+"accent": Color(0.396078, 0.780392, 0.262745, 1),
+"color": Color(0.470588, 0.847059, 0.294118, 1),
+"damage": 6.0,
+"description": "看起来软绵绵，最喜欢把自己团起来冲出去。\n威胁很低，留意它滚动前的直线预警。",
+"experience": 5,
+"front": ExtResource("3_grub_front"),
+"health": 30.0,
+"name": "张姐蛆",
+"radius": 15.0,
+"role": "melee",
+"side": ExtResource("4_grub_side"),
+"speed": 72.0,
+"subtitle": "翠绒毛虫 · 一级魔物"
+}
+
+[sub_resource type="Resource" id="Slime"]
+script = ExtResource("2_entry")
+content_id = "slime"
+data = {
+"accent": Color(0.937255, 0.443137, 0.552941, 1),
+"color": Color(0.937255, 0.443137, 0.552941, 1),
+"damage": 9.0,
+"description": "缓慢逼近的星蚀凝胶。\n生命与威胁均衡，最为常见。",
+"experience": 8,
+"front": ExtResource("5_slime_front"),
+"health": 36.0,
+"name": "星蚀史莱姆",
+"radius": 18.0,
+"role": "melee",
+"side": ExtResource("6_slime_side"),
+"speed": 78.5,
+"subtitle": "基础魔物"
+}
+
+[sub_resource type="Resource" id="Bat"]
+script = ExtResource("2_entry")
+content_id = "bat"
+data = {
+"accent": Color(0.721569, 0.537255, 1, 1),
+"color": Color(0.721569, 0.537255, 1, 1),
+"damage": 7.0,
+"description": "在远处盘旋并发射暮翼光弹。\n观察虚线预警，横向移动即可躲开。",
+"experience": 6,
+"front": ExtResource("7_bat_front"),
+"health": 22.0,
+"name": "暮翼蝠",
+"radius": 14.0,
+"role": "ranged",
+"side": ExtResource("8_bat_side"),
+"speed": 116.0,
+"subtitle": "远程魔物"
+}
+
+[sub_resource type="Resource" id="Brute"]
+script = ExtResource("2_entry")
+content_id = "brute"
+data = {
+"accent": Color(1, 0.623529, 0.352941, 1),
+"color": Color(1, 0.623529, 0.352941, 1),
+"damage": 16.0,
+"description": "披着陨岩外壳的重型魔物。\n生命和接触伤害都很高。",
+"experience": 16,
+"front": ExtResource("9_brute_front"),
+"health": 105.0,
+"name": "陨岩巨怪",
+"radius": 28.0,
+"role": "melee",
+"side": ExtResource("10_brute_side"),
+"speed": 50.0,
+"subtitle": "重型魔物"
+}
+
+[resource]
+script = ExtResource("1_manifest")
+catalog_id = "enemies"
+entries = Array[ExtResource("2_entry")]([SubResource("GreenGrub"), SubResource("Slime"), SubResource("Bat"), SubResource("Brute")])

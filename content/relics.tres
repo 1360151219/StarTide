@@ -1,0 +1,112 @@
+[gd_resource type="Resource" script_class="ContentManifestConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/content/content_manifest_config.gd" id="1_manifest"]
+[ext_resource type="Script" path="res://scripts/content/content_entry_config.gd" id="2_entry"]
+[ext_resource type="Texture2D" path="res://assets/art/items/item_atlas.png" id="3_atlas"]
+
+[sub_resource type="AtlasTexture" id="StarCoreIcon"]
+atlas = ExtResource("3_atlas")
+region = Rect2(0, 0, 384, 512)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="FlowFeatherIcon"]
+atlas = ExtResource("3_atlas")
+region = Rect2(384, 0, 384, 512)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="EnergyPrismIcon"]
+atlas = ExtResource("3_atlas")
+region = Rect2(768, 0, 384, 512)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="TimeGearIcon"]
+atlas = ExtResource("3_atlas")
+region = Rect2(1152, 0, 384, 512)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="EchoLensIcon"]
+atlas = ExtResource("3_atlas")
+region = Rect2(0, 512, 384, 512)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="StarBellIcon"]
+atlas = ExtResource("3_atlas")
+region = Rect2(384, 512, 384, 512)
+filter_clip = true
+
+[sub_resource type="Resource" id="StarCore"]
+script = ExtResource("2_entry")
+content_id = "star_core"
+data = {
+"acquire_effects": {"heal": 15.0},
+"description": "最大生命 +15；获得时恢复 15 点生命。",
+"icon": SubResource("StarCoreIcon"),
+"max_level": 3,
+"modifiers_per_level": {"max_health_flat": 15.0},
+"name": "星核扩容"
+}
+
+[sub_resource type="Resource" id="FlowFeather"]
+script = ExtResource("2_entry")
+content_id = "flow_feather"
+data = {
+"acquire_effects": {},
+"description": "移动速度 +8%。",
+"icon": SubResource("FlowFeatherIcon"),
+"max_level": 3,
+"modifiers_per_level": {"move_speed_multiplier": 0.08},
+"name": "流光羽"
+}
+
+[sub_resource type="Resource" id="EnergyPrism"]
+script = ExtResource("2_entry")
+content_id = "energy_prism"
+data = {
+"acquire_effects": {},
+"description": "全部技能伤害 +7%。",
+"icon": SubResource("EnergyPrismIcon"),
+"max_level": 3,
+"modifiers_per_level": {"damage_multiplier": 0.07},
+"name": "聚能棱晶"
+}
+
+[sub_resource type="Resource" id="TimeGear"]
+script = ExtResource("2_entry")
+content_id = "time_gear"
+data = {
+"acquire_effects": {},
+"description": "技能冷却与命中间隔 -5%。",
+"icon": SubResource("TimeGearIcon"),
+"max_level": 3,
+"modifiers_per_level": {"cooldown_multiplier": -0.05, "hit_interval_multiplier": -0.05},
+"name": "时砂齿轮"
+}
+
+[sub_resource type="Resource" id="EchoLens"]
+script = ExtResource("2_entry")
+content_id = "echo_lens"
+data = {
+"acquire_effects": {},
+"description": "技能范围与爆炸半径 +8%。",
+"icon": SubResource("EchoLensIcon"),
+"max_level": 3,
+"modifiers_per_level": {"range_multiplier": 0.08},
+"name": "回响透镜"
+}
+
+[sub_resource type="Resource" id="StarBell"]
+script = ExtResource("2_entry")
+content_id = "star_bell"
+data = {
+"acquire_effects": {},
+"description": "普通拾取范围 +25%。",
+"icon": SubResource("StarBellIcon"),
+"max_level": 3,
+"modifiers_per_level": {"pickup_radius_multiplier": 0.25},
+"name": "星引铃"
+}
+
+[resource]
+script = ExtResource("1_manifest")
+catalog_id = "relics"
+entries = Array[ExtResource("2_entry")]([SubResource("StarCore"), SubResource("FlowFeather"), SubResource("EnergyPrism"), SubResource("TimeGear"), SubResource("EchoLens"), SubResource("StarBell")])

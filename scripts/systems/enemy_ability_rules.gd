@@ -1,6 +1,7 @@
 extends RefCounted
 
 const AbilityCatalog = preload("res://scripts/enemy_ability_catalog.gd")
+const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
 
 
 static func segment_hits_circle(start: Vector2, finish: Vector2, center: Vector2, radius: float) -> bool:
@@ -34,7 +35,7 @@ static func player_danger_count(states: Dictionary, player_position: Vector2) ->
 		if state["phase"] == "executing" and state.get("hit_done", false):
 			continue
 		var config: Dictionary = AbilityCatalog.ability(state["ability_id"]).duplicate()
-		if state["phase"] == "executing" and state["ability_id"] == "green_grub_roll":
+		if state["phase"] == "executing" and str(config.get("runtime_kind", "")) == "roll":
 			config["distance"] = state["remaining"]
 		count += int(telegraph_covers_point(state["enemy"].position, state["direction"], player_position, config))
 	return count
@@ -67,7 +68,7 @@ static func ordered_enemies(enemies: Array[Node]) -> Array[Node]:
 
 static func movement_direction(enemy: Node, player_position: Vector2) -> Vector2:
 	var direction: Vector2 = enemy.position.direction_to(player_position)
-	if enemy.kind != "bat":
+	if not EnemyCatalog.is_ranged(enemy.kind):
 		return direction
 	var distance: float = enemy.position.distance_to(player_position)
 	if distance < 180.0:

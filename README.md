@@ -48,7 +48,7 @@
 | 金砂绿洲 | 在前关基础上加入暮翼蝠 | 加入星引护符、疾风叶 | 日轮守卫、陨星雨 | 聚能棱晶、星引铃 |
 | 彩晶火山 | 在前关基础上加入陨岩巨怪 | 加入星爆糖 | 霜潮脉冲、凤凰之心 | 时砂齿轮、回响透镜 |
 
-怪物池和掉落池始终由当前关卡本地配置决定，因此重玩第一关也不会刷出暮翼蝠、陨岩巨怪或后期掉落。技能池和遗物池按关卡继承；后期内容一旦在远征中被发现，重玩早期关卡时仍可进入该玩家的构筑候选，避免已经获得的玩法被反向锁回。
+怪物池和掉落池始终由当前关卡本地配置决定，因此重玩第一关也不会刷出暮翼蝠、陨岩巨怪或后期掉落。技能与遗物将“首次出现”和“本局候选”分开配置：候选条目具有权重、保底和数量上限，玩家已发现内容只能占用关卡明确预留的槽位，不会随着长期游玩无限稀释构筑池。第一关预留槽位为 0，因此后期内容不会倒灌新手教学。
 
 ## 局内构筑
 
@@ -79,7 +79,7 @@
 - 训练 I 提升伤害/治疗，训练 II 提升弹速或范围，训练 III 缩短冷却或命中间隔。
 - 永久训练不提前解锁局内技能或终极技能，且可以免费重置。
 - 每名英雄可穿戴武器、护甲和饰品；同一装备实例不能同时装备给两名英雄。
-- 每次胜利保证掉落 1～4 件 Lv.1 随机装备；普通/稀有/顶级概率为 75%/20%/5%，等级上限为 5/10/15。
+- 每次胜利保证掉落 1～4 件随机装备；装备池、条目权重、品质概率和掉落等级由当前关卡独立配置。当前三关品质权重依次为 `82/16/2`、`72/23/5`、`62/28/10`，掉落等级上限依次为 Lv.1、Lv.2、Lv.3；品质自身等级上限仍为 5/10/15。
 - 消耗一件未锁定、未穿戴的同名装备可使目标提升 1 级；升级不改变品质。
 - 战力公式 v1 为 `1000 + 等级战力 + 技能训练战力 + 装备战力`。战力只作局外成长评分，不会再次乘入伤害，也不会动态增强怪物。
 - 首通结算会明确展示获得的永久装备；若异常存档导致发放失败，修复冲突后的下一次通关会自动补发。
@@ -118,7 +118,7 @@ macOS 命令行：
 统一入口执行 26 套测试，覆盖关卡与逐关内容池、阶段、刷怪、怪物技能、胜负、schema 3/4/5→6 迁移、英雄成长、装备掉落/升级与战力、完整帧角色和预览器、6 技能/12 分支/6 遗物、三选一、重抽、战役、声音、4 种屏幕比例和架构边界。通过标识为：
 
 ```text
-ALL_TESTS_OK suites=26 responsive_profiles=4 enemy_abilities=2 home_carousel=stable_shell engine_errors=false
+ALL_TESTS_OK suites=26 responsive_profiles=4 content_catalogs=data_driven home_carousel=stable_shell engine_errors=false
 RESPONSIVE_SCREENSHOTS_OK profiles=4 threshold=0.035 updated=false
 ```
 
@@ -138,19 +138,21 @@ RESPONSIVE_SCREENSHOTS_OK profiles=4 threshold=0.035 updated=false
 
 ```text
 levels/                    LevelConfig 与关卡展示清单资源
+content/                   英雄、怪物、怪物技能、道具、技能、遗物和装备的数据资源清单
+scripts/content/           通用内容条目与目录资源类型
 scripts/levels/            关卡、展示、阶段、内容池、掉落和怪物技能预算配置
 scripts/run/               单局状态、内容解析、构筑、装配、推进和结算
 scripts/systems/           刷怪、怪物技能、敌弹、数据驱动掉落和结构化升级
 scripts/profile/           英雄经验、训练、装备、战力解析和 schema 6 本地仓库
 scripts/skills/            两名英雄的技能运行时
-scripts/presentation/      三套生态、预警、战斗反馈、HeroRig2D 和统一道具图集
+scripts/presentation/      三套生态、预警、战斗反馈和 HeroRig2D
 scripts/ui/                FrontendShell、BottomBar、角色中心、关卡轮播、图鉴、HUD 与覆盖层
 assets/art/                怪物、技能、遗物、道具和三套生态素材
 assets/generated/          两名英雄 Q 版完整角色帧与 6 枚永久装备图标
 tools/                     自动化验证与截图工具
 ```
 
-详细边界见 [架构说明](docs/ARCHITECTURE.md)，角色动作验收见 [英雄帧动画预览器](docs/HERO_RIG_TUNER.md)，战力与角色中心见 [实现说明](docs/POWER_CHARACTER_SYSTEM.md)，精确参数见 [关卡数值设计](docs/LEVEL_DESIGN.md)，汇报材料见 [游戏现状汇报](游戏现状汇报.md)。
+新增关卡与内容的操作步骤见 [关卡与内容接入指南](docs/LEVEL_AUTHORING.md)。详细边界见 [架构说明](docs/ARCHITECTURE.md)，角色动作验收见 [英雄帧动画预览器](docs/HERO_RIG_TUNER.md)，战力与角色中心见 [实现说明](docs/POWER_CHARACTER_SYSTEM.md)，精确参数见 [关卡数值设计](docs/LEVEL_DESIGN.md)，汇报材料见 [游戏现状汇报](游戏现状汇报.md)。
 
 ## 尚未完成的发布验收
 

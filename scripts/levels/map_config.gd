@@ -3,7 +3,7 @@ extends Resource
 
 @export var map_id := ""
 @export var display_name := ""
-@export_enum("windbell_meadow", "golden_oasis", "crystal_volcano") var biome_id := "windbell_meadow"
+@export var biome_id := "windbell_meadow"
 @export var floor_texture: Texture2D
 @export var world_bounds := Rect2(-1600.0, -1600.0, 3200.0, 3200.0)
 @export var player_start := Vector2.ZERO
@@ -30,8 +30,8 @@ func validation_errors() -> PackedStringArray:
 		errors.append("map_id 不能为空")
 	if display_name.is_empty():
 		errors.append("地图名称不能为空")
-	if biome_id not in ["windbell_meadow", "golden_oasis", "crystal_volcano"]:
-		errors.append("地图生态 ID 无效")
+	if biome_id.is_empty():
+		errors.append("地图生态 ID 不能为空")
 	if floor_texture == null:
 		errors.append("地图贴图不能为空")
 	if world_bounds.size.x <= 0.0 or world_bounds.size.y <= 0.0:

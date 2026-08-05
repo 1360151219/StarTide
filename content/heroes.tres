@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="ContentManifestConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/content/content_manifest_config.gd" id="1_manifest"]
+[ext_resource type="Script" path="res://scripts/content/content_entry_config.gd" id="2_entry"]
+
+[sub_resource type="Resource" id="StarWarden"]
+script = ExtResource("2_entry")
+content_id = "star_warden"
+data = {
+"description": "均衡的远程法师\n星枪、日轮与霜潮控场",
+"max_health": 100.0,
+"name": "星潮守望者",
+"passive_description": "抵挡下一次伤害，24 秒重新充能",
+"passive_name": "星潮结界",
+"speed": 230.0,
+"title": "星象术士"
+}
+
+[sub_resource type="Resource" id="EmberRanger"]
+script = ExtResource("2_entry")
+content_id = "ember_ranger"
+data = {
+"description": "高速爆发型射手\n爆裂箭、陨星雨与自愈火环",
+"max_health": 88.0,
+"name": "烬羽",
+"passive_description": "持续移动进入疾行，技能冷却加快 18%",
+"passive_name": "燎原步",
+"speed": 258.0,
+"title": "赤曜游侠"
+}
+
+[resource]
+script = ExtResource("1_manifest")
+catalog_id = "heroes"
+entries = Array[ExtResource("2_entry")]([SubResource("StarWarden"), SubResource("EmberRanger")])

@@ -14,7 +14,7 @@ func _initialize() -> void:
 	_test_pickup_effects()
 	_test_branch_and_relic_runtime()
 	if not failed:
-		print("CONTENT_RUNTIME_OK pools=progressive discovery=events replay=cross_level reroll=session pickups=haste+bomb branch=applied relics=runtime")
+		print("CONTENT_RUNTIME_OK pools=weighted discovery=bounded reroll=session pickups=haste+bomb branch=applied")
 	quit(1 if failed else 0)
 
 
@@ -47,10 +47,14 @@ func _test_runtime_pools_and_discovery() -> void:
 	records.discover_content("skills", "frost_tide")
 	records.discover_content("relics", "echo_lens")
 	var replay := _create_session("level_01", records, 811)
-	_require(replay.skill_pool_ids.has("frost_tide"), "已发现技能不能带回早期关卡")
-	_require(replay.relic_pool_ids.has("echo_lens"), "已发现遗物不能带回早期关卡")
+	_require(not replay.skill_pool_ids.has("frost_tide"), "已发现技能绕过第一关的发现内容槽位限制")
+	_require(not replay.relic_pool_ids.has("echo_lens"), "已发现遗物绕过第一关的发现内容槽位限制")
 	_require(not LevelCatalog.level_content_ids("level_01", "enemies").has("bat"), "玩家发现状态污染了第一关怪物生态")
 	replay.free()
+	var later_replay := _create_session("level_02", records, 812)
+	_require(later_replay.skill_pool_ids.has("frost_tide"), "第二关配置的发现技能槽位没有生效")
+	_require(later_replay.relic_pool_ids.size() <= LevelCatalog.by_id("level_02").content_pool.relic_pool_limit, "已发现遗物使候选池无限增长")
+	later_replay.free()
 
 
 func _test_pickup_effects() -> void:

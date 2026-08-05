@@ -1,5 +1,7 @@
 extends SceneTree
 
+const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
+
 var frame_count := 0
 var failed := false
 var paused_elapsed := 0.0
@@ -32,7 +34,7 @@ func _on_process_frame() -> void:
 		_test_victory(game)
 	if frame_count == 22:
 		if not failed:
-			print("SMOKE_OK levels=3 menu=bottom_bar carousel=3 preview=animated session=modular pause=stable upgrade=true victory=true unlock=true audio=14 volume_sync=true")
+			print("SMOKE_OK levels=%d menu=bottom_bar carousel=3 preview=animated session=modular pause=stable upgrade=true victory=true unlock=true audio=14 volume_sync=true" % LevelCatalog.all().size())
 		quit(1 if failed else 0)
 
 

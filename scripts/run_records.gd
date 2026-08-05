@@ -3,7 +3,6 @@ const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const EquipmentDropService = preload("res://scripts/profile/equipment_drop_service.gd")
 const EquipmentInventory = preload("res://scripts/profile/equipment_inventory.gd")
-const EquipmentRewardCatalog = preload("res://scripts/profile/equipment_reward_catalog.gd")
 const EquipmentRewardService = preload("res://scripts/profile/equipment_reward_service.gd")
 const HeroProgression = preload("res://scripts/profile/hero_progression.gd")
 const HeroStatResolver = preload("res://scripts/profile/hero_stat_resolver.gd")
@@ -115,29 +114,22 @@ func new_content_discoveries() -> Array[Dictionary]:
 	return discovery.new_discoveries()
 func clear_new_content_discoveries() -> void:
 	discovery.clear_new_discoveries()
-func record_run(hero_id: String, won: bool, killed_elite: bool, kills: int, run_level: int, survival_seconds: float) -> Dictionary:
-	var result := _update_record(hero_record(hero_id), won, killed_elite, kills, run_level, survival_seconds)
-	result["progression_reward"] = _award_progression(hero_id, won, survival_seconds)
-	result["random_equipment_reward"] = _award_random_equipment(won)
-	last_hero_id = hero_id
-	active_hero_id = hero_id
-	_save()
-	return result
-func record_level_run(hero_id: String, level_id: String, won: bool, killed_elite: bool, kills: int, run_level: int, survival_seconds: float, reward: RewardConfig) -> Dictionary:
+func record_level_run(hero_id: String, level: LevelConfig, won: bool, killed_elite: bool, kills: int, run_level: int, survival_seconds: float) -> Dictionary:
+	var level_id := level.level_id
 	var hero_result := _update_record(hero_record(hero_id), won, killed_elite, kills, run_level, survival_seconds)
 	var target_level_record := level_record(level_id)
 	var first_clear: bool = won and int(target_level_record["wins"]) == 0
 	var level_result := _update_record(target_level_record, won, killed_elite, kills, run_level, survival_seconds)
 	var newly_unlocked := ""
-	if won and reward != null and not reward.unlock_level_id.is_empty() and not is_level_unlocked(reward.unlock_level_id):
-		unlocked_levels[reward.unlock_level_id] = true
-		newly_unlocked = reward.unlock_level_id
+	if won and level.reward != null and not level.reward.unlock_level_id.is_empty() and not is_level_unlocked(level.reward.unlock_level_id):
+		unlocked_levels[level.reward.unlock_level_id] = true
+		newly_unlocked = level.reward.unlock_level_id
 	var progression_reward := _award_progression(hero_id, won, survival_seconds)
 	var equipment_reward := {}
-	var equipment_reward_id := EquipmentRewardCatalog.first_clear_reward_id(level_id)
-	if won and not equipment_reward_id.is_empty() and not bool(granted_reward_ids.get(equipment_reward_id, false)):
-		equipment_reward = EquipmentRewardService.apply(equipment_reward_id, equipment, granted_reward_ids)
-	var random_equipment_reward := _award_random_equipment(won)
+	var fixed_reward := level.reward.first_clear_equipment_reward if level.reward != null else null
+	if won and fixed_reward != null and not bool(granted_reward_ids.get(fixed_reward.reward_id, false)):
+		equipment_reward = EquipmentRewardService.apply(fixed_reward, equipment, granted_reward_ids)
+	var random_equipment_reward := _award_random_equipment(won, level.equipment_drop_table)
 	last_hero_id = hero_id
 	active_hero_id = hero_id
 	last_level_id = level_id
@@ -171,10 +163,10 @@ func _award_progression(hero_id: String, won: bool, survival_seconds: float) -> 
 	var award := HeroProgression.award_run(hero_id, hero_progressions[hero_id], won, survival_seconds)
 	hero_progressions[hero_id] = award["progress"]
 	return award["reward"]
-func _award_random_equipment(won: bool) -> Dictionary:
+func _award_random_equipment(won: bool, table: EquipmentDropTableConfig) -> Dictionary:
 	if not won:
 		return {}
-	var reward := EquipmentDropService.apply(equipment, next_equipment_sequence, equipment_drop_rng)
+	var reward := EquipmentDropService.apply(equipment, next_equipment_sequence, equipment_drop_rng, table)
 	next_equipment_sequence = int(reward.get("next_sequence", next_equipment_sequence))
 	return reward
 func _finish_equipment_command(result: Dictionary, hero_id := "") -> Dictionary:
@@ -208,7 +200,7 @@ func _load() -> void:
 	}
 	equipment = EquipmentInventory.new(hero_ids, raw_equipment["items"], raw_equipment["loadouts"])
 	granted_reward_ids = profile.get("granted_reward_ids", {}).duplicate(true)
-	var starter_reward := EquipmentRewardService.apply(EquipmentRewardCatalog.STARTER_REWARD_ID, equipment, granted_reward_ids)
+	var starter_reward := EquipmentRewardService.apply(LevelCatalog.starter_equipment_reward(), equipment, granted_reward_ids)
 	next_equipment_sequence = maxi(1, int(profile.get("next_equipment_sequence", 1)))
 	discovery = ContentDiscoveryService.new(profile.get("discovered_content", {}))
 	var needs_repair := int(profile.get("source_schema_version", SCHEMA_VERSION)) < SCHEMA_VERSION
@@ -225,7 +217,12 @@ func _load() -> void:
 		last_hero_id = hero_ids[0]
 	if not hero_ids.has(active_hero_id):
 		active_hero_id = last_hero_id
+	var unlocked_before := unlocked_levels.duplicate(true)
 	unlocked_levels[level_ids[0]] = true
+	for level in LevelCatalog.all():
+		if int(level_records.get(level.level_id, {}).get("wins", 0)) > 0 and level.reward != null and not level.reward.unlock_level_id.is_empty():
+			unlocked_levels[level.reward.unlock_level_id] = true
+	needs_repair = needs_repair or unlocked_levels != unlocked_before
 	if not level_ids.has(last_level_id) or not is_level_unlocked(last_level_id):
 		last_level_id = level_ids[0]
 	if needs_repair:

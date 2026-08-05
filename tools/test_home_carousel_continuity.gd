@@ -1,6 +1,7 @@
 extends SceneTree
 
 const AudioManager = preload("res://scripts/audio_manager.gd")
+const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const RunRecords = preload("res://scripts/run_records.gd")
 const FrontendShell = preload("res://scripts/ui/frontend_shell.gd")
 const HomeShellContract = preload("res://tools/support/home_shell_contract.gd")
@@ -33,15 +34,15 @@ func _on_process_frame() -> void:
 		_require(screen.selected_level_id == "level_02", "第一次滑动没有切换到第二关")
 		_require(HomeShellContract.snapshot(screen) == shell_instances, "第一次滑动替换了远征页面组件树")
 		_require(screen.level_preview.title_label.text == "金砂绿洲", "第二关信息没有更新")
-		_require(screen.level_selector.page_label.text == "第 2 / 3 关", "第二关页码没有更新")
+		_require(screen.level_selector.page_label.text == "第 2 / %d 关" % LevelCatalog.all().size(), "第二关页码没有更新")
 		screen.level_selector.move_by(1)
 	elif frame_count == 13:
 		_require(screen.selected_level_id == "level_03", "第二次滑动没有切换到第三关")
 		_require(HomeShellContract.snapshot(screen) == shell_instances, "第二次滑动替换了远征页面组件树")
 		_require(screen.level_preview.title_label.text == "彩晶火山", "第三关信息没有更新")
-		_require(screen.level_selector.page_label.text == "第 3 / 3 关", "第三关页码没有更新")
+		_require(screen.level_selector.page_label.text == "第 3 / %d 关" % LevelCatalog.all().size(), "第三关页码没有更新")
 		if not failed:
-			print("HOME_CONTINUITY_OK levels=3 shell=stable data=updated")
+			print("HOME_CONTINUITY_OK levels=%d shell=stable data=updated" % LevelCatalog.all().size())
 		quit(1 if failed else 0)
 
 

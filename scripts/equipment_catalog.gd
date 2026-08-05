@@ -17,63 +17,8 @@ const STAT_IDS := [
 	"cooldown_reduction", "move_speed_percent", "range_percent",
 	"projectile_speed_percent", "pickup_radius_percent",
 ]
-
-const EQUIPMENT := {
-	"apprentice_starwand": {
-		"name": "启程星杖",
-		"description": "稳定放大英雄技能的基础威力。",
-		"icon": preload("res://assets/generated/equipment/apprentice_starwand.png"),
-		"slot": "weapon",
-		"default_rarity": "common",
-		"base_stats": {"damage_percent": 0.05},
-		"stats_per_enhance": {"damage_percent": 0.01},
-	},
-	"windstring_bow": {
-		"name": "风弦短弓",
-		"description": "提高技能威力与投射物飞行速度。",
-		"icon": preload("res://assets/generated/equipment/windstring_bow.png"),
-		"slot": "weapon",
-		"default_rarity": "rare",
-		"base_stats": {"damage_percent": 0.04, "projectile_speed_percent": 0.04},
-		"stats_per_enhance": {"damage_percent": 0.008, "projectile_speed_percent": 0.006},
-	},
-	"meadow_guard": {
-		"name": "风铃护衣",
-		"description": "以柔韧叶纤维提升最大生命。",
-		"icon": preload("res://assets/generated/equipment/meadow_guard.png"),
-		"slot": "armor",
-		"default_rarity": "common",
-		"base_stats": {"max_health_percent": 0.08},
-		"stats_per_enhance": {"max_health_percent": 0.015},
-	},
-	"crystal_vest": {
-		"name": "彩晶背心",
-		"description": "直接增加最大生命，并提供少量移速。",
-		"icon": preload("res://assets/generated/equipment/crystal_vest.png"),
-		"slot": "armor",
-		"default_rarity": "rare",
-		"base_stats": {"max_health_flat": 10.0, "move_speed_percent": 0.02},
-		"stats_per_enhance": {"max_health_flat": 2.0},
-	},
-	"windbell_charm": {
-		"name": "风铃叶坠",
-		"description": "提高移动速度与拾取范围。",
-		"icon": preload("res://assets/generated/equipment/windbell_charm.png"),
-		"slot": "charm",
-		"default_rarity": "common",
-		"base_stats": {"move_speed_percent": 0.06, "pickup_radius_percent": 0.10},
-		"stats_per_enhance": {"move_speed_percent": 0.006, "pickup_radius_percent": 0.015},
-	},
-	"timeglass_charm": {
-		"name": "时砂棱镜",
-		"description": "缩短技能间隔并扩大作用范围。",
-		"icon": preload("res://assets/generated/equipment/timeglass_charm.png"),
-		"slot": "charm",
-		"default_rarity": "rare",
-		"base_stats": {"cooldown_reduction": 0.04, "range_percent": 0.04},
-		"stats_per_enhance": {"cooldown_reduction": 0.006, "range_percent": 0.006},
-	},
-}
+const MANIFEST: ContentManifestConfig = preload("res://content/equipment.tres")
+static var EQUIPMENT: Dictionary = MANIFEST.as_dictionary()
 
 
 static func ids() -> PackedStringArray:
@@ -112,6 +57,10 @@ static func default_rarity(equipment_id: String) -> String:
 	return str(equipment(equipment_id).get("default_rarity", "common"))
 
 
+static func content_tier(equipment_id: String) -> int:
+	return int(equipment(equipment_id).get("content_tier", 1))
+
+
 static func rarity_multiplier(rarity_id: String) -> float:
 	return float(RARITY_META.get(rarity_id, RARITY_META["common"])["stat_multiplier"])
 
@@ -139,17 +88,20 @@ static func resolved_stats(equipment_id: String, rarity_id: String, equipment_le
 
 
 static func validation_errors() -> PackedStringArray:
-	var errors := PackedStringArray()
+	var errors := MANIFEST.validation_errors(PackedStringArray([
+		"name", "description", "icon", "slot", "content_tier", "default_rarity",
+		"base_stats", "stats_per_enhance",
+	]))
 	for rarity_id in RARITIES:
 		var rarity: Dictionary = RARITY_META.get(rarity_id, {})
-		if float(rarity.get("stat_multiplier", 0.0)) <= 0.0 or int(rarity.get("max_level", 0)) < 1 or int(rarity.get("drop_weight", 0)) < 1:
+		if float(rarity.get("stat_multiplier", 0.0)) <= 0.0 or int(rarity.get("max_level", 0)) < 1:
 			errors.append("%s 品质配置无效" % rarity_id)
 	for equipment_id in EQUIPMENT:
 		var data: Dictionary = EQUIPMENT[equipment_id]
-		if str(data.get("name", "")).is_empty():
-			errors.append("%s 缺少名称" % equipment_id)
 		if not SLOTS.has(str(data.get("slot", ""))):
 			errors.append("%s 装备槽无效" % equipment_id)
+		if int(data.get("content_tier", 0)) <= 0:
+			errors.append("%s 内容阶级无效" % equipment_id)
 		if not RARITIES.has(str(data.get("default_rarity", ""))):
 			errors.append("%s 默认品质无效" % equipment_id)
 		_validate_stats(errors, equipment_id, data.get("base_stats", {}))

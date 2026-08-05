@@ -5,6 +5,7 @@ extends Resource
 @export var display_name := ""
 @export_multiline var description := ""
 @export var unlock_level_id := ""
+@export var first_clear_equipment_reward: EquipmentRewardConfig
 
 
 func validation_errors() -> PackedStringArray:

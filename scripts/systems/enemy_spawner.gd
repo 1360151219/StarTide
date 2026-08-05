@@ -26,27 +26,28 @@ func next_spawn_count(delta: float, elapsed: float, current_count: int) -> int:
 	return mini(1 + int(rng.randf() < stage.extra_spawn_chance), level.max_enemies - current_count)
 
 
-func roll_enemy_id(current_ranged_count := 0) -> String:
-	var weights: Dictionary = stage_director.current_stage().enemy_weights
-	var allowed_ids := PackedStringArray()
+func roll_enemy_id(active_counts: Dictionary = {}, current_ranged_count := 0) -> String:
+	var stage: StageConfig = stage_director.current_stage()
+	var allowed_entries: Array[EnemySpawnEntryConfig] = []
 	var total_weight := 0.0
-	for enemy_id in EnemyCatalog.ids():
-		if current_ranged_count >= level.max_ranged_enemies and EnemyCatalog.is_ranged(enemy_id):
+	for entry in stage.enemy_entries:
+		if entry == null:
 			continue
-		var weight := float(weights.get(enemy_id, 0.0))
-		if weight <= 0.0:
+		if current_ranged_count >= level.max_ranged_enemies and EnemyCatalog.is_ranged(entry.enemy_id):
 			continue
-		allowed_ids.append(enemy_id)
-		total_weight += weight
-	if allowed_ids.is_empty() or total_weight <= 0.0:
+		if entry.max_active > 0 and int(active_counts.get(entry.enemy_id, 0)) >= entry.max_active:
+			continue
+		allowed_entries.append(entry)
+		total_weight += entry.weight
+	if allowed_entries.is_empty() or total_weight <= 0.0:
 		return ""
 	var roll := rng.randf() * total_weight
 	var cumulative := 0.0
-	for enemy_id in allowed_ids:
-		cumulative += float(weights.get(enemy_id, 0.0))
+	for entry in allowed_entries:
+		cumulative += entry.weight
 		if roll < cumulative:
-			return enemy_id
-	return allowed_ids[-1]
+			return entry.enemy_id
+	return allowed_entries[-1].enemy_id
 
 
 func spawn_position(player_position: Vector2, elite := false, viewport_size := Vector2.ZERO) -> Vector2:

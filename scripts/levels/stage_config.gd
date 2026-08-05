@@ -8,8 +8,7 @@ extends Resource
 @export var spawn_interval_start := 0.9
 @export var spawn_interval_end := 0.74
 @export_range(0.0, 1.0, 0.01) var extra_spawn_chance := 0.0
-@export var enemy_weights: Dictionary = {"slime": 1.0}
-@export var enabled_ability_ids := PackedStringArray()
+@export var enemy_entries: Array[EnemySpawnEntryConfig] = []
 @export var transition_rest_duration := 3.0
 
 
@@ -17,6 +16,26 @@ func spawn_interval_at(elapsed: float, end_time: float) -> float:
 	var duration := maxf(end_time - start_time, 0.001)
 	var progress := clampf((elapsed - start_time) / duration, 0.0, 1.0)
 	return lerpf(spawn_interval_start, spawn_interval_end, progress)
+
+
+func entry_for(enemy_id: String) -> EnemySpawnEntryConfig:
+	for entry in enemy_entries:
+		if entry != null and entry.enemy_id == enemy_id:
+			return entry
+	return null
+
+
+func enemy_weight(enemy_id: String) -> float:
+	var entry := entry_for(enemy_id)
+	return entry.weight if entry != null else 0.0
+
+
+func enemy_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	for entry in enemy_entries:
+		if entry != null:
+			result.append(entry.enemy_id)
+	return result
 
 
 func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := PackedStringArray()) -> PackedStringArray:
@@ -31,17 +50,20 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 		errors.append("刷怪间隔必须大于 0")
 	if transition_rest_duration < 0.0:
 		errors.append("阶段喘息时间不能小于 0")
+	if enemy_entries.is_empty():
+		errors.append("怪物编成不能为空")
 	var total_weight := 0.0
-	for enemy_id in enemy_weights:
-		if not valid_enemy_ids.has(enemy_id):
-			errors.append("未知怪物：%s" % enemy_id)
-		var weight := float(enemy_weights[enemy_id])
-		if weight < 0.0:
-			errors.append("怪物权重不能为负数：%s" % enemy_id)
-		total_weight += weight
+	var seen_enemy_ids: Dictionary = {}
+	for entry in enemy_entries:
+		if entry == null:
+			errors.append("怪物编成条目不能为空")
+			continue
+		for message in entry.validation_errors(valid_enemy_ids, valid_ability_ids):
+			errors.append(message)
+		if seen_enemy_ids.has(entry.enemy_id):
+			errors.append("怪物编成重复：%s" % entry.enemy_id)
+		seen_enemy_ids[entry.enemy_id] = true
+		total_weight += entry.weight
 	if not is_equal_approx(total_weight, 1.0):
 		errors.append("怪物权重总和必须为 1，当前为 %.3f" % total_weight)
-	for ability_id in enabled_ability_ids:
-		if not valid_ability_ids.has(ability_id):
-			errors.append("未知怪物技能：%s" % ability_id)
 	return errors

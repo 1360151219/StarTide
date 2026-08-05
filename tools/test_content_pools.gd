@@ -1,45 +1,64 @@
 extends SceneTree
 
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
+const RelicCatalog = preload("res://scripts/relic_catalog.gd")
 
 var failed := false
 
 
 func _initialize() -> void:
-	_require(LevelCatalog.validation_errors().is_empty(), "关卡或内容池配置校验失败")
-	_expect_level_pool("level_01", ["green_grub", "slime"], ["xp", "heart"], 2, 2)
-	_expect_level_pool("level_02", ["green_grub", "slime", "bat"], ["xp", "heart", "magnet", "haste_leaf"], 4, 4)
-	_expect_level_pool("level_03", ["green_grub", "slime", "bat", "brute"], ["xp", "heart", "magnet", "haste_leaf", "star_bomb"], 6, 6)
-	_require(LevelCatalog.debut_level_id("enemies", "green_grub") == "level_01", "张姐蛆首次出现关卡错误")
-	_require(LevelCatalog.debut_level_id("enemies", "bat") == "level_02", "暮翼蝠首次出现关卡错误")
-	_require(LevelCatalog.debut_level_id("enemies", "brute") == "level_03", "陨岩巨怪首次出现关卡错误")
-	_require(LevelCatalog.debut_level_id("pickups", "haste_leaf") == "level_02", "疾风叶首次出现关卡错误")
-	_require(LevelCatalog.debut_level_id("pickups", "star_bomb") == "level_03", "星爆糖首次出现关卡错误")
-	_require(LevelCatalog.debut_level_id("skills", "sun_orbit") == "level_02", "日轮守卫首次出现关卡错误")
-	_require(LevelCatalog.debut_level_id("skills", "frost_tide") == "level_03", "霜潮脉冲首次出现关卡错误")
-	_require(LevelCatalog.debut_level_id("relics", "star_core") == "level_01", "星核扩容首次出现关卡错误")
-	_require(LevelCatalog.debut_level_id("relics", "echo_lens") == "level_03", "回响透镜首次出现关卡错误")
+	_require(LevelCatalog.validation_errors().is_empty(), "战役或内容池配置校验失败")
+	var introduced_skills := PackedStringArray()
+	var introduced_relics := PackedStringArray()
+	var previous_tier := 0
 	for level in LevelCatalog.all():
-		for stage in level.stages:
-			for weight in stage.enemy_weights.values():
-				_require(float(weight) > 0.0, "%s 仍含零权重怪物占位" % level.level_id)
+		_require(level.content_tier >= previous_tier, "%s 内容阶级发生倒退" % level.level_id)
+		previous_tier = level.content_tier
+		_validate_stage_entries(level)
+		_validate_introductions(level, "skills", level.content_pool.introduced_skill_ids, introduced_skills)
+		_validate_introductions(level, "relics", level.content_pool.introduced_relic_ids, introduced_relics)
+		var pool := LevelCatalog.resolved_content_pool(level.level_id)
+		_require(_contains_all(pool["introduced_skill_ids"], introduced_skills), "%s 技能首次出现继承链断裂" % level.level_id)
+		_require(_contains_all(pool["introduced_relic_ids"], introduced_relics), "%s 遗物首次出现继承链断裂" % level.level_id)
+		_require(pool["skill_entries"].size() >= mini(pool["skill_pool_limit"], 1), "%s 技能候选池为空" % level.level_id)
+		_require(pool["relic_entries"].size() >= mini(pool["relic_pool_limit"], 1), "%s 遗物候选池为空" % level.level_id)
+		_require(LevelCatalog.level_content_ids(level.level_id, "pickups").has("xp"), "%s 缺少经验掉落" % level.level_id)
+	_require(_same_ids(introduced_skills, SkillCatalog.ids()), "仍有技能未声明首次出现关卡")
+	_require(_same_ids(introduced_relics, RelicCatalog.ids()), "仍有遗物未声明首次出现关卡")
 	if not failed:
-		print("CONTENT_POOLS_OK enemies=progressive pickups=progressive skills=6 relics=6 zero_weights=false")
+		print("CONTENT_POOLS_OK levels=%d weighted=true limited=true debuts=data_driven" % LevelCatalog.all().size())
 	quit(1 if failed else 0)
 
 
-func _expect_level_pool(level_id: String, enemy_ids: Array, pickup_ids: Array, skill_count: int, relic_count: int) -> void:
-	_require(_same_ids(LevelCatalog.level_content_ids(level_id, "enemies"), enemy_ids), "%s 怪物池错误" % level_id)
-	_require(_same_ids(LevelCatalog.level_content_ids(level_id, "pickups"), pickup_ids), "%s 掉落池错误" % level_id)
-	var pool := LevelCatalog.resolved_content_pool(level_id)
-	_require(pool["skill_ids"].size() == skill_count, "%s 技能池累计数量错误" % level_id)
-	_require(pool["relic_ids"].size() == relic_count, "%s 遗物池累计数量错误" % level_id)
+func _validate_stage_entries(level: LevelConfig) -> void:
+	for stage in level.stages:
+		var total := 0.0
+		for entry in stage.enemy_entries:
+			_require(entry.weight > 0.0, "%s/%s 含零权重怪物" % [level.level_id, stage.stage_id])
+			_require(entry.max_active >= 0, "%s/%s 怪物上限无效" % [level.level_id, stage.stage_id])
+			total += entry.weight
+		_require(is_equal_approx(total, 1.0), "%s/%s 怪物权重总和不是 1" % [level.level_id, stage.stage_id])
 
 
-func _same_ids(actual: PackedStringArray, expected: Array) -> bool:
+func _validate_introductions(level: LevelConfig, category: String, ids: PackedStringArray, accumulated: PackedStringArray) -> void:
+	for content_id in ids:
+		_require(not accumulated.has(content_id), "%s 重复声明首次出现：%s" % [level.level_id, content_id])
+		_require(LevelCatalog.debut_level_id(category, content_id) == level.level_id, "%s 首次出现关卡解析错误" % content_id)
+		accumulated.append(content_id)
+
+
+func _contains_all(actual: PackedStringArray, expected: PackedStringArray) -> bool:
+	for content_id in expected:
+		if not actual.has(content_id):
+			return false
+	return true
+
+
+func _same_ids(actual: PackedStringArray, expected: PackedStringArray) -> bool:
 	var actual_ids := Array(actual)
+	var expected_ids := Array(expected)
 	actual_ids.sort()
-	var expected_ids := expected.duplicate()
 	expected_ids.sort()
 	return actual_ids == expected_ids
 

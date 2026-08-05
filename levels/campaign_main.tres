@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="CampaignManifest" format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/campaign_manifest.gd" id="1_manifest"]
+[ext_resource type="Script" path="res://scripts/levels/chapter_config.gd" id="2_chapter"]
+[ext_resource type="Script" path="res://scripts/levels/difficulty_profile_config.gd" id="3_profile"]
+[ext_resource type="Script" path="res://scripts/levels/equipment_grant_entry_config.gd" id="4_grant"]
+[ext_resource type="Script" path="res://scripts/levels/equipment_reward_config.gd" id="5_reward"]
+[ext_resource type="Resource" path="res://levels/level_01_star_courtyard.tres" id="6_level_01"]
+[ext_resource type="Resource" path="res://levels/level_02_dusk_corridor.tres" id="7_level_02"]
+[ext_resource type="Resource" path="res://levels/level_03_meteor_core.tres" id="8_level_03"]
+[ext_resource type="Script" path="res://scripts/levels/level_config.gd" id="9_level_config"]
+
+[sub_resource type="Resource" id="DifficultyProfile"]
+script = ExtResource("3_profile")
+profile_id = "chapter_01_curve"
+display_name = "星门初航"
+pressure_curve = PackedFloat32Array(1, 1.495, 3.251)
+recommended_power_curve = PackedInt32Array(1000, 1100, 1250)
+pressure_tolerance = 0.04
+
+[sub_resource type="Resource" id="Chapter"]
+script = ExtResource("2_chapter")
+chapter_id = "chapter_01"
+display_name = "远征大厅"
+level_ids = PackedStringArray("level_01", "level_02", "level_03")
+default_difficulty_profile_id = "chapter_01_curve"
+
+[sub_resource type="Resource" id="StarterWeapon"]
+script = ExtResource("4_grant")
+instance_id = "starter-weapon"
+definition_id = "apprentice_starwand"
+
+[sub_resource type="Resource" id="StarterArmor"]
+script = ExtResource("4_grant")
+instance_id = "starter-armor"
+definition_id = "meadow_guard"
+
+[sub_resource type="Resource" id="StarterCharm"]
+script = ExtResource("4_grant")
+instance_id = "starter-charm"
+definition_id = "windbell_charm"
+
+[sub_resource type="Resource" id="StarterReward"]
+script = ExtResource("5_reward")
+reward_id = "starter_equipment_v1"
+entries = Array[ExtResource("4_grant")]([SubResource("StarterWeapon"), SubResource("StarterArmor"), SubResource("StarterCharm")])
+
+[resource]
+script = ExtResource("1_manifest")
+campaign_id = "main_campaign"
+display_name = "星潮远征"
+chapters = Array[ExtResource("2_chapter")]([SubResource("Chapter")])
+difficulty_profiles = Array[ExtResource("3_profile")]([SubResource("DifficultyProfile")])
+levels = Array[ExtResource("9_level_config")]([ExtResource("6_level_01"), ExtResource("7_level_02"), ExtResource("8_level_03")])
+starter_equipment_reward = SubResource("StarterReward")

@@ -41,7 +41,7 @@ func _initialize() -> void:
 		_require(session.state.finished and session.state.victory, "%s 未能按独立胜利条件通关" % level.display_name)
 		session.queue_free()
 	if not failed:
-		print("CAMPAIGN_OK levels=3 unlock_chain=true elites=configured upgrades=bounded victory=per_level")
+		print("CAMPAIGN_OK levels=%d unlock_chain=true elites=configured upgrades=bounded victory=per_level" % LevelCatalog.all().size())
 	quit(1 if failed else 0)
 
 

@@ -35,10 +35,11 @@ var upgrades: RefCounted
 var build_state: RefCounted
 var skill_pool_ids := PackedStringArray()
 var relic_pool_ids := PackedStringArray()
+var skill_pool_weights: Dictionary = {}
+var relic_pool_weights: Dictionary = {}
 var elite_enemy: Node
 var damage_resolver := PlayerDamageResolver.new()
 var safety := RunSafetyController.new()
-
 func configure(hero_id: String, level_config: LevelConfig, run_records: RefCounted, audio_manager: Node, combat_effects: Node2D, random_streams: Dictionary) -> void:
 	level = level_config
 	records = run_records
@@ -47,9 +48,11 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	effects = combat_effects
 	state.reset(hero_id, level.level_id)
 	build_state = RunBuildState.new(hero_id)
-	var content_pool := RunContentResolver.resolve(level.level_id, hero_id, records)
+	var content_pool := RunContentResolver.resolve(level.level_id, hero_id, records, random_streams["upgrade"])
 	skill_pool_ids = content_pool["skill_ids"]
 	relic_pool_ids = content_pool["relic_ids"]
+	skill_pool_weights = content_pool["skill_weights"]
+	relic_pool_weights = content_pool["relic_weights"]
 	stage_director.configure(level)
 	var progression: Dictionary = records.progression_snapshot(hero_id)
 	var nodes := RunWorldBuilder.new().build(self, state, build_state, level, stage_director, audio, effects, random_streams, progression)
@@ -119,7 +122,6 @@ func pause() -> void:
 func resume() -> void:
 	if not state.finished:
 		state.paused = false
-
 func select_upgrade(choice_key: String) -> bool:
 	var result: Dictionary = upgrades.apply_structured_choice(choice_key, build_state)
 	if not bool(result.get("success", false)):
@@ -148,7 +150,7 @@ func reroll_upgrade() -> bool:
 	if state.finished or state.pending_upgrades <= 0:
 		return false
 	var health_ratio: float = player.health / player.max_health
-	var result: Dictionary = upgrades.reroll_structured_choices(build_state, skill_pool_ids, relic_pool_ids, health_ratio)
+	var result: Dictionary = upgrades.reroll_structured_choices(build_state, skill_pool_weights, relic_pool_weights, health_ratio)
 	if not bool(result.get("success", false)):
 		return false
 	upgrade_requested.emit(state.player_level, result["choices"], upgrades, build_state)
@@ -159,8 +161,6 @@ func reroll_upgrade() -> bool:
 func add_experience(amount: int) -> void:
 	if state.add_experience(amount) > 0 and not state.paused:
 		_request_upgrade()
-
-
 func _update_stage_events() -> void:
 	var events := stage_director.advance(state.elapsed)
 	var transitions: Array = events["transitions"]
@@ -214,7 +214,7 @@ func _on_pickup_collected(pickup_id: String) -> void:
 func _request_upgrade() -> void:
 	state.paused = true
 	var health_ratio: float = player.health / player.max_health
-	var choices: Array = upgrades.build_structured_choices(build_state, skill_pool_ids, relic_pool_ids, health_ratio)
+	var choices: Array = upgrades.build_structured_choices(build_state, skill_pool_weights, relic_pool_weights, health_ratio)
 	if choices.is_empty():
 		state.pending_upgrades = maxi(0, state.pending_upgrades - 1)
 		state.paused = state.pending_upgrades > 0

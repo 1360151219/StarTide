@@ -45,7 +45,7 @@ func _check_level_dependencies(path: String, source: String) -> void:
 			continue
 		if line.contains("res://scripts/levels/") or line.contains("res://scripts/enemy_catalog.gd") or line.contains("res://scripts/enemy_ability_catalog.gd"):
 			continue
-		if line.contains("res://scripts/pickup_catalog.gd") or line.contains("res://scripts/skill_catalog.gd") or line.contains("res://scripts/relic_catalog.gd"):
+		if line.contains("res://scripts/pickup_catalog.gd") or line.contains("res://scripts/skill_catalog.gd") or line.contains("res://scripts/relic_catalog.gd") or line.contains("res://scripts/equipment_catalog.gd"):
 			continue
 		_fail("配置层依赖了非数据模块：%s -> %s" % [path, line.strip_edges()])
 

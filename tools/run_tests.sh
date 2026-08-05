@@ -60,4 +60,4 @@ if [ "$FAILED" -ne 0 ]; then
   exit 1
 fi
 
-printf 'ALL_TESTS_OK suites=26 responsive_profiles=4 enemy_abilities=2 home_carousel=stable_shell engine_errors=false\n'
+printf 'ALL_TESTS_OK suites=26 responsive_profiles=4 content_catalogs=data_driven home_carousel=stable_shell engine_errors=false\n'

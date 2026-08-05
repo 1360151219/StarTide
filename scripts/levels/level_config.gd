@@ -3,6 +3,10 @@ extends Resource
 
 @export var level_id := ""
 @export var order := 1
+@export var chapter_id := "chapter_01"
+@export_range(1, 99, 1) var content_tier := 1
+@export var difficulty_profile_id := ""
+@export_range(0, 99, 1) var difficulty_step := 0
 @export_range(1, 10, 1) var difficulty_rating := 1
 @export_range(1, 100000, 1) var recommended_power := 1000
 @export var display_name := ""
@@ -17,6 +21,7 @@ extends Resource
 @export var difficulty: DifficultyConfig
 @export var loot: LootConfig
 @export var content_pool: LevelContentPoolConfig
+@export var equipment_drop_table: EquipmentDropTableConfig
 @export var enemy_ability_budget: EnemyAbilityBudgetConfig
 @export var stages: Array[StageConfig] = []
 @export var elite: EliteConfig
@@ -43,6 +48,10 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 		errors.append("level_id 不能为空")
 	if order <= 0:
 		errors.append("关卡顺序必须大于 0")
+	if chapter_id.is_empty():
+		errors.append("章节 ID 不能为空")
+	if content_tier <= 0:
+		errors.append("内容阶级必须大于 0")
 	if difficulty_rating <= 0:
 		errors.append("难度评级必须大于 0")
 	if recommended_power <= 0:
@@ -71,6 +80,8 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 		errors.append("内容池配置不能为空")
 	else:
 		_append_prefixed(errors, "内容池", content_pool.validation_errors())
+	if equipment_drop_table == null:
+		errors.append("重复通关装备掉落表不能为空")
 	if enemy_ability_budget == null:
 		errors.append("怪物技能预算不能为空")
 	else:

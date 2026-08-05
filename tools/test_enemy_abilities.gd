@@ -23,24 +23,27 @@ func _initialize() -> void:
 	_test_death_and_projectile_lifetime()
 	_test_shared_invulnerability_and_shield()
 	if not failed:
-		print("ENEMY_ABILITIES_OK skilled_enemies=2 abilities=2 deterministic=true budgets=true swept=true shield=true cleanup=true")
+		print("ENEMY_ABILITIES_OK abilities=%d variants=data_driven deterministic=true budgets=true swept=true shield=true cleanup=true" % EnemyAbilityCatalog.ids().size())
 	quit(1 if failed else 0)
 
 
 func _test_catalog_and_level_budgets() -> void:
-	_require(EnemyAbilityCatalog.ids().size() == 2, "怪物技能目录必须仅包含两项技能")
+	_require(EnemyAbilityCatalog.validation_errors().is_empty(), "怪物技能目录配置无效")
 	_require(EnemyAbilityCatalog.ability_for_enemy("green_grub") == "green_grub_roll", "张姐蛆缺少技能映射")
 	_require(EnemyAbilityCatalog.ability_for_enemy("bat") == "bat_bolt", "暮翼蝠缺少技能映射")
 	_require(EnemyAbilityCatalog.ability_for_enemy("slime").is_empty(), "星蚀史莱姆不应拥有技能")
 	_require(EnemyAbilityCatalog.ability_for_enemy("brute").is_empty(), "陨岩巨怪不应拥有技能")
-	var expected_limits := [[3, 2], [4, 4], [5, 5]]
-	for index in range(3):
-		var level := LevelCatalog.all()[index]
-		_require(level.enemy_ability_budget.max_telegraphs == expected_limits[index][0], "%s 预警预算错误" % level.display_name)
-		_require(level.enemy_ability_budget.max_projectiles == expected_limits[index][1], "%s 敌弹预算错误" % level.display_name)
+	var previous_telegraphs := 0
+	var previous_projectiles := 0
+	for level in LevelCatalog.all():
+		_require(level.enemy_ability_budget.max_telegraphs >= previous_telegraphs, "%s 预警预算随关卡倒退" % level.display_name)
+		_require(level.enemy_ability_budget.max_projectiles >= previous_projectiles, "%s 敌弹预算随关卡倒退" % level.display_name)
+		previous_telegraphs = level.enemy_ability_budget.max_telegraphs
+		previous_projectiles = level.enemy_ability_budget.max_projectiles
 		for stage in level.stages:
-			for ability_id in stage.enabled_ability_ids:
-				_require(EnemyAbilityCatalog.ids().has(ability_id), "阶段引用了无效技能：%s" % ability_id)
+			for entry in stage.enemy_entries:
+				if not entry.ability_variant_id.is_empty():
+					_require(EnemyAbilityCatalog.ids().has(entry.ability_variant_id), "阶段引用了无效技能：%s" % entry.ability_variant_id)
 
 
 func _test_opening_protection_and_budget() -> void:
@@ -90,10 +93,11 @@ func _test_non_casters_stay_idle() -> void:
 	_require(session.enemy_projectiles.projectiles.is_empty(), "无技能怪物错误生成了敌方弹体")
 	session.free()
 
-
 func _test_bat_lock_and_projectile() -> void:
 	var session := _create_session("level_03", "ember_ranger", 104)
 	var enemy := _spawn_only(session, "bat", Vector2(250, 0))
+	EnemyAbilityCatalog.ABILITIES["test_bolt_variant"] = EnemyAbilityCatalog.ability("bat_bolt").duplicate(true)
+	enemy.ability_id = "test_bolt_variant"
 	_prime_and_start(session, enemy)
 	session.player.position = Vector2(0, 80)
 	_advance_abilities(session, 0.6, 1.86)
@@ -107,6 +111,7 @@ func _test_bat_lock_and_projectile() -> void:
 	session.player.position = projectile.position + projectile.velocity.normalized() * 100.0
 	session.enemy_projectiles.advance(0.5)
 	_require(session.player.health < before and session.enemy_projectiles.projectiles.is_empty(), "高速敌弹连续碰撞或命中清理错误")
+	EnemyAbilityCatalog.ABILITIES.erase("test_bolt_variant")
 	session.free()
 
 

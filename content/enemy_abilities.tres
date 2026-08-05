@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="ContentManifestConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/content/content_manifest_config.gd" id="1_manifest"]
+[ext_resource type="Script" path="res://scripts/content/content_entry_config.gd" id="2_entry"]
+
+[sub_resource type="Resource" id="GreenGrubRoll"]
+script = ExtResource("2_entry")
+content_id = "green_grub_roll"
+data = {
+"cooldown": 5.0,
+"damage": 7.0,
+"distance": 100.0,
+"enemy_id": "green_grub",
+"hit_type": "grub_roll",
+"is_default": true,
+"lane_width": 38.0,
+"max_range": 260.0,
+"min_range": 100.0,
+"name": "团团滚",
+"recovery": 0.45,
+"runtime_kind": "roll",
+"shape": "lane",
+"speed": 185.0,
+"threat_multiplier": 1.1,
+"warning": 0.65
+}
+
+[sub_resource type="Resource" id="BatBolt"]
+script = ExtResource("2_entry")
+content_id = "bat_bolt"
+data = {
+"cooldown": 4.5,
+"damage": 6.0,
+"enemy_id": "bat",
+"hit_type": "bat_bolt",
+"is_default": true,
+"lock_time": 0.3,
+"max_range": 480.0,
+"min_range": 140.0,
+"name": "暮翼光弹",
+"projectile_distance": 520.0,
+"projectile_radius": 11.0,
+"projectile_speed": 260.0,
+"recovery": 0.4,
+"runtime_kind": "bolt",
+"shape": "dashed_line",
+"threat_multiplier": 1.25,
+"warning": 0.9
+}
+
+[resource]
+script = ExtResource("1_manifest")
+catalog_id = "enemy_abilities"
+entries = Array[ExtResource("2_entry")]([SubResource("GreenGrubRoll"), SubResource("BatBolt")])

@@ -12,12 +12,40 @@
 [ext_resource type="Script" uid="uid://cwl7jvbgrr1m1" path="res://scripts/levels/enemy_ability_budget_config.gd" id="10_abilities"]
 [ext_resource type="Script" uid="uid://cmx07ep5sckkx" path="res://scripts/levels/drop_entry_config.gd" id="11_drop"]
 [ext_resource type="Script" uid="uid://b3tx1b2sdyiph" path="res://scripts/levels/level_content_pool_config.gd" id="12_pool"]
+[ext_resource type="Script" path="res://scripts/levels/weighted_content_entry_config.gd" id="13_weighted"]
+[ext_resource type="Script" path="res://scripts/levels/enemy_spawn_entry_config.gd" id="14_enemy"]
+[ext_resource type="Script" path="res://scripts/levels/equipment_drop_table_config.gd" id="15_drop_table"]
+[ext_resource type="Script" path="res://scripts/levels/equipment_grant_entry_config.gd" id="16_grant"]
+[ext_resource type="Script" path="res://scripts/levels/equipment_reward_config.gd" id="17_equipment_reward"]
+
+[sub_resource type="Resource" id="SkillFrostTide"]
+script = ExtResource("13_weighted")
+content_id = "frost_tide"
+weight = 1.25
+
+[sub_resource type="Resource" id="SkillPhoenixHeart"]
+script = ExtResource("13_weighted")
+content_id = "phoenix_heart"
+weight = 1.25
+
+[sub_resource type="Resource" id="RelicTimeGear"]
+script = ExtResource("13_weighted")
+content_id = "time_gear"
+weight = 1.3
+
+[sub_resource type="Resource" id="RelicEchoLens"]
+script = ExtResource("13_weighted")
+content_id = "echo_lens"
+weight = 1.3
 
 [sub_resource type="Resource" id="ContentPool"]
 script = ExtResource("12_pool")
 inherit_from_level_id = "level_02"
-added_skill_ids = PackedStringArray("frost_tide", "phoenix_heart")
-added_relic_ids = PackedStringArray("time_gear", "echo_lens")
+introduced_skill_ids = PackedStringArray("frost_tide", "phoenix_heart")
+introduced_relic_ids = PackedStringArray("time_gear", "echo_lens")
+skill_entries = Array[ExtResource("13_weighted")]([SubResource("SkillFrostTide"), SubResource("SkillPhoenixHeart")])
+relic_entries = Array[ExtResource("13_weighted")]([SubResource("RelicTimeGear"), SubResource("RelicEchoLens")])
+relic_pool_limit = 4
 
 [sub_resource type="Resource" id="Difficulty"]
 script = ExtResource("3_difficulty")
@@ -92,11 +120,90 @@ glow_color = Color(0.35, 0.93, 0.86, 0.065)
 decoration_count = 80
 environment_particle_color = Color(0.72, 1, 0.91, 0.78)
 
+[sub_resource type="Resource" id="FirstClearEquipmentEntry"]
+script = ExtResource("16_grant")
+instance_id = "clear-level-03-charm"
+definition_id = "timeglass_charm"
+rarity_id = "rare"
+
+[sub_resource type="Resource" id="FirstClearEquipment"]
+script = ExtResource("17_equipment_reward")
+reward_id = "first_clear_level_03_equipment_v1"
+entries = Array[ExtResource("16_grant")]([SubResource("FirstClearEquipmentEntry")])
+
 [sub_resource type="Resource" id="Reward"]
 script = ExtResource("8_reward")
 reward_id = "campaign_complete"
 display_name = "星门守望者"
 description = "完成当前三关远征，获得星门守望者认证"
+first_clear_equipment_reward = SubResource("FirstClearEquipment")
+
+[sub_resource type="Resource" id="DropApprenticeStarwand"]
+script = ExtResource("13_weighted")
+content_id = "apprentice_starwand"
+weight = 0.6
+
+[sub_resource type="Resource" id="DropMeadowGuard"]
+script = ExtResource("13_weighted")
+content_id = "meadow_guard"
+weight = 0.6
+
+[sub_resource type="Resource" id="DropWindbellCharm"]
+script = ExtResource("13_weighted")
+content_id = "windbell_charm"
+weight = 0.6
+
+[sub_resource type="Resource" id="DropWindstringBow"]
+script = ExtResource("13_weighted")
+content_id = "windstring_bow"
+weight = 1.1
+
+[sub_resource type="Resource" id="DropCrystalVest"]
+script = ExtResource("13_weighted")
+content_id = "crystal_vest"
+weight = 1.1
+
+[sub_resource type="Resource" id="DropTimeglassCharm"]
+script = ExtResource("13_weighted")
+content_id = "timeglass_charm"
+weight = 1.4
+
+[sub_resource type="Resource" id="EquipmentDrops"]
+script = ExtResource("15_drop_table")
+table_id = "level_03_clear_drops_v1"
+equipment_entries = Array[ExtResource("13_weighted")]([SubResource("DropApprenticeStarwand"), SubResource("DropMeadowGuard"), SubResource("DropWindbellCharm"), SubResource("DropWindstringBow"), SubResource("DropCrystalVest"), SubResource("DropTimeglassCharm")])
+rarity_weights = {
+"common": 62.0,
+"rare": 28.0,
+"top": 10.0
+}
+max_level = 3
+
+[sub_resource type="Resource" id="Stage1Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.38
+max_active = 7
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage1Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.12
+max_active = 10
+
+[sub_resource type="Resource" id="Stage1Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.15
+max_active = 18
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="Stage1Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.35
+max_active = 28
 
 [sub_resource type="Resource" id="Stage1"]
 script = ExtResource("5_stage")
@@ -106,14 +213,34 @@ subtitle = "岩壳魔物踏入星核圣所"
 spawn_interval_start = 0.78
 spawn_interval_end = 0.66
 extra_spawn_chance = 0.06
-enemy_weights = {
-"bat": 0.38,
-"brute": 0.12,
-"green_grub": 0.15,
-"slime": 0.35
-}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "bat_bolt")
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage1Bat"), SubResource("Stage1Brute"), SubResource("Stage1Grub"), SubResource("Stage1Slime")])
 transition_rest_duration = 0.0
+
+[sub_resource type="Resource" id="Stage2Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.37
+max_active = 8
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage2Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.3
+max_active = 18
+
+[sub_resource type="Resource" id="Stage2Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.08
+max_active = 12
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="Stage2Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.25
+max_active = 22
 
 [sub_resource type="Resource" id="Stage2"]
 script = ExtResource("5_stage")
@@ -124,14 +251,34 @@ start_time = 30.0
 spawn_interval_start = 0.64
 spawn_interval_end = 0.52
 extra_spawn_chance = 0.18
-enemy_weights = {
-"bat": 0.37,
-"brute": 0.3,
-"green_grub": 0.08,
-"slime": 0.25
-}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "bat_bolt")
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage2Bat"), SubResource("Stage2Brute"), SubResource("Stage2Grub"), SubResource("Stage2Slime")])
 transition_rest_duration = 2.0
+
+[sub_resource type="Resource" id="Stage3Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.32
+max_active = 8
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage3Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.45
+max_active = 26
+
+[sub_resource type="Resource" id="Stage3Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.05
+max_active = 10
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="Stage3Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.18
+max_active = 18
 
 [sub_resource type="Resource" id="Stage3"]
 script = ExtResource("5_stage")
@@ -142,14 +289,34 @@ start_time = 60.0
 spawn_interval_start = 0.5
 spawn_interval_end = 0.4
 extra_spawn_chance = 0.28
-enemy_weights = {
-"bat": 0.32,
-"brute": 0.45,
-"green_grub": 0.05,
-"slime": 0.18
-}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "bat_bolt")
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage3Bat"), SubResource("Stage3Brute"), SubResource("Stage3Grub"), SubResource("Stage3Slime")])
 transition_rest_duration = 2.0
+
+[sub_resource type="Resource" id="Stage4Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.25
+max_active = 8
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage4Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.6
+max_active = 36
+
+[sub_resource type="Resource" id="Stage4Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.03
+max_active = 8
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="Stage4Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.12
+max_active = 14
 
 [sub_resource type="Resource" id="Stage4"]
 script = ExtResource("5_stage")
@@ -160,13 +327,7 @@ start_time = 90.0
 spawn_interval_start = 0.44
 spawn_interval_end = 0.35
 extra_spawn_chance = 0.35
-enemy_weights = {
-"bat": 0.25,
-"brute": 0.6,
-"green_grub": 0.03,
-"slime": 0.12
-}
-enabled_ability_ids = PackedStringArray("green_grub_roll", "bat_bolt")
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage4Bat"), SubResource("Stage4Brute"), SubResource("Stage4Grub"), SubResource("Stage4Slime")])
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Victory"]
@@ -180,6 +341,10 @@ failure_heading = "星核远征失败"
 script = ExtResource("1_level")
 level_id = "level_03"
 order = 3
+chapter_id = "chapter_01"
+content_tier = 3
+difficulty_profile_id = "chapter_01_curve"
+difficulty_step = 2
 difficulty_rating = 3
 recommended_power = 1250
 display_name = "彩晶火山"
@@ -193,6 +358,7 @@ max_ranged_enemies = 10
 difficulty = SubResource("Difficulty")
 loot = SubResource("Loot")
 content_pool = SubResource("ContentPool")
+equipment_drop_table = SubResource("EquipmentDrops")
 enemy_ability_budget = SubResource("AbilityBudget")
 stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3"), SubResource("Stage4")])
 elite = SubResource("Elite")

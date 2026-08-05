@@ -5,8 +5,8 @@ const RunState = preload("res://scripts/run/run_state.gd")
 
 func finalize(records: RefCounted, state: RefCounted, level: LevelConfig, _passives: RefCounted, build_state: RefCounted) -> Dictionary:
 	var result: Dictionary = records.record_level_run(
-		state.hero_id, state.level_id, state.victory, state.elite_defeated,
-		state.kills, state.player_level, state.elapsed, level.reward
+		state.hero_id, level, state.victory, state.elite_defeated,
+		state.kills, state.player_level, state.elapsed
 	)
 	var discoveries: Array[Dictionary] = records.new_content_discoveries()
 	return {

@@ -21,7 +21,7 @@ func legal_candidates(build_state: RefCounted, skill_pool_ids, relic_pool_ids, h
 			continue
 		if not build_state.has_skill(skill_id):
 			if build_state.can_add_skill(skill_id):
-				choices.append(ChoiceFactory.skill_unlock(skill_id))
+				choices.append(_with_weight(ChoiceFactory.skill_unlock(skill_id), _content_weight(skill_pool_ids, skill_id)))
 			continue
 		var current_level := int(build_state.skill_levels[skill_id])
 		if current_level >= int(skill["max_level"]):
@@ -29,12 +29,12 @@ func legal_candidates(build_state: RefCounted, skill_pool_ids, relic_pool_ids, h
 		var target_level := current_level + 1
 		if target_level == int(skill["branch_level"]) and not build_state.skill_branches.has(skill_id):
 			for branch_id in SkillCatalog.branch_ids(skill_id):
-				choices.append(ChoiceFactory.skill_branch(skill_id, branch_id, target_level))
+				choices.append(_with_weight(ChoiceFactory.skill_branch(skill_id, branch_id, target_level), _content_weight(skill_pool_ids, skill_id)))
 		elif build_state.can_upgrade_skill(skill_id):
-			choices.append(ChoiceFactory.skill_upgrade(skill_id, target_level))
+			choices.append(_with_weight(ChoiceFactory.skill_upgrade(skill_id, target_level), _content_weight(skill_pool_ids, skill_id)))
 	for relic_id in _unique_sorted_ids(relic_pool_ids):
 		if RelicCatalog.has(relic_id) and build_state.can_add_or_upgrade_relic(relic_id):
-			choices.append(ChoiceFactory.relic_upgrade(relic_id, int(build_state.relic_levels.get(relic_id, 0)) + 1))
+			choices.append(_with_weight(ChoiceFactory.relic_upgrade(relic_id, int(build_state.relic_levels.get(relic_id, 0)) + 1), _content_weight(relic_pool_ids, relic_id)))
 	if health_ratio < 0.7:
 		choices.append(ChoiceFactory.recovery())
 	return choices
@@ -47,7 +47,7 @@ func pick_group(build_state: RefCounted, skill_pool_ids, relic_pool_ids, health_
 			available.append(group)
 	if available.is_empty():
 		return []
-	var result: Array = available[rng.randi_range(0, available.size() - 1)].duplicate(true)
+	var result: Array = available[_weighted_group_index(available)].duplicate(true)
 	_shuffle(result)
 	return result
 
@@ -139,6 +139,38 @@ func _unique_sorted_ids(raw_ids) -> Array:
 		result.append(content_id)
 	result.sort()
 	return result
+
+
+func _content_weight(raw_pool, content_id: String) -> float:
+	return maxf(0.001, float(raw_pool.get(content_id, 1.0))) if raw_pool is Dictionary else 1.0
+
+
+func _with_weight(choice: Dictionary, weight: float) -> Dictionary:
+	choice["offer_weight"] = weight
+	return choice
+
+
+func _weighted_group_index(groups: Array) -> int:
+	var weights := PackedFloat32Array()
+	var total := 0.0
+	for group in groups:
+		var seen_content: Dictionary = {}
+		var weight := 0.0
+		for choice in group:
+			var content_id := str(choice["content_id"])
+			if not seen_content.has(content_id):
+				weight += float(choice.get("offer_weight", 1.0))
+				seen_content[content_id] = true
+		weight = maxf(weight, 0.001)
+		weights.append(weight)
+		total += weight
+	var roll := rng.randf() * total
+	var cursor := 0.0
+	for index in range(groups.size()):
+		cursor += weights[index]
+		if roll < cursor:
+			return index
+	return groups.size() - 1
 
 
 func _shuffle(values: Array) -> void:

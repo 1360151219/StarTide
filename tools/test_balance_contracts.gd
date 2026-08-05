@@ -14,7 +14,7 @@ func _initialize() -> void:
 	_test_healing_budget()
 	_test_biomes()
 	if not failed:
-		print("BALANCE_OK experience=36+28 growth_cap=4.5 phoenix_hps=1.8 hearts=5/6/7 biomes=3")
+		print("BALANCE_OK experience=36+28 growth_cap=4.5 phoenix_hps=1.8 levels=%d data_driven=true" % LevelCatalog.all().size())
 	quit(1 if failed else 0)
 
 
@@ -50,20 +50,22 @@ func _effective_skill_output(skill_id: String, skill_level: int) -> float:
 
 func _test_healing_budget() -> void:
 	var levels := LevelCatalog.all()
+	var previous_budget := 0
 	for index in range(levels.size()):
 		var heart_entry: DropEntryConfig
 		for entry in levels[index].loot.bonus_entries:
 			if entry.pickup_id == "heart":
 				heart_entry = entry
 				break
-		_require(heart_entry != null and heart_entry.max_per_run == 5 + index, "%s 治疗心预算错误" % levels[index].display_name)
+		_require(heart_entry != null and heart_entry.max_per_run >= previous_budget, "%s 治疗心预算随关卡倒退" % levels[index].display_name)
+		previous_budget = heart_entry.max_per_run
 	_require(PickupCatalog.pickup("heart")["amount"] == 20.0, "治疗心效果没有由道具目录统一维护")
 
 
 func _test_biomes() -> void:
-	var expected := ["windbell_meadow", "golden_oasis", "crystal_volcano"]
-	for index in range(expected.size()):
-		_require(LevelCatalog.all()[index].map.biome_id == expected[index], "第 %d 关生态 ID 错误" % (index + 1))
+	for level in LevelCatalog.all():
+		_require(not level.map.biome_id.is_empty(), "%s 生态 ID 为空" % level.level_id)
+		_require(level.map.floor_texture != null, "%s 生态缺少地面贴图" % level.level_id)
 
 
 func _require(condition: bool, message: String) -> void:

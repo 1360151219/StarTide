@@ -50,8 +50,16 @@ func active_ranged_count() -> int:
 	return count
 
 
+func active_counts_by_kind() -> Dictionary:
+	var counts: Dictionary = {}
+	for enemy in enemies:
+		if is_instance_valid(enemy):
+			counts[enemy.kind] = int(counts.get(enemy.kind, 0)) + 1
+	return counts
+
+
 func _spawn_next_enemy(elapsed: float) -> Node:
-	var enemy_id := spawner.roll_enemy_id(active_ranged_count())
+	var enemy_id := spawner.roll_enemy_id(active_counts_by_kind(), active_ranged_count())
 	if enemy_id.is_empty():
 		return null
 	return spawn_enemy(enemy_id, null, elapsed)
@@ -60,10 +68,12 @@ func _spawn_next_enemy(elapsed: float) -> Node:
 func spawn_enemy(enemy_id: String, elite_config: EliteConfig = null, elapsed := 0.0) -> Node:
 	var enemy := EnemyEntity.new()
 	var scaling := level.difficulty.multipliers_at(elapsed, level.duration)
+	var stage_entry: EnemySpawnEntryConfig = stage_director.current_stage().entry_for(enemy_id)
+	var ability_id: String = stage_entry.ability_variant_id if stage_entry != null else ""
 	var viewport := get_viewport()
 	var viewport_size := viewport.get_visible_rect().size if viewport != null else Vector2.ZERO
 	enemy.position = spawner.spawn_position(player.position, elite_config != null, viewport_size)
-	enemy.configure(enemy_id, scaling, elite_config)
+	enemy.configure(enemy_id, scaling, elite_config, ability_id)
 	enemy.spawn_serial = next_spawn_serial
 	next_spawn_serial += 1
 	enemy.z_index = level.map.depth_index(enemy.position.y)

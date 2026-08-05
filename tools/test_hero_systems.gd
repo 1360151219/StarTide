@@ -29,7 +29,7 @@ func _initialize() -> void:
 	_test_permanent_move_speed()
 	host.free()
 	if not failed:
-		print("HEROES_OK heroes=2 skills=6 isolated=true passives=2 turning=both effects=true slows=stacked projectiles=swept frame_stop=true")
+		print("HEROES_OK heroes=%d skills=%d isolated=true passives=2 turning=both effects=true slows=stacked projectiles=swept frame_stop=true" % [HeroCatalog.ids().size(), HeroCatalog.SKILLS.size()])
 	quit(1 if failed else 0)
 
 

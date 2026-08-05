@@ -1,45 +1,73 @@
 extends RefCounted
 
-const IDS := ["green_grub_roll", "bat_bolt"]
-
-const ABILITIES := {
-	"green_grub_roll": {
-		"enemy_id": "green_grub", "hit_type": "grub_roll", "name": "团团滚",
-		"warning": 0.65, "cooldown": 5.0, "min_range": 100.0, "max_range": 260.0,
-		"speed": 185.0, "distance": 100.0, "damage": 7.0, "recovery": 0.45,
-		"shape": "lane", "lane_width": 38.0,
-	},
-	"bat_bolt": {
-		"enemy_id": "bat", "hit_type": "bat_bolt", "name": "暮翼光弹",
-		"warning": 0.9, "lock_time": 0.3, "cooldown": 4.5,
-		"min_range": 140.0, "max_range": 480.0, "projectile_speed": 260.0,
-		"projectile_radius": 11.0, "projectile_distance": 520.0,
-		"damage": 6.0, "recovery": 0.4, "shape": "dashed_line",
-	},
-}
-
-const ENEMY_ABILITIES := {
-	"green_grub": "green_grub_roll",
-	"bat": "bat_bolt",
-}
-
-const THREAT_MULTIPLIERS := {
-	"green_grub": 1.10,
-	"bat": 1.25,
-}
+const MANIFEST: ContentManifestConfig = preload("res://content/enemy_abilities.tres")
+static var ABILITIES: Dictionary = MANIFEST.as_dictionary()
 
 
 static func ability(ability_id: String) -> Dictionary:
-	return ABILITIES[ability_id]
+	return ABILITIES.get(ability_id, {})
 
 
 static func ability_for_enemy(enemy_id: String) -> String:
-	return ENEMY_ABILITIES.get(enemy_id, "")
+	var fallback := ""
+	for ability_id in ABILITIES:
+		var data: Dictionary = ABILITIES[ability_id]
+		if str(data.get("enemy_id", "")) != enemy_id:
+			continue
+		if bool(data.get("is_default", false)):
+			return ability_id
+		if fallback.is_empty():
+			fallback = ability_id
+	return fallback
 
 
-static func threat_multiplier(enemy_id: String) -> float:
-	return float(THREAT_MULTIPLIERS.get(enemy_id, 1.0))
+static func threat_multiplier(ability_id: String) -> float:
+	return float(ability(ability_id).get("threat_multiplier", 1.0))
 
 
 static func ids() -> PackedStringArray:
-	return PackedStringArray(IDS)
+	return PackedStringArray(ABILITIES.keys())
+
+
+static func validation_errors(valid_enemy_ids := PackedStringArray()) -> PackedStringArray:
+	var errors := MANIFEST.validation_errors(PackedStringArray([
+		"enemy_id", "runtime_kind", "hit_type", "name", "warning", "cooldown",
+		"min_range", "max_range", "damage", "recovery", "shape", "threat_multiplier",
+	]))
+	var default_enemies: Dictionary = {}
+	for ability_id in ABILITIES:
+		var data: Dictionary = ABILITIES[ability_id]
+		var enemy_id := str(data.get("enemy_id", ""))
+		if not valid_enemy_ids.is_empty() and not valid_enemy_ids.has(enemy_id):
+			errors.append("%s 引用了未知怪物 %s" % [ability_id, enemy_id])
+		var runtime_kind := str(data.get("runtime_kind", ""))
+		if runtime_kind == "roll":
+			_validate_positive_fields(errors, ability_id, data, PackedStringArray(["speed", "distance", "lane_width"]))
+			if str(data.get("shape", "")) != "lane":
+				errors.append("%s 的滚动预警必须使用 lane" % ability_id)
+		elif runtime_kind == "bolt":
+			_validate_positive_fields(errors, ability_id, data, PackedStringArray([
+				"lock_time", "projectile_speed", "projectile_radius", "projectile_distance",
+			]))
+			if str(data.get("shape", "")) != "dashed_line":
+				errors.append("%s 的弹体预警必须使用 dashed_line" % ability_id)
+		else:
+			errors.append("%s 使用了未知运行类型 %s" % [ability_id, runtime_kind])
+		if str(data.get("hit_type", "")).is_empty():
+			errors.append("%s 的命中类型不能为空" % ability_id)
+		_validate_positive_fields(errors, ability_id, data, PackedStringArray([
+			"warning", "cooldown", "max_range", "damage", "recovery", "threat_multiplier",
+		]))
+		if float(data.get("min_range", -1.0)) < 0.0 or float(data.get("min_range", 0.0)) >= float(data.get("max_range", 0.0)):
+			errors.append("%s 的施法距离区间无效" % ability_id)
+		if bool(data.get("is_default", false)):
+			if default_enemies.has(enemy_id):
+				errors.append("怪物 %s 配置了多个默认技能" % enemy_id)
+			default_enemies[enemy_id] = ability_id
+	return errors
+
+
+static func _validate_positive_fields(errors: PackedStringArray, ability_id: String, data: Dictionary, fields: PackedStringArray) -> void:
+	for field in fields:
+		if float(data.get(field, 0.0)) <= 0.0:
+			errors.append("%s 的 %s 必须大于 0" % [ability_id, field])

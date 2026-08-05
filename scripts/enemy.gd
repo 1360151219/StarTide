@@ -23,12 +23,14 @@ var is_elite := false
 var display_name := ""
 var visual_scale := 1.0
 var ability_damage_multiplier := 1.0
+var ability_id := ""
 var contact_enabled := true
 var spawn_serial := 0
 
 
-func configure(enemy_kind: String, scaling: Dictionary, elite_config: EliteConfig = null) -> void:
+func configure(enemy_kind: String, scaling: Dictionary, elite_config: EliteConfig = null, configured_ability_id := "") -> void:
 	kind = enemy_kind
+	ability_id = configured_ability_id
 	var data := EnemyCatalog.enemy(kind)
 	max_health = float(data["health"]) * float(scaling["health"])
 	speed = float(data["speed"]) * float(scaling["speed"])

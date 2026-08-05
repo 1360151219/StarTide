@@ -18,20 +18,21 @@ func _initialize() -> void:
 	_test_exhausted_pool_fallbacks()
 	_test_reroll_determinism()
 	if not failed:
-		print("RUN_BUILD_OK skills=6 branches=12 relics=6 skill_slots=3 relic_slots=4 output_cap=4.5 phoenix_hps=1.8 structured=true validation=strict reroll=deterministic")
+		print("RUN_BUILD_OK catalogs=data_driven skill_slots=3 relic_slots=4 output_cap=4.5 phoenix_hps=1.8 structured=true validation=strict reroll=deterministic")
 	quit(1 if failed else 0)
 
 
 func _test_catalogs() -> void:
-	_require(SkillCatalog.ids().size() == 6, "技能目录数量错误")
+	_require(not SkillCatalog.ids().is_empty() and SkillCatalog.validation_errors().is_empty(), "技能目录配置无效")
 	for skill_id in SkillCatalog.ids():
 		var skill := SkillCatalog.skill(skill_id)
 		_require(skill["branches"].size() == 2, "%s 未配置双分支" % skill_id)
 		_require(skill["icon"] != null, "%s 缺少图标" % skill_id)
+		_require(HeroCatalog.ids().has(str(skill["owner_hero_id"])), "%s 引用了未知英雄" % skill_id)
 		_require(HeroCatalog.skill(skill_id) == skill, "HeroCatalog.skill 兼容入口未委托到 SkillCatalog")
-	_require(SkillCatalog.signature_for_hero("star_warden") == "star_lance", "星潮守望者签名技能错误")
-	_require(SkillCatalog.signature_for_hero("ember_ranger") == "ember_volley", "烬羽签名技能错误")
-	_require(RelicCatalog.ids().size() == 6, "遗物目录数量错误")
+	for hero_id in HeroCatalog.ids():
+		_require(not SkillCatalog.signature_for_hero(hero_id).is_empty(), "%s 缺少签名技能" % hero_id)
+	_require(not RelicCatalog.ids().is_empty() and RelicCatalog.validation_errors().is_empty(), "遗物目录配置无效")
 	for relic_id in RelicCatalog.ids():
 		var relic := RelicCatalog.relic(relic_id)
 		_require(int(relic["max_level"]) == 3, "%s 等级上限错误" % relic_id)

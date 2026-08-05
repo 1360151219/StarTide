@@ -13,14 +13,14 @@ static func stage_pressure(level: LevelConfig, stage_index: int) -> float:
 	var scaling := level.difficulty.multipliers_at(midpoint, level.duration)
 	var reference_speed: float = EnemyCatalog.enemy("slime")["speed"]
 	var weighted_threat := 0.0
-	for enemy_id in stage.enemy_weights:
-		var enemy := EnemyCatalog.enemy(enemy_id)
-		var weight := float(stage.enemy_weights[enemy_id])
+	for entry in stage.enemy_entries:
+		var enemy := EnemyCatalog.enemy(entry.enemy_id)
+		var weight := entry.weight
 		var health: float = enemy["health"] * scaling["health"]
 		var damage: float = enemy["damage"] * scaling["damage"]
 		var speed_ratio: float = enemy["speed"] * scaling["speed"] / reference_speed
-		var ability_ratio := _ability_active_ratio(level, stage_index, enemy_id)
-		var ability_threat := lerpf(1.0, EnemyAbilityCatalog.threat_multiplier(enemy_id), ability_ratio)
+		var ability_ratio := _ability_active_ratio(level, stage_index, entry)
+		var ability_threat := lerpf(1.0, EnemyAbilityCatalog.threat_multiplier(entry.ability_variant_id), ability_ratio)
 		weighted_threat += weight * health * damage * speed_ratio * ability_threat
 	return spawn_rate * weighted_threat
 
@@ -35,10 +35,9 @@ static func level_pressure(level: LevelConfig) -> float:
 	return weighted_total / level.duration
 
 
-static func _ability_active_ratio(level: LevelConfig, stage_index: int, enemy_id: String) -> float:
+static func _ability_active_ratio(level: LevelConfig, stage_index: int, entry: EnemySpawnEntryConfig) -> float:
 	var stage := level.stages[stage_index]
-	var ability_id := EnemyAbilityCatalog.ability_for_enemy(enemy_id)
-	if ability_id.is_empty() or not stage.enabled_ability_ids.has(ability_id):
+	if entry.ability_variant_id.is_empty():
 		return 0.0
 	if level.enemy_ability_budget == null:
 		return 1.0

@@ -82,10 +82,8 @@ func _state_for(enemy: Node) -> Dictionary:
 
 func _can_begin(state: Dictionary, enemy: Node, elapsed: float, warning_count: int) -> bool:
 	var budget: EnemyAbilityBudgetConfig = level.enemy_ability_budget
-	var ability_id := AbilityCatalog.ability_for_enemy(enemy.kind)
+	var ability_id: String = enemy.ability_id
 	if budget == null or ability_id.is_empty() or elapsed < budget.opening_protection_time:
-		return false
-	if not stage_director.current_stage().enabled_ability_ids.has(ability_id):
 		return false
 	if float(state["visible_since"]) < 0.0 or elapsed - float(state["visible_since"]) < VISIBLE_CAST_DELAY:
 		return false
@@ -98,14 +96,14 @@ func _can_begin(state: Dictionary, enemy: Node, elapsed: float, warning_count: i
 	var config := AbilityCatalog.ability(ability_id)
 	if AbilityRules.warning_covers_player(enemy, player, config) and AbilityRules.player_danger_count(states, player.position) >= budget.max_player_danger_areas:
 		return false
-	if ability_id == "bat_bolt" and projectile_system.projectiles.size() >= budget.max_projectiles:
+	if str(config["runtime_kind"]) == "bolt" and projectile_system.projectiles.size() >= budget.max_projectiles:
 		return false
 	var distance: float = enemy.position.distance_to(player.position)
 	return distance >= float(config["min_range"]) and distance <= float(config["max_range"])
 
 
 func _begin_warning(state: Dictionary, enemy: Node, elapsed: float) -> void:
-	var ability_id := AbilityCatalog.ability_for_enemy(enemy.kind)
+	var ability_id: String = enemy.ability_id
 	var config := AbilityCatalog.ability(ability_id)
 	var direction: Vector2 = enemy.position.direction_to(player.position)
 	state["ability_id"] = ability_id
@@ -124,7 +122,7 @@ func _advance_warning(state: Dictionary, enemy: Node, delta: float, elapsed: flo
 		enemy.contact_enabled = true
 		return
 	var config := AbilityCatalog.ability(state["ability_id"])
-	if state["ability_id"] == "bat_bolt":
+	if str(config["runtime_kind"]) == "bolt":
 		_advance_idle(enemy, delta, elapsed)
 		if float(state["phase_left"]) > float(config["lock_time"]) + 0.0001:
 			state["direction"] = enemy.position.direction_to(player.position)
@@ -137,12 +135,12 @@ func _advance_warning(state: Dictionary, enemy: Node, delta: float, elapsed: flo
 
 func _start_execution(state: Dictionary, enemy: Node, elapsed: float) -> void:
 	var config := AbilityCatalog.ability(state["ability_id"])
-	match state["ability_id"]:
-		"green_grub_roll":
+	match str(config["runtime_kind"]):
+		"roll":
 			state["phase"] = "executing"
 			state["remaining"] = float(config["distance"])
 			enemy.contact_enabled = false
-		"bat_bolt":
+		"bolt":
 			projectile_system.spawn_bolt(enemy, enemy.position, state["direction"], config, enemy.ability_damage_multiplier)
 			_enter_recovery(state, enemy, elapsed)
 
@@ -204,8 +202,8 @@ func _elite_slot_reserved(elapsed: float, warning_count: int) -> bool:
 		return false
 	for enemy in enemy_system.snapshot():
 		if enemy.is_elite and _is_visible(enemy.position):
-			var ability_id := AbilityCatalog.ability_for_enemy(enemy.kind)
-			if ability_id.is_empty() or not stage_director.current_stage().enabled_ability_ids.has(ability_id):
+			var ability_id: String = enemy.ability_id
+			if ability_id.is_empty():
 				continue
 			var state := _state_for(enemy)
 			if state["phase"] == "idle" and elapsed >= float(state["cooldown_until"]):

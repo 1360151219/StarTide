@@ -1,7 +1,7 @@
 # 《星潮守望者》架构说明
 
-> 适用版本：Godot 4.7 / 三关 MVP v2
-> 更新日期：2026-07-26
+> 适用版本：Godot 4.7 / 配置化战役 v3
+> 更新日期：2026-08-04
 
 ## 1. 架构目标
 
@@ -51,12 +51,13 @@ HeroRig2D
   └─ VisualRoot → 统一脚底原点、呼吸和跑步起伏
 
 LevelCatalog
-  └─ levels/*.tres
-      └─ LevelConfig
+  └─ levels/campaign_main.tres → CampaignManifest
+      ├─ ChapterConfig[] / DifficultyProfileConfig[]
+      └─ LevelConfig[]
           ├─ MapConfig
           ├─ DifficultyConfig
           ├─ LootConfig → DropEntryConfig[]
-          ├─ LevelContentPoolConfig
+          ├─ LevelContentPoolConfig / EquipmentDropTableConfig
           ├─ EnemyAbilityBudgetConfig
           ├─ StageConfig[]
           ├─ EliteConfig
@@ -66,6 +67,11 @@ LevelCatalog
 LevelPresentationCatalog
   └─ levels/level_presentations.tres
       └─ LevelPresentationConfig[]
+
+ContentManifestConfig
+  └─ content/*.tres
+      ├─ enemies / pickups / skills / relics
+      └─ equipment
 ```
 
 ## 3. 关键模块
@@ -73,7 +79,7 @@ LevelPresentationCatalog
 | 模块 | 主要文件 | 职责 |
 | --- | --- | --- |
 | 组合根 | `scripts/game.gd` | 创建服务与 UI、启动会话、暂停/恢复、升级与结算路由 |
-| 关卡配置 | `scripts/levels/`、`levels/*.tres` | 地图、阶段、怪物权重、掉落池、技能/遗物首次出现、预算、精英、胜负与奖励 |
+| 战役与关卡配置 | `scripts/levels/`、`levels/*.tres` | 战役清单、章节压力曲线、地图、阶段编成、候选池、装备掉落、精英、胜负与奖励 |
 | 关卡展示 | `level_presentation_catalog.gd`、`level_presentations.tres` | 预览图、主题色和预览怪物；与战斗配置按稳定关卡 ID 关联 |
 | 单局编排 | `scripts/run/run_session.gd` | 单帧推进顺序、统一受击、升级暂停、胜负边界 |
 | 内容解析 | `run_content_resolver.gd`、`run_build_state.gd` | 合并关卡首次开放内容和玩家已发现内容，维护技能槽、分支、遗物与重抽 |
@@ -87,7 +93,7 @@ LevelPresentationCatalog
 | 永久成长与发现 | `scripts/profile/`、`run_records.gd` | schema 6、英雄经验、训练、装备品质/等级、战力、五类发现和旧档迁移 |
 | 角色帧动画 | `hero_rig_2d.gd`、`hero_sprite_catalog.gd`、`hero_rig_2d.tscn` | 单一完整角色绘制节点、统一脚底基线、7 状态、左右镜像和暂停冻结 |
 | 表现层 | `scripts/presentation/`、`scripts/ui/` | 三套生态、FrontendShell、BottomBar、角色中心、HUD、反馈和覆盖层 |
-| 数据目录 | `hero_catalog.gd`、`enemy_catalog.gd`、`skill_catalog.gd`、`relic_catalog.gd`、`pickup_catalog.gd` | 静态数值、素材和稳定 ID |
+| 数据目录 | `content/*.tres`、各 `*_catalog.gd` | 资源清单保存数值、素材和稳定 ID；目录脚本只提供查询与领域校验 |
 
 ## 4. 关卡配置
 
@@ -115,13 +121,13 @@ LevelPresentationCatalog
 
 ### 4.3 LevelContentPoolConfig
 
-每关声明本关首次加入的技能和遗物，可通过 `inherit_from_level_id` 继承更早关卡。`LevelCatalog` 统一负责：
+每关分别声明“首次出现 ID”和“本局候选条目”，可通过 `inherit_from_level_id` 继承更早关卡。候选条目包含权重与保底标记，技能/遗物各自拥有池上限和玩家已发现内容槽位。`LevelCatalog` 统一负责：
 
-- 解析累计技能池和遗物池。
+- 解析累计首次出现集合与带权候选池。
 - 推导怪物、道具、技能和遗物的首次出现关卡。
 - 校验继承方向、重复首次声明、未知 ID 和预览池外怪物。
 
-`RunContentResolver` 将关卡累计池与玩家已发现内容合并，并过滤为当前英雄的技能。这样后期技能或遗物被发现后，重玩早期关卡仍可使用；怪物和掉落不参与这项合并，始终保持关卡本地生态。
+`RunContentResolver` 先按英雄过滤，再保留签名技能和其他保底条目，最后用确定性随机流按权重进行无放回抽取。玩家已发现内容只能进入关卡预留槽位，最终结果仍受池上限约束；怪物和掉落不参与合并，始终保持关卡本地生态。
 
 当前递进关系：
 
@@ -139,7 +145,7 @@ LevelPresentationCatalog
 
 ### 4.5 StageConfig
 
-每阶段保存开始时间、刷怪间隔、额外生成概率、四类怪物权重、喘息时间和 `enabled_ability_ids`。技能开放顺序由资源决定，不写死在状态机中。
+每阶段保存开始时间、刷怪间隔、额外生成概率、喘息时间和 `EnemySpawnEntryConfig[]`。每个怪物条目独立配置权重、场上数量上限和技能变体；远程怪物仍额外受到关卡全局上限约束。技能开放顺序由编成资源决定，不写死在状态机中。
 
 ### 4.6 EnemyAbilityBudgetConfig
 
@@ -224,7 +230,7 @@ idle/站位
 
 `HeroStatResolver` 将等级、训练和装备解析为同一不可变永久快照；`PowerRatingService` 从这份快照对应的真实修正派生战力。开局只读取一次，经 `RunSession → RunWorldBuilder → Player/SkillController/PickupSystem` 注入。本局中途修改档案不会改变正在进行的战斗。
 
-永久装备与单局遗物分别由 `EquipmentInventory` 和 `RunBuildState` 管理。新档与旧档迁移通过稳定奖励收据获得三件新手装备；三关首通奖励也使用稳定实例 ID，重复结算不会重复发放。每次胜利由 `EquipmentDropService` 独立生成 1～4 件随机品质装备；同名消耗升级与材料保护只修改装备实例。发放成功前不会写入固定奖励收据，异常冲突解除后的后续通关会自动补发。
+永久装备与单局遗物分别由 `EquipmentInventory` 和 `RunBuildState` 管理。新档与旧档迁移通过战役清单中的稳定奖励收据获得三件新手装备；各关首通奖励由 `RewardConfig.first_clear_equipment_reward` 保存稳定奖励与实例 ID。每次胜利由当前关卡的 `EquipmentDropTableConfig` 生成 1～4 件装备，装备池、内容阶级、条目权重、品质权重和初始等级区间都由关卡决定。同名消耗升级与材料保护只修改装备实例；发放成功前不会写入固定奖励收据。
 
 ## 9. 局内构筑与升级候选
 
@@ -251,7 +257,7 @@ idle/站位
 
 英雄始终公开；其余类别未发现时只显示剪影、“？？？”和已发现数量。技能卡公开后，两个分支仍分别保持隐藏，直到玩家在局内实际选择对应分支。结算页统计本局新发现数量。
 
-发现数据还参与 `RunContentResolver`：后期已发现的同英雄技能和遗物可回流至早期关卡构筑池，但不会修改该关怪物或掉落池。
+发现数据还参与 `RunContentResolver`：已发现的同英雄技能和遗物只有在关卡预留发现槽位时才可进入候选，并受最终池上限约束，不会修改怪物或掉落池。
 
 ## 11. 随机流
 
@@ -274,11 +280,11 @@ idle/站位
 
 当前统一入口执行 26 套测试，并拒绝脚本解析错误、测试标识缺失或重复。除关卡、阶段、刷怪、怪物技能、敌弹、胜负、成长、战役、声音、比例和架构测试外，还包括：
 
-- `test_content_pools.gd`：三关怪物/掉落池、技能/遗物继承、首次出现和零权重占位。
+- `test_content_pools.gd`：清单中全部关卡的怪物编成、内容阶级、首次出现、继承、带权候选和池上限。
 - `test_run_build.gd`：6 技能、12 分支、6 遗物、3/4 槽位、输出上限、严格候选和确定性重抽。
-- `test_content_runtime.gd`：实际发现事件、跨关重玩、加速/范围伤害道具、拾取范围遗物和分支运行时。
+- `test_content_runtime.gd`：实际发现事件、发现槽位与池上限、加速/范围伤害道具、拾取范围遗物和分支运行时。
 - `test_power_equipment.gd`：战力黄金值、装备互斥、奖励幂等、属性快照和 schema 4→6。
-- `test_equipment_progression.gd`：1～4 件保证掉落、75/20/5 品质权重、品质倍率/等级上限和同名消耗升级。
+- `test_equipment_progression.gd`：逐关 1～4 件保证掉落、装备内容阶级、品质曲线、掉落等级区间和同名消耗升级。
 - `test_hero_rig.gd`：两名英雄、单一完整绘制组件、7 个动画状态、512 像素透明画布、统一脚底基线、镜像、暂停和整图回退。
 - `test_hero_rig_tuner.gd`：2 名英雄、7 个动作、96/188/360 三档尺寸、播放暂停、从首帧重播和稳定接口边界。
 
@@ -292,11 +298,12 @@ idle/站位
 
 ## 13. 扩展原则
 
-- 新增怪物技能：先加入 `EnemyAbilityCatalog`，再扩展状态机执行分支和预警形状测试。
-- 新增关卡：新增 `LevelConfig` 资源、展示清单项和内容池声明，再加入 `LevelCatalog`，不修改 `game.gd` 或创建新的大厅卡片类。
-- 新增技能：只在 `SkillCatalog` 声明数值、两条分支和运行时键，再由目标关卡内容池声明首次出现。
-- 新增遗物或道具：分别扩展 `RelicCatalog` / `PickupCatalog`，由关卡资源控制首次进入候选或掉落。
-- 新增永久装备：扩展 `EquipmentCatalog`，通过 `EquipmentRewardCatalog` 声明稳定奖励，不把永久装备加入单局遗物。
+- 新增怪物技能：同类变体加入 `content/enemy_abilities.tres`；全新 `runtime_kind` 再扩展状态机执行分支和预警形状测试。
+- 新增关卡：新增 `LevelConfig` 与展示项，把关卡资源加入 `campaign_main.tres` 的章节和关卡数组，不修改 `LevelCatalog`、`game.gd` 或创建新的大厅卡片类。
+- 新增技能：向 `content/skills.tres` 增加数值、两条分支和运行时键，再由目标关卡声明首次出现与候选权重。
+- 新增怪物技能变体：扩展 `content/enemy_abilities.tres` 并复用已有 `runtime_kind`；全新行为才增加运行时策略。
+- 新增遗物或道具：分别扩展 `content/relics.tres` / `content/pickups.tres`，由关卡资源控制候选或战斗掉落。
+- 新增永久装备：扩展 `content/equipment.tres` 并设置独立内容阶级；重复掉落放入关卡掉落表，固定首通奖励放入该关 `RewardConfig`。
 - 新增英雄：提供目录、三项技能和 6 张约定命名的完整姿势帧，复用 `HeroRig2D`，不复制状态机。
 - 新增存储后端：实现 `ProfileRepository`，不让战斗系统直接依赖云端 SDK。
 - 新增敌方弹种：扩展 `EnemyProjectileSystem`，不向英雄弹体加入阵营分支。

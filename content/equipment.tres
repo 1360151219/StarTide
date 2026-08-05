@@ -1,0 +1,99 @@
+[gd_resource type="Resource" script_class="ContentManifestConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/content/content_manifest_config.gd" id="1_manifest"]
+[ext_resource type="Script" path="res://scripts/content/content_entry_config.gd" id="2_entry"]
+[ext_resource type="Texture2D" path="res://assets/generated/equipment/apprentice_starwand.png" id="3_starwand"]
+[ext_resource type="Texture2D" path="res://assets/generated/equipment/windstring_bow.png" id="4_bow"]
+[ext_resource type="Texture2D" path="res://assets/generated/equipment/meadow_guard.png" id="5_guard"]
+[ext_resource type="Texture2D" path="res://assets/generated/equipment/crystal_vest.png" id="6_vest"]
+[ext_resource type="Texture2D" path="res://assets/generated/equipment/windbell_charm.png" id="7_windbell"]
+[ext_resource type="Texture2D" path="res://assets/generated/equipment/timeglass_charm.png" id="8_timeglass"]
+
+[sub_resource type="Resource" id="Starwand"]
+script = ExtResource("2_entry")
+content_id = "apprentice_starwand"
+data = {
+"base_stats": {"damage_percent": 0.05},
+"content_tier": 1,
+"default_rarity": "common",
+"description": "稳定放大英雄技能的基础威力。",
+"icon": ExtResource("3_starwand"),
+"name": "启程星杖",
+"slot": "weapon",
+"stats_per_enhance": {"damage_percent": 0.01}
+}
+
+[sub_resource type="Resource" id="Bow"]
+script = ExtResource("2_entry")
+content_id = "windstring_bow"
+data = {
+"base_stats": {"damage_percent": 0.04, "projectile_speed_percent": 0.04},
+"content_tier": 2,
+"default_rarity": "rare",
+"description": "提高技能威力与投射物飞行速度。",
+"icon": ExtResource("4_bow"),
+"name": "风弦短弓",
+"slot": "weapon",
+"stats_per_enhance": {"damage_percent": 0.008, "projectile_speed_percent": 0.006}
+}
+
+[sub_resource type="Resource" id="Guard"]
+script = ExtResource("2_entry")
+content_id = "meadow_guard"
+data = {
+"base_stats": {"max_health_percent": 0.08},
+"content_tier": 1,
+"default_rarity": "common",
+"description": "以柔韧叶纤维提升最大生命。",
+"icon": ExtResource("5_guard"),
+"name": "风铃护衣",
+"slot": "armor",
+"stats_per_enhance": {"max_health_percent": 0.015}
+}
+
+[sub_resource type="Resource" id="Vest"]
+script = ExtResource("2_entry")
+content_id = "crystal_vest"
+data = {
+"base_stats": {"max_health_flat": 10.0, "move_speed_percent": 0.02},
+"content_tier": 2,
+"default_rarity": "rare",
+"description": "直接增加最大生命，并提供少量移速。",
+"icon": ExtResource("6_vest"),
+"name": "彩晶背心",
+"slot": "armor",
+"stats_per_enhance": {"max_health_flat": 2.0}
+}
+
+[sub_resource type="Resource" id="Windbell"]
+script = ExtResource("2_entry")
+content_id = "windbell_charm"
+data = {
+"base_stats": {"move_speed_percent": 0.06, "pickup_radius_percent": 0.1},
+"content_tier": 1,
+"default_rarity": "common",
+"description": "提高移动速度与拾取范围。",
+"icon": ExtResource("7_windbell"),
+"name": "风铃叶坠",
+"slot": "charm",
+"stats_per_enhance": {"move_speed_percent": 0.006, "pickup_radius_percent": 0.015}
+}
+
+[sub_resource type="Resource" id="Timeglass"]
+script = ExtResource("2_entry")
+content_id = "timeglass_charm"
+data = {
+"base_stats": {"cooldown_reduction": 0.04, "range_percent": 0.04},
+"content_tier": 3,
+"default_rarity": "rare",
+"description": "缩短技能间隔并扩大作用范围。",
+"icon": ExtResource("8_timeglass"),
+"name": "时砂棱镜",
+"slot": "charm",
+"stats_per_enhance": {"cooldown_reduction": 0.006, "range_percent": 0.006}
+}
+
+[resource]
+script = ExtResource("1_manifest")
+catalog_id = "equipment"
+entries = Array[ExtResource("2_entry")]([SubResource("Starwand"), SubResource("Bow"), SubResource("Guard"), SubResource("Vest"), SubResource("Windbell"), SubResource("Timeglass")])

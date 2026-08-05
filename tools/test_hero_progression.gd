@@ -26,7 +26,7 @@ func _initialize() -> void:
 	for path in cleanup_paths:
 		DirAccess.remove_absolute(path)
 	if not failed:
-		print("PROGRESSION_OK schema=6 migration=true levels=10 skill_points=9 reset=free skills=6 snapshot=true")
+		print("PROGRESSION_OK schema=6 migration=true levels=10 skill_points=9 reset=free skills=%d snapshot=true" % HeroCatalog.SKILLS.size())
 	quit(1 if failed else 0)
 
 
@@ -34,14 +34,14 @@ func _test_rewards_and_training() -> void:
 	var test_path := _new_test_path("progression")
 	var records := RunRecords.new(test_path)
 	var level := LevelCatalog.first()
-	var no_reward := records.record_level_run("ember_ranger", level.level_id, false, false, 0, 1, 29.9, level.reward)
+	var no_reward := records.record_level_run("ember_ranger", level, false, false, 0, 1, 29.9)
 	_require(no_reward["progression_reward"]["hero_xp_gained"] == 10, "30 秒内有效失败没有获得保底英雄经验")
-	var mid_reward := records.record_level_run("ember_ranger", level.level_id, false, false, 0, 1, 30.0, level.reward)
+	var mid_reward := records.record_level_run("ember_ranger", level, false, false, 0, 1, 30.0)
 	_require(mid_reward["progression_reward"]["hero_xp_gained"] == 20, "30 秒失败经验边界错误")
-	var failure_reward := records.record_level_run("ember_ranger", level.level_id, false, false, 0, 1, 90.0, level.reward)
+	var failure_reward := records.record_level_run("ember_ranger", level, false, false, 0, 1, 90.0)
 	_require(failure_reward["progression_reward"]["hero_xp_gained"] == 30, "失败英雄经验没有按存活时间封顶")
 	for _index in range(9):
-		records.record_level_run("star_warden", level.level_id, true, false, 1, 1, 90.0, level.reward)
+		records.record_level_run("star_warden", level, true, false, 1, 1, 90.0)
 	var snapshot := records.progression_snapshot("star_warden")
 	_require(snapshot["level"] == 10 and snapshot["total_skill_points"] == 9, "九次通关没有达到十级或获得九点技能点")
 	_require(not records.train_skill("star_warden", "star_lance")["success"], "未发现技能被永久培养")

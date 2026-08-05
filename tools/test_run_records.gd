@@ -53,7 +53,7 @@ func _initialize() -> void:
 		push_error("RECORDS_FAILED: 图鉴发现未持久化或跨启动重复报告")
 		_finish(1)
 		return
-	var failed_run := first.record_level_run("star_warden", "level_01", false, false, 5, 2, 12.0, LevelCatalog.first().reward)
+	var failed_run := first.record_level_run("star_warden", LevelCatalog.first(), false, false, 5, 2, 12.0)
 	if failed_run["first_clear"] or not failed_run["newly_unlocked"].is_empty() or first.is_level_unlocked("level_02"):
 		push_error("RECORDS_FAILED: 失败局错误解锁关卡或发放首通")
 		_finish(1)
@@ -67,7 +67,7 @@ func _initialize() -> void:
 		_finish(1)
 		return
 	var first_level := LevelCatalog.by_id("level_01")
-	var unlock_result: Dictionary = reloaded.record_level_run("ember_ranger", "level_01", true, true, 30, 6, 90.0, first_level.reward)
+	var unlock_result: Dictionary = reloaded.record_level_run("ember_ranger", first_level, true, true, 30, 6, 90.0)
 	if not unlock_result["first_clear"] or unlock_result["newly_unlocked"] != "level_02":
 		push_error("RECORDS_FAILED: 首通奖励或解锁结果错误")
 		_finish(1)
@@ -81,7 +81,16 @@ func _initialize() -> void:
 		push_error("RECORDS_FAILED: 关卡战绩与英雄战绩没有独立保存")
 		_finish(1)
 		return
-	var repeat_result := progress_reloaded.record_level_run("ember_ranger", "level_01", true, false, 20, 5, 90.0, first_level.reward)
+	var unlock_config := ConfigFile.new()
+	unlock_config.load(test_path)
+	unlock_config.set_value("progress", "unlocked_level_02", false)
+	unlock_config.save(test_path)
+	progress_reloaded = RunRecords.new(test_path)
+	if not progress_reloaded.is_level_unlocked("level_02"):
+		push_error("RECORDS_FAILED: 新增关卡后没有按既有通关记录修复解锁链")
+		_finish(1)
+		return
+	var repeat_result := progress_reloaded.record_level_run("ember_ranger", first_level, true, false, 20, 5, 90.0)
 	if repeat_result["first_clear"] or not repeat_result["newly_unlocked"].is_empty() or progress_reloaded.is_level_unlocked("level_03"):
 		push_error("RECORDS_FAILED: 重复通关再次发放首通或越级解锁")
 		_finish(1)

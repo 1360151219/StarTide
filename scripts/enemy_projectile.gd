@@ -3,6 +3,7 @@ extends Node2D
 var source: Node
 var velocity := Vector2.ZERO
 var damage := 0.0
+var hit_type := "enemy_projectile"
 var radius := 11.0
 var max_distance := 520.0
 var traveled := 0.0
