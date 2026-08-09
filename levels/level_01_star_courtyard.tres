@@ -84,12 +84,14 @@ script = ExtResource("2_map")
 map_id = "star_courtyard"
 display_name = "风铃草原"
 floor_texture = ExtResource("9_floor")
-background_color = Color(0.46, 0.67, 0.5, 1)
-floor_tint = Color(0.72, 0.79, 0.7, 0.96)
+background_color = Color(0.38, 0.63, 0.55, 1)
+floor_tint = Color(0.66, 0.8, 0.77, 0.96)
 border_color = Color(0.37, 0.69, 0.38, 0.78)
 glow_color = Color(1, 0.96, 0.52, 0.055)
-decoration_count = 56
-environment_particle_color = Color(1, 0.98, 0.75, 0.72)
+scene_saturation = 0.7
+scene_exposure = 0.94
+decoration_count = 48
+environment_particle_color = Color(1, 0.98, 0.75, 0.58)
 
 [sub_resource type="Resource" id="FirstClearEquipmentEntry"]
 script = ExtResource("16_grant")

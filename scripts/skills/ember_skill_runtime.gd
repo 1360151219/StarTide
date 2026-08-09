@@ -3,6 +3,9 @@ extends Node
 signal skill_released(skill_id: String)
 
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
+const CombatTimeline = preload("res://scripts/combat/combat_timeline.gd")
+const METEOR_FALL_TIME := 0.34
+const PHOENIX_IMPACT_TIME := 0.18
 
 var player: Node2D
 var enemies: Node2D
@@ -16,6 +19,7 @@ var build_state: RefCounted
 var volley_timer := 0.25
 var meteor_timer := 1.0
 var phoenix_timer := 1.0
+var timeline := CombatTimeline.new()
 
 
 func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Node2D, combat_effects: Node2D, audio_manager: Node, random: RandomNumberGenerator, skill_levels: Dictionary, permanent_modifiers: Dictionary, build: RefCounted) -> void:
@@ -30,7 +34,8 @@ func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Nod
 	build_state = build
 
 
-func advance(skill_delta: float, _real_delta: float, _elapsed: float) -> void:
+func advance(skill_delta: float, real_delta: float, _elapsed: float) -> void:
+	timeline.advance(real_delta)
 	_update_ember_volley(skill_delta)
 	_update_meteor_rain(skill_delta)
 	_update_phoenix_heart(skill_delta)
@@ -110,8 +115,16 @@ func _update_meteor_rain(delta: float) -> void:
 	for index in range(mini(count, candidates.size())):
 		var target_position: Vector2 = candidates[index].position
 		var radius: float = data["radius"][skill_level] * _multiplier("meteor_rain", "range_multiplier") * _branch_multiplier("meteor_rain", "radius_multiplier")
-		enemies.damage_area(target_position, radius, data["damage"][skill_level] * _multiplier("meteor_rain", "damage_multiplier"))
-		effects.add_effect(target_position, radius, Color("ff7a35"), 0.72, "meteor")
+		var fall_time := METEOR_FALL_TIME + index * 0.055
+		effects.add_effect(target_position, radius, Color("ffb43f"), fall_time, "meteor_warning")
+		timeline.schedule(
+			fall_time,
+			_resolve_meteor_impact.bind(
+				target_position, radius,
+				data["damage"][skill_level] * _multiplier("meteor_rain", "damage_multiplier")
+			),
+			"meteor_rain"
+		)
 
 
 func _update_phoenix_heart(delta: float) -> void:
@@ -126,9 +139,33 @@ func _update_phoenix_heart(delta: float) -> void:
 	skill_released.emit("phoenix_heart")
 	audio.play_sfx("skill_phoenix_heart", 0.0, rng.randf_range(0.97, 1.03))
 	var radius: float = data["radius"][skill_level] * _multiplier("phoenix_heart", "range_multiplier") * _branch_multiplier("phoenix_heart", "radius_multiplier")
-	player.heal(data["healing"][skill_level] * _multiplier("phoenix_heart", "healing_multiplier"))
-	enemies.damage_area(player.position, radius, data["damage"][skill_level] * _multiplier("phoenix_heart", "damage_multiplier"))
-	effects.add_effect(player.position, radius, Color("ff9b3d"), 0.55, "phoenix")
+	var center := player.position
+	effects.add_effect(center, radius, Color("ff9b3d"), 0.48, "phoenix")
+	timeline.schedule(
+		PHOENIX_IMPACT_TIME,
+		_resolve_phoenix_impact.bind(
+			center, radius,
+			data["damage"][skill_level] * _multiplier("phoenix_heart", "damage_multiplier"),
+			data["healing"][skill_level] * _multiplier("phoenix_heart", "healing_multiplier")
+		),
+		"phoenix_heart"
+	)
+
+
+func _resolve_meteor_impact(center: Vector2, radius: float, damage: float) -> void:
+	enemies.damage_area(center, radius, damage)
+	effects.add_effect(center, radius, Color("ff7a35"), 0.46, "meteor_impact")
+	audio.play_sfx("meteor_impact", -1.0, rng.randf_range(0.96, 1.04))
+
+
+func _resolve_phoenix_impact(center: Vector2, radius: float, damage: float, healing: float) -> void:
+	if not is_instance_valid(player):
+		return
+	player.heal(healing)
+	effects.add_heal_number(player.position - Vector2(18.0, 36.0), healing)
+	enemies.damage_area(center, radius, damage)
+	effects.add_effect(center, radius, Color("ff9b3d"), 0.42, "phoenix_impact")
+	audio.play_sfx("phoenix_impact", -1.0, rng.randf_range(0.97, 1.03))
 
 
 func _shuffle(values: Array) -> void:

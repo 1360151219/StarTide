@@ -70,12 +70,12 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	safety.reset()
 	damage_resolver.hit_feedback_requested.connect(player_hit_feedback_requested.emit)
 	enemies.enemy_defeated.connect(_on_enemy_defeated)
-	enemies.enemy_spawned.connect(_on_enemy_spawned)
+	enemies.enemy_spawned.connect(func(enemy: Node) -> void: records.discover_content("enemies", enemy.kind))
 	enemy_abilities.player_hit_requested.connect(_apply_player_hit)
 	enemy_projectiles.player_hit_requested.connect(_apply_player_hit)
 	pickups.experience_collected.connect(add_experience)
 	pickups.heal_requested.connect(player.heal)
-	pickups.pickup_collected.connect(_on_pickup_collected)
+	pickups.pickup_collected.connect(func(pickup_id: String) -> void: records.discover_content("pickups", pickup_id))
 	records.discover_content("skills", str(build_state.skill_slots[0]))
 	enemies.spawn_initial()
 	var stage := stage_director.current_stage()
@@ -167,9 +167,13 @@ func _update_stage_events() -> void:
 	if not transitions.is_empty():
 		var stage: StageConfig = transitions[-1]
 		stage_banner_requested.emit(stage.display_name, stage.subtitle, 2.4)
+		audio.play_sfx("stage_transition", -1.0)
 	if events["elite_due"]:
 		state.elite_spawned = true
 		elite_enemy = enemies.spawn_elite(level.elite, state.elapsed)
+		if is_instance_valid(elite_enemy):
+			effects.add_effect(elite_enemy.position, elite_enemy.radius + 52.0, Color("f6c968"), 0.72, "elite_appear")
+		audio.play_sfx("elite_appear", 0.0)
 		stage_banner_requested.emit("%s · %s降临" % [stage_director.current_stage().display_name, level.elite.display_name], "击败可获得额外赐福与星引磁场", 2.8)
 
 
@@ -191,6 +195,8 @@ func _on_enemy_defeated(enemy: Node) -> void:
 	pickups.drop_for_enemy(enemy)
 	if not enemy.is_elite:
 		return
+	effects.add_effect(enemy.position, enemy.radius + 62.0, Color("f6c968"), 0.76, "elite_defeat")
+	audio.play_sfx("elite_defeat", 0.0)
 	state.elite_defeated = true
 	elite_enemy = null
 	build_state.rerolls_remaining += 1
@@ -201,14 +207,6 @@ func _on_enemy_defeated(enemy: Node) -> void:
 		_finish(true, RunState.END_COMPLETED)
 	elif state.pending_upgrades > 0:
 		_request_upgrade()
-
-
-func _on_enemy_spawned(enemy: Node) -> void:
-	records.discover_content("enemies", enemy.kind)
-
-
-func _on_pickup_collected(pickup_id: String) -> void:
-	records.discover_content("pickups", pickup_id)
 
 
 func _request_upgrade() -> void:

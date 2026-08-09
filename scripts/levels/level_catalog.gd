@@ -1,7 +1,6 @@
 extends RefCounted
 
 const CampaignValidator = preload("res://scripts/levels/campaign_validator.gd")
-const LevelPresentationCatalog = preload("res://scripts/levels/level_presentation_catalog.gd")
 const MANIFEST: CampaignManifest = preload("res://levels/campaign_main.tres")
 
 
@@ -95,20 +94,7 @@ static func level_content_ids(level_id: String, category: String) -> PackedStrin
 
 
 static func validation_errors() -> PackedStringArray:
-	var errors := CampaignValidator.validation_errors(MANIFEST)
-	for message in LevelPresentationCatalog.validation_errors(ids()):
-		errors.append("关卡展示：%s" % message)
-	for level in MANIFEST.levels:
-		if level == null:
-			continue
-		var presentation := LevelPresentationCatalog.by_id(level.level_id)
-		if presentation == null:
-			continue
-		var enemy_ids := level_content_ids(level.level_id, "enemies")
-		for enemy_id in presentation.featured_enemy_ids:
-			if not enemy_ids.has(enemy_id):
-				errors.append("关卡展示：%s 预览了池外怪物 %s" % [level.level_id, enemy_id])
-	return errors
+	return CampaignValidator.validation_errors(MANIFEST)
 
 
 static func _content_lineage(level_id: String) -> Array[LevelConfig]:

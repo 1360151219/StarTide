@@ -24,7 +24,7 @@ var record_label: Label
 
 func _ready() -> void:
 	size = Vector2(504, 574)
-	add_theme_stylebox_override("panel", CharacterStyle.paper_card(false, 22.0))
+	CharacterStyle.apply_panel(self, false, 22.0)
 	_build_hero_summary()
 	CharacterStyle.add_label(self, "核心属性", 18, CharacterStyle.INK, Vector2(18, 194), Vector2(220, 30))
 	var metrics := [
@@ -58,7 +58,7 @@ func _build_hero_summary() -> void:
 	var plate := Panel.new()
 	plate.position = Vector2(12, 12)
 	plate.size = Vector2(480, 166)
-	plate.add_theme_stylebox_override("panel", CharacterStyle.surface(UiFactory.GLASS, 18.0, UiFactory.GOLD))
+	CharacterStyle.apply_surface_panel(plate, UiFactory.SURFACE_ALT, 18.0, UiFactory.PRIMARY)
 	add_child(plate)
 	portrait = TextureRect.new()
 	portrait.position = Vector2(18, 8)
@@ -66,15 +66,15 @@ func _build_hero_summary() -> void:
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	plate.add_child(portrait)
-	name_label = CharacterStyle.add_label(plate, "", 23, UiFactory.PALE, Vector2(166, 16), Vector2(286, 32))
-	power_label = CharacterStyle.add_label(plate, "", 25, UiFactory.GOLD, Vector2(166, 50), Vector2(286, 36))
-	level_label = CharacterStyle.add_label(plate, "", 14, UiFactory.CYAN, Vector2(166, 90), Vector2(286, 24))
+	name_label = CharacterStyle.add_label(plate, "", 23, UiFactory.INK, Vector2(166, 16), Vector2(286, 32))
+	power_label = CharacterStyle.add_label(plate, "", 25, UiFactory.ACCENT_DARK, Vector2(166, 50), Vector2(286, 36))
+	level_label = CharacterStyle.add_label(plate, "", 14, UiFactory.PRIMARY_DARK, Vector2(166, 90), Vector2(286, 24))
 	progress_bar = CompactProgressBar.new()
 	progress_bar.position = Vector2(166, 120)
 	progress_bar.size = Vector2(270, 10)
-	progress_bar.configure_colors(UiFactory.GOLD, Color(0.3, 0.56, 0.56, 0.28), 5.0)
+	progress_bar.configure_colors(UiFactory.ACCENT, Color(UiFactory.PRIMARY, 0.2), 5.0)
 	plate.add_child(progress_bar)
-	progress_label = CharacterStyle.add_label(plate, "", 12, UiFactory.PALE_MUTED, Vector2(166, 134), Vector2(270, 20), HORIZONTAL_ALIGNMENT_RIGHT)
+	progress_label = CharacterStyle.add_label(plate, "", 12, UiFactory.MUTED_INK, Vector2(166, 134), Vector2(270, 20), HORIZONTAL_ALIGNMENT_RIGHT)
 
 
 func _refresh(snapshot: Dictionary) -> void:
@@ -108,7 +108,7 @@ func _metric_card(caption: String, at: Vector2) -> Label:
 	var card := Panel.new()
 	card.position = at
 	card.size = Vector2(230, 72)
-	card.add_theme_stylebox_override("panel", CharacterStyle.paper_card(true, 16.0, Color(UiFactory.PAPER_STROKE, 0.78), false))
+	CharacterStyle.apply_panel(card, true, 16.0, Color(UiFactory.PRIMARY, 0.78))
 	add_child(card)
 	CharacterStyle.add_label(card, caption, 13, CharacterStyle.MUTED, Vector2(14, 9), Vector2(202, 20))
 	return CharacterStyle.add_label(card, "0", 23, CharacterStyle.INK, Vector2(14, 30), Vector2(202, 34))
@@ -118,7 +118,7 @@ func _breakdown_card(caption: String, at: Vector2) -> Label:
 	var card := Panel.new()
 	card.position = at
 	card.size = Vector2(110, 68)
-	card.add_theme_stylebox_override("panel", CharacterStyle.paper_card(false, 14.0, Color(UiFactory.PAPER_STROKE, 0.82), false))
+	CharacterStyle.apply_panel(card, false, 14.0, Color(UiFactory.PRIMARY, 0.82))
 	add_child(card)
 	CharacterStyle.add_label(card, caption, 12, CharacterStyle.MUTED, Vector2(8, 6), Vector2(94, 20), HORIZONTAL_ALIGNMENT_CENTER)
 	return CharacterStyle.add_label(card, "0", 19, CharacterStyle.INK, Vector2(8, 28), Vector2(94, 30), HORIZONTAL_ALIGNMENT_CENTER)

@@ -13,28 +13,17 @@
 .DS_Store
 Thumbs.db
 *.log
-/preview/
+/preview/*
+!/preview/.gdignore
+!/preview/responsive/
+!/preview/responsive/*.png
 __pycache__/
 *.py[cod]
 
-# Local editor integration
-/addons/godot_ai/
-/godot-ai-LICENSE.txt
-
-# Design workspaces and non-runtime art sources
-/design/.gdignore
-/design/ui_psd/
-/design/ui_reviews/
-/assets/generated/heroes/
-/assets/generated/hero_chibi/source/
-/assets/generated/equipment/source/
-/assets/generated/ui/source/
-
-
 # Generated export output
 /build/
-/android/.build_version
-/android/build/
+/builds/
+/android/
 *.apk
 *.apk.*
 *.aab

@@ -7,9 +7,10 @@ const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const SafeArea = preload("res://scripts/ui/safe_area.gd")
 const SkillDock = preload("res://scripts/ui/skill_dock.gd")
 const StageHud = preload("res://scripts/ui/stage_hud.gd")
-const StarTideGlyph = preload("res://scripts/ui/star_tide_glyph.gd")
+const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
 const VirtualJoystickScript = preload("res://scripts/virtual_joystick.gd")
 const CompactProgressBar = preload("res://scripts/ui/compact_progress_bar.gd")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 
 var health_bar: Control
 var xp_bar: Control
@@ -64,14 +65,14 @@ func refresh(state: RefCounted, level: LevelConfig, player: Node2D, skills: Node
 	health_bar.max_value = player.max_health
 	health_bar.value = player.health
 	health_label.text = "生命 %d / %d" % [ceili(player.health), ceili(player.max_health)]
-	health_label.modulate = Color.WHITE if player.health / player.max_health > 0.3 else Color(1.0, 0.74, 0.62)
+	health_label.modulate = Color.WHITE if player.health / player.max_health > 0.3 else UiFactory.DANGER_DARK
 	xp_bar.max_value = state.experience_needed
 	xp_bar.value = state.experience
 	level_label.text = "LV.%d" % state.player_level
 	stats_label.text = "剩余 %s  ·  击败 %d" % [_format_time(maxf(0.0, level.duration - state.elapsed)), state.kills]
 	skill_dock.refresh(skills, state.elapsed)
 	var passive_color := Color("70e8ff") if state.hero_id == "star_warden" else Color("ff9a62")
-	stage_hud.refresh(stage, passives.status_text(state.elapsed), passive_color, pickups.remaining_magnet_seconds(state.elapsed), elite)
+	stage_hud.refresh(stage, passives.status_text(state.elapsed), passive_color, pickups.remaining_magnet_seconds(state.elapsed), elite, state.elapsed, level.duration)
 
 
 func advance(delta: float) -> void:
@@ -113,38 +114,47 @@ func _build_top_panel(parent: Control) -> void:
 	top_panel.offset_top = 8.0
 	top_panel.offset_right = 252.0
 	top_panel.offset_bottom = 80.0
-	top_panel.add_theme_stylebox_override("panel", UiFactory.panel_style(UiFactory.GLASS, 16.0, UiFactory.GOLD))
-	level_label = UiFactory.label("LV.1", 21, UiFactory.PALE)
-	level_label.position = Vector2(14, 8)
-	level_label.size = Vector2(82, 28)
-	top_panel.add_child(level_label)
-	stats_label = UiFactory.label("", 17, UiFactory.PALE)
-	stats_label.position = Vector2(94, 10)
-	stats_label.size = Vector2(340, 26)
+	SunlitCardStyle.apply_panel(top_panel, Color(UiFactory.SURFACE, 0.98), Color("8d7248"), 8.0, false, true, "hud_top")
+	var level_plate := Panel.new()
+	level_plate.position = Vector2(-4, -4)
+	level_plate.size = Vector2(102, 80)
+	SunlitCardStyle.apply_panel(level_plate, UiFactory.HUD_SURFACE_ALT, UiFactory.ACCENT, 8.0, true, true, "map_tag", 2)
+	top_panel.add_child(level_plate)
+	level_label = UiFactory.label("LV.1", 23, UiFactory.HUD_TEXT)
+	level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	level_plate.add_child(level_label)
+	stats_label = UiFactory.label("", 16, UiFactory.INK)
+	stats_label.position = Vector2(106, 37)
+	stats_label.size = Vector2(310, 24)
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	top_panel.add_child(stats_label)
-	health_bar = _make_bar(Vector2(14, 38), Vector2(420, 16), UiFactory.CORAL, 8.0)
+	health_bar = _make_bar(Vector2(106, 10), Vector2(310, 21), UiFactory.DANGER, 6.0)
 	top_panel.add_child(health_bar)
-	health_label = UiFactory.label("生命 100 / 100", 14, UiFactory.CREAM)
-	health_label.position = Vector2(14, 37)
-	health_label.size = Vector2(420, 21)
+	health_label = UiFactory.label("生命 100 / 100", 14, UiFactory.INK)
+	health_label.position = Vector2(106, 10)
+	health_label.size = Vector2(310, 21)
 	health_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	health_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	health_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_panel.add_child(health_label)
-	xp_bar = _make_bar(Vector2(14, 64), Vector2(420, 6), UiFactory.PRIMARY, 3.0)
+	xp_bar = _make_bar(Vector2(106, 64), Vector2(310, 5), UiFactory.PRIMARY, 2.5)
 	top_panel.add_child(xp_bar)
 	pause_button = Button.new()
-	pause_button.position = Vector2(444, 10)
-	pause_button.size = Vector2(48, 48)
-	pause_button.add_theme_color_override("font_color", UiFactory.CREAM)
-	UiFactory.apply_button_styles(pause_button, UiFactory.PRIMARY_DARK, UiFactory.GOLD)
+	pause_button.position = Vector2(430, 5)
+	pause_button.size = Vector2(62, 62)
+	var pause_style := UiFactory.panel_style(UiFactory.HUD_SURFACE, 31.0, UiFactory.ACCENT)
+	pause_style.set_border_width_all(3)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		pause_button.add_theme_stylebox_override(state, pause_style)
 	pause_button.pressed.connect(pause_requested.emit)
 	top_panel.add_child(pause_button)
-	var pause_glyph := StarTideGlyph.new()
+	var pause_glyph := SunlitGlyph.new()
 	pause_glyph.glyph_id = "pause"
 	pause_glyph.set_selected(true)
-	pause_glyph.position = Vector2(11, 11)
-	pause_glyph.size = Vector2(26, 26)
+	pause_glyph.position = Vector2(16, 16)
+	pause_glyph.size = Vector2(30, 30)
 	pause_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pause_button.add_child(pause_glyph)
 
@@ -169,8 +179,8 @@ func _build_controls(parent: Control) -> void:
 	tutorial_panel.offset_right = -18.0
 	tutorial_panel.offset_bottom = -180.0
 	tutorial_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tutorial_panel.add_theme_stylebox_override("panel", UiFactory.panel_style(Color(0.018, 0.1, 0.15, 0.9), 18.0, Color(UiFactory.CYAN, 0.72)))
-	tutorial_label = UiFactory.label("拖动左下摇杆移动", 18, UiFactory.CREAM)
+	SunlitCardStyle.apply_panel(tutorial_panel, Color(UiFactory.HUD_SURFACE, 0.92), Color(UiFactory.PRIMARY_LIGHT, 0.72), 8.0, false, true, "map_tag")
+	tutorial_label = UiFactory.label("拖动左下摇杆移动", 18, UiFactory.HUD_TEXT)
 	tutorial_panel.add_child(tutorial_label)
 	tutorial_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	tutorial_label.offset_left = 12.0

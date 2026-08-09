@@ -5,7 +5,7 @@ signal training_changed(message: String)
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const CharacterStyle = preload("res://scripts/ui/character_ui_style.gd")
-const StarTideLockBadge = preload("res://scripts/ui/star_tide_lock_badge.gd")
+const SunlitLockBadge = preload("res://scripts/ui/sunlit_lock_badge.gd")
 
 var records: RefCounted
 var hero_id := ""
@@ -25,7 +25,7 @@ var reset_armed := false
 
 func _ready() -> void:
 	size = Vector2(504, 574)
-	add_theme_stylebox_override("panel", CharacterStyle.paper_card(false, 22.0))
+	CharacterStyle.apply_panel(self, false, 22.0)
 	_build_header()
 	for index in range(3):
 		_build_skill_card(index)
@@ -55,19 +55,19 @@ func _build_header() -> void:
 	var header := Panel.new()
 	header.position = Vector2(14, 14)
 	header.size = Vector2(476, 72)
-	header.add_theme_stylebox_override("panel", CharacterStyle.surface(UiFactory.GLASS, 17.0, UiFactory.GOLD, false))
+	CharacterStyle.apply_surface_panel(header, UiFactory.SURFACE_ALT, 17.0, UiFactory.PRIMARY)
 	add_child(header)
-	CharacterStyle.add_label(header, "技能培养", 20, UiFactory.PALE, Vector2(16, 10), Vector2(180, 28))
-	points_label = CharacterStyle.add_label(header, "", 22, UiFactory.GOLD_LIGHT, Vector2(330, 8), Vector2(128, 32), HORIZONTAL_ALIGNMENT_RIGHT)
+	CharacterStyle.add_label(header, "技能培养", 20, UiFactory.INK, Vector2(16, 10), Vector2(180, 28))
+	points_label = CharacterStyle.add_label(header, "", 22, UiFactory.ACCENT_DARK, Vector2(330, 8), Vector2(128, 32), HORIZONTAL_ALIGNMENT_RIGHT)
 	points_label.tooltip_text = "可用技能点"
-	invested_label = CharacterStyle.add_label(header, "", 13, UiFactory.PALE_MUTED, Vector2(16, 42), Vector2(442, 20), HORIZONTAL_ALIGNMENT_RIGHT)
+	invested_label = CharacterStyle.add_label(header, "", 13, UiFactory.MUTED_INK, Vector2(16, 42), Vector2(442, 20), HORIZONTAL_ALIGNMENT_RIGHT)
 
 
 func _build_skill_card(index: int) -> void:
 	var card := Panel.new()
 	card.position = Vector2(14, 98 + index * 130)
 	card.size = Vector2(476, 118)
-	card.add_theme_stylebox_override("panel", CharacterStyle.paper_card(true, 18.0))
+	CharacterStyle.apply_panel(card, true, 18.0)
 	add_child(card)
 	skill_cards.append(card)
 	var icon := TextureRect.new()
@@ -77,7 +77,7 @@ func _build_skill_card(index: int) -> void:
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	card.add_child(icon)
 	skill_icons.append(icon)
-	var lock_badge := StarTideLockBadge.new()
+	var lock_badge := SunlitLockBadge.new()
 	lock_badge.position = Vector2(190, 11)
 	lock_badge.size = Vector2(96, 96)
 	card.add_child(lock_badge)
@@ -100,7 +100,7 @@ func _refresh(snapshot: Dictionary) -> void:
 	var progression: Dictionary = snapshot.get("progression", snapshot)
 	var available := int(progression.get("available_skill_points", 0))
 	var invested := int(progression.get("spent_skill_points", 0))
-	points_label.text = "✦ %d" % available
+	points_label.text = "技能点 %d" % available
 	points_label.accessibility_name = "可用技能点 %d" % available
 	invested_label.text = "Lv.%d  ·  已用 %d" % [int(progression.get("level", 1)), invested]
 	var skills: Array = progression.get("skills", [])
@@ -135,7 +135,7 @@ func _refresh_skill(index: int, skill: Dictionary) -> void:
 	skill_effects[index].text = "待培养" if level <= 0 else str(skill.get("effect_text", ""))
 	var at_maximum := level >= maximum
 	var next_cost := int(skill.get("next_cost", 1))
-	button.text = "满级" if at_maximum else "培养  ✦%d" % next_cost
+	button.text = "满级" if at_maximum else "培养 · %d 点" % next_cost
 	button.tooltip_text = "消耗 %d 技能点进行培养" % next_cost
 	button.disabled = not bool(skill.get("can_train", false))
 	CharacterStyle.apply_segment(button, not button.disabled)
@@ -175,7 +175,4 @@ func _reset() -> void:
 
 
 func _level_pips(level: int, maximum: int) -> String:
-	var result := ""
-	for index in range(maximum):
-		result += "◆" if index < level else "◇"
-	return result
+	return "%d / %d" % [level, maximum]

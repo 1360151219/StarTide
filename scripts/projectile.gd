@@ -8,7 +8,7 @@ var pierce := 0
 var blast_radius := 0.0
 var trail_color := Color("56d9ef")
 var core_color := Color("dffcff")
-var outline_color := Color("e5b95e")
+var outline_color := Color("07506a")
 var visual_kind := "star_lance"
 var age := 0.0
 var previous_position := Vector2.ZERO
@@ -59,6 +59,7 @@ func _draw_star_lance() -> void:
 	faint_trail.a = 0.12
 	var bright_trail := trail_color
 	bright_trail.a = 0.68
+	draw_line(Vector2(-32, 0), Vector2(4, 0), Color(0.02, 0.2, 0.3, 0.72), radius * 1.18, true)
 	for trail_index in range(3):
 		var wave := sin(age * 24.0 + trail_index * TAU / 3.0) * (3.0 + trail_index)
 		draw_line(Vector2(-38, wave), Vector2(-4, wave * 0.2), faint_trail, radius * (1.5 - trail_index * 0.22), true)
@@ -82,6 +83,7 @@ func _draw_ember_arrow() -> void:
 		var flame_offset := sin(age * 26.0 + index * 1.7) * (2.5 + index)
 		var flame_color := trail_color
 		flame_color.a = (0.48 - index * 0.07) * flicker
+		draw_line(Vector2(-flame_length - 2.0, flame_offset), Vector2(-3, 0), Color(0.18, 0.07, 0.13, flame_color.a * 0.86), maxf(4.0, radius * (1.48 - index * 0.16)), true)
 		draw_line(Vector2(-flame_length, flame_offset), Vector2(-3, 0), flame_color, maxf(2.0, radius * (1.15 - index * 0.18)), true)
 	var arrow := PackedVector2Array([
 		Vector2(17, 0), Vector2(3, -radius * 0.78), Vector2(6, -2),

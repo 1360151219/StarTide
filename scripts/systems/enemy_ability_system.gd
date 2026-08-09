@@ -15,11 +15,13 @@ var projectile_system: Node2D
 var stage_director: RefCounted
 var rng: RandomNumberGenerator
 var audio: Node
+var effects: Node2D
 var states: Dictionary = {}
 var last_warning_start := -INF
 var telegraphs: Node2D
+var viewport_size := Vector2(540, 960)
 
-func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D, enemies: Node2D, projectiles: Node2D, director: RefCounted, random: RandomNumberGenerator, audio_manager: Node) -> void:
+func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D, enemies: Node2D, projectiles: Node2D, director: RefCounted, random: RandomNumberGenerator, audio_manager: Node, combat_effects: Node2D) -> void:
 	level = level_config
 	run_state = state
 	player = player_node
@@ -28,6 +30,7 @@ func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D
 	stage_director = director
 	rng = random
 	audio = audio_manager
+	effects = combat_effects
 	telegraphs = TelegraphRenderer.new()
 	add_child(telegraphs)
 	enemy_system.enemy_removed.connect(_on_enemy_removed)
@@ -37,6 +40,7 @@ func advance(delta: float, elapsed: float) -> void:
 		return
 	_cleanup_states()
 	telegraphs.advance(delta)
+	viewport_size = get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(540, 960)
 	var warning_count := AbilityRules.phase_count(states, false)
 	for enemy in AbilityRules.ordered_enemies(enemy_system.snapshot()):
 		if run_state.finished:
@@ -44,7 +48,7 @@ func advance(delta: float, elapsed: float) -> void:
 		if not enemy_system.is_active(enemy):
 			continue
 		var state := _state_for(enemy)
-		_update_visibility(state, enemy, elapsed)
+		AbilityRules.update_visibility(state, enemy.position, player.position, viewport_size, elapsed)
 		match state["phase"]:
 			"warning":
 				_advance_warning(state, enemy, delta, elapsed)
@@ -65,6 +69,8 @@ func clear_all() -> void:
 		var enemy: Node = state["enemy"]
 		if is_instance_valid(enemy):
 			enemy.contact_enabled = true
+			if enemy.has_method("clear_ability_visual"):
+				enemy.clear_ability_visual()
 	states.clear()
 	if is_instance_valid(telegraphs):
 		telegraphs.clear_warnings()
@@ -75,9 +81,10 @@ func _state_for(enemy: Node) -> Dictionary:
 		states[key] = {
 			"enemy": enemy, "phase": "idle", "phase_left": 0.0,
 			"cooldown_until": 0.0, "visible_since": -1.0,
-			"direction": Vector2.ZERO,
-			"start": enemy.position, "remaining": 0.0, "hit_done": false,
-		}
+				"direction": Vector2.ZERO,
+				"start": enemy.position, "remaining": 0.0, "hit_done": false,
+				"trail_elapsed": 0.0,
+			}
 	return states[key]
 
 func _can_begin(state: Dictionary, enemy: Node, elapsed: float, warning_count: int) -> bool:
@@ -112,14 +119,20 @@ func _begin_warning(state: Dictionary, enemy: Node, elapsed: float) -> void:
 	state["direction"] = direction
 	state["start"] = enemy.position
 	state["hit_done"] = false
+	state["trail_elapsed"] = 0.0
 	last_warning_start = elapsed
-	audio.play_sfx("ui_select", -8.0, 1.15)
+	audio.play_sfx("enemy_warning", 0.0, 1.0 if ability_id == "green_grub_roll" else 1.08)
+	audio.play_sfx("grub_roll_charge" if ability_id == "green_grub_roll" else "bat_bolt_charge", -5.0)
+	if enemy.has_method("set_ability_visual"):
+		enemy.set_ability_visual(ability_id, "warning", 0.0, direction)
 
 
 func _advance_warning(state: Dictionary, enemy: Node, delta: float, elapsed: float) -> void:
 	if float(state["visible_since"]) < 0.0:
 		state["phase"] = "idle"
 		enemy.contact_enabled = true
+		if enemy.has_method("clear_ability_visual"):
+			enemy.clear_ability_visual()
 		return
 	var config := AbilityCatalog.ability(state["ability_id"])
 	if str(config["runtime_kind"]) == "bolt":
@@ -129,6 +142,9 @@ func _advance_warning(state: Dictionary, enemy: Node, delta: float, elapsed: flo
 	else:
 		enemy.advance_motion(Vector2.ZERO, 0.0, delta, elapsed)
 	state["phase_left"] = float(state["phase_left"]) - delta
+	var warning_progress := clampf(1.0 - float(state["phase_left"]) / maxf(float(config["warning"]), 0.001), 0.0, 1.0)
+	if enemy.has_method("set_ability_visual"):
+		enemy.set_ability_visual(state["ability_id"], "warning", warning_progress, state["direction"])
 	if float(state["phase_left"]) <= 0.0001:
 		_start_execution(state, enemy, elapsed)
 
@@ -140,7 +156,14 @@ func _start_execution(state: Dictionary, enemy: Node, elapsed: float) -> void:
 			state["phase"] = "executing"
 			state["remaining"] = float(config["distance"])
 			enemy.contact_enabled = false
+			audio.play_sfx("grub_roll_move", -2.0, rng.randf_range(0.96, 1.04))
+			if enemy.has_method("set_ability_visual"):
+				enemy.set_ability_visual(state["ability_id"], "executing", 0.0, state["direction"])
 		"bolt":
+			effects.add_effect(enemy.position, enemy.radius + 28.0, Color("a66be8"), 0.26, "bat_launch")
+			audio.play_sfx("bat_bolt_launch", -1.0, rng.randf_range(0.97, 1.04))
+			if enemy.has_method("set_ability_visual"):
+				enemy.set_ability_visual(state["ability_id"], "executing", 1.0, state["direction"])
 			projectile_system.spawn_bolt(enemy, enemy.position, state["direction"], config, enemy.ability_damage_multiplier)
 			_enter_recovery(state, enemy, elapsed)
 
@@ -151,6 +174,13 @@ func _advance_execution(state: Dictionary, enemy: Node, delta: float, elapsed: f
 	var movement_delta := minf(delta, float(state["remaining"]) / float(config["speed"]))
 	var movement: Vector2 = enemy.advance_motion(state["direction"], float(config["speed"]), movement_delta, elapsed)
 	state["remaining"] = float(state["remaining"]) - movement.length()
+	state["trail_elapsed"] = float(state["trail_elapsed"]) + delta
+	if float(state["trail_elapsed"]) >= 0.06:
+		state["trail_elapsed"] = 0.0
+		effects.add_effect(enemy.position, enemy.radius + 12.0, Color("8bcf65"), 0.24, "grub_roll_trail", {"direction": state["direction"]})
+	var execution_progress := clampf(1.0 - float(state["remaining"]) / maxf(float(config["distance"]), 0.001), 0.0, 1.0)
+	if enemy.has_method("set_ability_visual"):
+		enemy.set_ability_visual(state["ability_id"], "executing", execution_progress, state["direction"])
 	if not state["hit_done"] and AbilityRules.segment_hits_circle(before, enemy.position, player.position, enemy.radius + 21.0):
 		state["hit_done"] = true
 		_emit_hit(enemy, config)
@@ -161,10 +191,16 @@ func _advance_execution(state: Dictionary, enemy: Node, delta: float, elapsed: f
 func _advance_recovery(state: Dictionary, enemy: Node, delta: float, elapsed: float) -> void:
 	enemy.advance_motion(Vector2.ZERO, 0.0, delta, elapsed)
 	state["phase_left"] = float(state["phase_left"]) - delta
+	var recovery_duration := maxf(float(AbilityCatalog.ability(state["ability_id"])["recovery"]), 0.001)
+	var recovery_progress := clampf(1.0 - float(state["phase_left"]) / recovery_duration, 0.0, 1.0)
+	if enemy.has_method("set_ability_visual"):
+		enemy.set_ability_visual(state["ability_id"], "recovery", recovery_progress, state["direction"])
 	if float(state["phase_left"]) <= 0.0:
 		state["phase"] = "idle"
 		var cooldown: float = AbilityCatalog.ability(state["ability_id"])["cooldown"]
 		state["cooldown_until"] = elapsed + cooldown * rng.randf_range(0.85, 1.15)
+		if enemy.has_method("clear_ability_visual"):
+			enemy.clear_ability_visual()
 
 
 func _enter_recovery(state: Dictionary, enemy: Node, _elapsed: float) -> void:
@@ -172,6 +208,9 @@ func _enter_recovery(state: Dictionary, enemy: Node, _elapsed: float) -> void:
 	state["phase"] = "recovery"
 	state["phase_left"] = float(config["recovery"])
 	enemy.contact_enabled = true
+	if str(config["runtime_kind"]) == "roll" and not bool(state["hit_done"]):
+		effects.add_effect(enemy.position, enemy.radius + 24.0, Color("ffe36b"), float(config["recovery"]), "grub_recover")
+		audio.play_sfx("grub_roll_miss", -2.0, rng.randf_range(0.97, 1.04))
 
 
 func _advance_idle(enemy: Node, delta: float, elapsed: float) -> void:
@@ -183,25 +222,11 @@ func _emit_hit(enemy: Node, config: Dictionary) -> void:
 	player_hit_requested.emit(hit)
 
 
-func _update_visibility(state: Dictionary, enemy: Node, elapsed: float) -> void:
-	if _is_visible(enemy.position):
-		if float(state["visible_since"]) < 0.0:
-			state["visible_since"] = elapsed
-	else:
-		state["visible_since"] = -1.0
-
-
-func _is_visible(position: Vector2) -> bool:
-	var viewport := get_viewport()
-	var size := viewport.get_visible_rect().size if viewport != null else Vector2(540, 960)
-	return AbilityRules.is_visible(position, player.position, size)
-
-
 func _elite_slot_reserved(elapsed: float, warning_count: int) -> bool:
 	if warning_count < level.enemy_ability_budget.max_telegraphs - 1:
 		return false
 	for enemy in enemy_system.snapshot():
-		if enemy.is_elite and _is_visible(enemy.position):
+		if enemy.is_elite and AbilityRules.is_visible(enemy.position, player.position, viewport_size):
 			var ability_id: String = enemy.ability_id
 			if ability_id.is_empty():
 				continue
@@ -218,5 +243,7 @@ func _cleanup_states() -> void:
 
 
 func _on_enemy_removed(enemy: Node) -> void:
+	if is_instance_valid(enemy) and enemy.has_method("clear_ability_visual"):
+		enemy.clear_ability_visual()
 	states.erase(enemy.get_instance_id())
 	telegraphs.set_states(states)

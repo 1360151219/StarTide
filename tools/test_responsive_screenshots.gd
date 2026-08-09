@@ -39,8 +39,8 @@ func _check_profile(profile: Dictionary) -> void:
 	game.audio_manager.sfx_enabled = true
 	game.audio_manager.set_music_volume(0.65, false)
 	game.audio_manager.set_sfx_volume(0.75, false)
-	game.start_screen.level_preview.set_active(false)
-	game.start_screen.level_preview.phase = 0.25
+	game.start_screen.route_map.set_active(false)
+	game.start_screen.route_map.phase = 0.25
 	await process_frame
 	RenderingServer.force_draw(false)
 	var image := viewport.get_texture().get_image()

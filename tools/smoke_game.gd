@@ -1,6 +1,7 @@
 extends SceneTree
 
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
+const CueCatalog = preload("res://scripts/audio_cue_catalog.gd")
 
 var frame_count := 0
 var failed := false
@@ -30,16 +31,18 @@ func _on_process_frame() -> void:
 		_begin_pause(game)
 	if frame_count == 14:
 		_finish_pause_and_upgrade(game)
-	if frame_count == 18:
+	if frame_count == 36:
+		_verify_upgrade_completed(game)
+	if frame_count == 40:
 		_test_victory(game)
-	if frame_count == 22:
+	if frame_count == 44:
 		if not failed:
-			print("SMOKE_OK levels=%d menu=bottom_bar carousel=3 preview=animated session=modular pause=stable upgrade=true victory=true unlock=true audio=14 volume_sync=true" % LevelCatalog.all().size())
+			print("SMOKE_OK levels=%d menu=route_map destinations=3 session=modular pause=stable upgrade=true victory=true unlock=true audio=%d volume_sync=true" % [LevelCatalog.all().size(), CueCatalog.ids().size()])
 		quit(1 if failed else 0)
 
 
 func _test_start_screen(game: Node) -> void:
-	_require(game.audio_manager.STREAMS.size() == 14, "声音资源没有完整初始化")
+	_require(CueCatalog.ids().size() == 39, "声音 Cue 没有完整初始化")
 	var original_music: float = game.audio_manager.music_volume
 	var original_sfx: float = game.audio_manager.sfx_volume
 	game.audio_manager.set_music_volume(0.37, false)
@@ -55,17 +58,17 @@ func _test_start_screen(game: Node) -> void:
 	_require(not game.start_screen.audio_settings.settings_card.visible, "开始页声音设置无法关闭")
 	game.audio_manager.set_music_volume(original_music, false)
 	game.audio_manager.set_sfx_volume(original_sfx, false)
-	_require(game.start_screen.level_selector.page_buttons.size() == 3, "开始页轮播没有固定三个复用节点")
-	_require(game.start_screen.level_selector.left_button.disabled, "第一关左侧轮播按钮仍可用")
-	_require(not game.start_screen.level_selector.right_button.disabled, "后续关卡无法通过轮播预览")
-	_require(game.start_screen.level_preview.animation_player.is_playing(), "关卡动态预览没有播放")
-	_require(game.start_screen.bottom_bar.buttons.size() == 3, "绘本底栏没有提供三个主入口")
-	game.start_screen.level_selector.right_button.pressed.emit()
+	_require(game.start_screen.route_map.route_pins.size() == 3, "远征地图没有固定三个生态节点")
+	_require(bool(game.start_screen.route_map.route_pins[0].get("selected")), "第一关路线节点没有选中")
+	_require(bool(game.start_screen.route_map.route_pins[1].get("locked")), "后续关卡没有保持锁定预览")
+	_require(game.start_screen.route_map.animation_player.is_playing(), "远征路线动画没有播放")
+	_require(game.start_screen.bottom_bar.buttons.size() == 3, "远征底栏没有提供三个主入口")
+	game.start_screen.route_map.move_by(1)
 	_require(game.start_screen.selected_level_id == "level_02" and game.start_screen.start_button.disabled, "未解锁关卡预览没有阻止进入")
-	game.start_screen.level_selector.left_button.pressed.emit()
+	game.start_screen.route_map.move_by(-1)
 	game.start_screen.bottom_bar.buttons["character"].pressed.emit()
 	_require(game.start_screen.character_page.visible and not game.start_screen.lobby_view.visible, "角色菜单没有显示角色配置页")
-	_require(not game.start_screen.level_preview.animation_player.is_playing(), "离开关卡大厅后预览仍在播放")
+	_require(not game.start_screen.route_map.animation_player.is_playing(), "离开关卡大厅后路线动画仍在播放")
 	game.start_screen.character_page.select_hero("ember_ranger")
 	_require(game.run_records.get_active_hero_id() == "ember_ranger", "角色页没有更新出战英雄")
 	game.start_screen.bottom_bar.buttons["start"].pressed.emit()
@@ -120,6 +123,11 @@ func _finish_pause_and_upgrade(game: Node) -> void:
 	game.upgrade_overlay.reroll_button.pressed.emit()
 	_require(game.upgrade_overlay.visible and game.session.build_state.rerolls_remaining == 0, "重抽没有刷新候选或消费次数")
 	game.upgrade_overlay.buttons[0].pressed.emit()
+	_require(game.upgrade_overlay.selection_locked, "升级选择没有进入确认动画")
+	game.upgrade_overlay.finish_selection()
+
+
+func _verify_upgrade_completed(game: Node) -> void:
 	_require(not game.upgrade_overlay.visible and not game.session.state.paused, "选择升级后没有恢复游戏")
 	_require(not game.audio_manager.music_ducked, "选择升级后背景音乐没有恢复")
 
@@ -130,6 +138,8 @@ func _test_victory(game: Node) -> void:
 	game.session.advance(game.session.level.duration, Vector2.ZERO)
 	_require(game.session.state.finished and game.session.state.victory, "第一关 90 秒胜利未生效")
 	_require(game.result_overlay.visible, "胜利结算没有出现")
+	game.result_overlay.finish_reveal()
+	_require(not game.result_overlay.replay_button.disabled and not game.result_overlay.home_button.disabled, "跳过结算演出后按钮仍不可操作")
 	_require(game.result_overlay.hero_preview.visible and game.result_overlay.hero_rig.hero_id == "star_warden", "结算页没有展示本局英雄")
 	_require(game.result_overlay.hero_rig.current_state == "victory", "胜利结算没有触发骨骼胜利动画")
 	var reward_tooltips: PackedStringArray = game.result_overlay.reward_strip.tile_tooltips()

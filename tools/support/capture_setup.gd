@@ -9,8 +9,8 @@ static func isolate_records(game: Node) -> void:
 	var first_level_id := LevelCatalog.first().level_id
 	game.run_records = records
 	game.start_screen.records = records
-	game.start_screen.level_selector.records = records
-	game.start_screen.level_selector.selected_level_id = first_level_id
+	game.start_screen.route_map.records = records
+	game.start_screen.route_map.selected_level_id = first_level_id
 	game.start_screen.selected_level_id = first_level_id
 	if is_instance_valid(game.start_screen.character_page):
 		game.start_screen.character_page.configure(records, records.get_active_hero_id())

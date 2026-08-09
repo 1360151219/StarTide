@@ -8,7 +8,8 @@ const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
 const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
 const PauseBuildStrip = preload("res://scripts/ui/pause_build_strip.gd")
-const VICTORY_CREST := preload("res://assets/generated/ui/victory_crest.png")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
+const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
 
 var audio_settings: Control
 var build_icons
@@ -37,38 +38,36 @@ func show_build(build_state: RefCounted) -> void:
 
 func _build_pause_card() -> void:
 	pause_card = Panel.new()
-	pause_card.position = Vector2(24, 74)
-	pause_card.size = Vector2(492, 812)
-	pause_card.add_theme_stylebox_override(
-		"panel",
-		UiFactory.panel_style(Color(1.0, 0.975, 0.89, 0.97), 30.0, Color("f4b638"))
-	)
+	pause_card.position = Vector2(24, 145)
+	pause_card.size = Vector2(492, 670)
+	SunlitCardStyle.apply_panel(pause_card, Color(UiFactory.SURFACE, 0.98), UiFactory.PRIMARY, 12.0, true, false, "canvas")
 	design_frame.add_child(pause_card)
-	var star_mark := _plain_label("✦", 22, UiFactory.GOLD)
-	star_mark.position = Vector2(222, 24)
-	star_mark.size = Vector2(48, 32)
-	star_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	pause_card.add_child(star_mark)
+	var expedition_mark := SunlitGlyph.new()
+	expedition_mark.glyph_id = "expedition"
+	expedition_mark.set_selected(true)
+	expedition_mark.position = Vector2(230, 20)
+	expedition_mark.size = Vector2(32, 32)
+	pause_card.add_child(expedition_mark)
 	var title := _plain_label("冒险暂停", 34, UiFactory.INK)
 	title.position = Vector2(30, 52)
 	title.size = Vector2(432, 48)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pause_card.add_child(title)
-	var hint := _plain_label("星潮已经停住，准备好就继续出发", 16, UiFactory.MUTED_INK)
+	var hint := _plain_label("远征已经暂停，准备好就继续出发", 16, UiFactory.MUTED_INK)
 	hint.position = Vector2(30, 100)
 	hint.size = Vector2(432, 30)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pause_card.add_child(hint)
-	_add_button(pause_card, "▶  继续冒险", Vector2(30, 144), Vector2(432, 74), true, resume_requested.emit)
 	_build_summary_card()
+	_add_button(pause_card, "继续冒险", Vector2(30, 356), Vector2(432, 70), true, resume_requested.emit)
 	var audio_hint := _plain_label("需要调整听感？", 14, UiFactory.MUTED_INK)
-	audio_hint.position = Vector2(30, 592)
+	audio_hint.position = Vector2(30, 448)
 	audio_hint.size = Vector2(170, 48)
 	audio_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	pause_card.add_child(audio_hint)
-	_add_button(pause_card, "返回关卡大厅", Vector2(30, 694), Vector2(432, 62), false, home_requested.emit)
+	_add_button(pause_card, "返回关卡大厅", Vector2(30, 548), Vector2(432, 62), false, home_requested.emit)
 	var footnote := _plain_label("返回大厅将结束本次远征", 13, Color("8a6b58"))
-	footnote.position = Vector2(30, 760)
+	footnote.position = Vector2(30, 616)
 	footnote.size = Vector2(432, 28)
 	footnote.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pause_card.add_child(footnote)
@@ -76,35 +75,23 @@ func _build_pause_card() -> void:
 
 func _build_summary_card() -> void:
 	var summary_card := Panel.new()
-	summary_card.position = Vector2(30, 244)
-	summary_card.size = Vector2(432, 324)
-	summary_card.add_theme_stylebox_override(
-		"panel",
-		UiFactory.panel_style(Color(0.89, 0.97, 0.91, 0.98), 22.0, Color(0.08, 0.55, 0.59, 0.48))
-	)
+	summary_card.position = Vector2(30, 154)
+	summary_card.size = Vector2(432, 184)
+	SunlitCardStyle.apply_panel(summary_card, UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.58), 10.0, false, true, "ribbon")
 	pause_card.add_child(summary_card)
 	var section_mark := _plain_label("本局构筑", 21, UiFactory.INK)
 	section_mark.position = Vector2(20, 16)
 	section_mark.size = Vector2(196, 32)
 	summary_card.add_child(section_mark)
-	var crest := TextureRect.new()
-	crest.position = Vector2(126, 54)
-	crest.size = Vector2(180, 180)
-	crest.texture = VICTORY_CREST
-	crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	crest.modulate = Color(1.0, 1.0, 1.0, 0.13)
-	crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	summary_card.add_child(crest)
 	build_icons = PauseBuildStrip.new()
-	build_icons.position = Vector2(26, 126)
+	build_icons.position = Vector2(26, 88)
 	build_icons.size = Vector2(380, 62)
 	summary_card.add_child(build_icons)
 
 
 func _build_audio_settings(audio: Node) -> void:
 	audio_settings = AudioSettingsPanel.new()
-	audio_settings.position = Vector2(362, 666)
+	audio_settings.position = Vector2(362, 593)
 	design_frame.add_child(audio_settings)
 	audio_settings.configure(audio, true)
 
@@ -118,11 +105,10 @@ func _add_button(parent: Control, text: String, at: Vector2, button_size: Vector
 	button.add_theme_color_override("font_color", UiFactory.INK)
 	button.add_theme_color_override("font_hover_color", UiFactory.INK)
 	button.add_theme_color_override("font_pressed_color", UiFactory.INK)
-	UiFactory.apply_button_styles(
-		button,
-		Color("f5ad35") if primary else Color("f7f1df"),
-		Color("fff0b0") if primary else Color("3b8588")
-	)
+	if primary:
+		UiFactory.apply_primary_button(button)
+	else:
+		UiFactory.apply_secondary_button(button)
 	button.pressed.connect(callback)
 	parent.add_child(button)
 

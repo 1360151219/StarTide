@@ -1,19 +1,73 @@
 extends Node2D
 
 const EnvironmentMotes = preload("res://scripts/presentation/environment_motes.gd")
+const WorldLandmarks = preload("res://scripts/presentation/world_landmarks.gd")
+const WORLD_COLOR_SHADER := """
+shader_type canvas_item;
+
+uniform float scene_saturation : hint_range(0.4, 1.0) = 0.72;
+uniform float scene_exposure : hint_range(0.6, 1.1) = 0.92;
+uniform vec2 readability_center = vec2(0.0);
+uniform float readability_radius = 180.0;
+varying vec2 world_position;
+
+void vertex() {
+	world_position = VERTEX;
+}
+
+void fragment() {
+	vec4 source = texture(TEXTURE, UV) * COLOR;
+	float luma = dot(source.rgb, vec3(0.299, 0.587, 0.114));
+	float quiet_zone = 1.0 - smoothstep(readability_radius * 0.45, readability_radius, distance(world_position, readability_center));
+	float local_saturation = mix(scene_saturation, scene_saturation * 0.72, quiet_zone);
+	source.rgb = mix(vec3(luma), source.rgb, local_saturation) * scene_exposure;
+	COLOR = source;
+}
+"""
 
 var map: MapConfig
 var environment_motes: Node2D
+var landmarks: Node2D
+var tracked_player: Node2D
 
 
 func configure(map_config: MapConfig) -> void:
 	map = map_config
+	var color_shader := Shader.new()
+	color_shader.code = WORLD_COLOR_SHADER
+	var color_material := ShaderMaterial.new()
+	color_material.shader = color_shader
+	color_material.set_shader_parameter("scene_saturation", map.scene_saturation)
+	color_material.set_shader_parameter("scene_exposure", map.scene_exposure)
+	material = color_material
+	if is_instance_valid(landmarks):
+		landmarks.queue_free()
+	landmarks = WorldLandmarks.new()
+	landmarks.use_parent_material = true
+	add_child(landmarks)
+	landmarks.configure(map)
 	if is_instance_valid(environment_motes):
 		environment_motes.queue_free()
 	environment_motes = EnvironmentMotes.new()
+	environment_motes.use_parent_material = true
 	add_child(environment_motes)
 	environment_motes.configure(map)
 	queue_redraw()
+
+
+func track_player(player: Node2D) -> void:
+	tracked_player = player
+	if is_instance_valid(environment_motes):
+		environment_motes.track_player(player)
+	if material is ShaderMaterial:
+		material.set_shader_parameter("readability_center", player.position)
+
+
+func _process(_delta: float) -> void:
+	if not is_instance_valid(tracked_player):
+		return
+	if material is ShaderMaterial:
+		material.set_shader_parameter("readability_center", tracked_player.position)
 
 
 func _draw() -> void:
@@ -28,7 +82,6 @@ func _draw() -> void:
 		)
 		draw_circle(glow_position, 105.0 + index % 4 * 24.0, map.glow_color)
 	_draw_decorations()
-	draw_rect(map.world_bounds, map.border_color, false, 8.0)
 
 
 func _draw_decorations() -> void:

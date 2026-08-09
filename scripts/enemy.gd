@@ -1,6 +1,7 @@
 extends Node2D
 
 const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
+const EnemyVisualDetails = preload("res://scripts/presentation/enemy_visual_details.gd")
 
 var kind := "slime"
 var max_health := 35.0
@@ -26,6 +27,10 @@ var ability_damage_multiplier := 1.0
 var ability_id := ""
 var contact_enabled := true
 var spawn_serial := 0
+var ability_visual_id := ""
+var ability_visual_phase := ""
+var ability_visual_progress := 0.0
+var ability_visual_direction := Vector2.ZERO
 
 
 func configure(enemy_kind: String, scaling: Dictionary, elite_config: EliteConfig = null, configured_ability_id := "") -> void:
@@ -96,6 +101,22 @@ func apply_slow(factor: float, duration: float, now: float) -> void:
 	_refresh_slow(now)
 
 
+func set_ability_visual(ability: String, phase: String, progress: float, direction: Vector2) -> void:
+	ability_visual_id = ability
+	ability_visual_phase = phase
+	ability_visual_progress = clampf(progress, 0.0, 1.0)
+	ability_visual_direction = direction
+	queue_redraw()
+
+
+func clear_ability_visual() -> void:
+	ability_visual_id = ""
+	ability_visual_phase = ""
+	ability_visual_progress = 0.0
+	ability_visual_direction = Vector2.ZERO
+	queue_redraw()
+
+
 func _refresh_slow(now: float) -> void:
 	var active_effects: Array[Dictionary] = []
 	slow_factor = 1.0
@@ -114,33 +135,34 @@ func _draw() -> void:
 	var metrics := _visual_metrics()
 	_draw_ground(metrics)
 	if slowed:
-		draw_arc(Vector2.ZERO, radius + 7.0, 0.0, TAU, 28, Color(0.4, 0.9, 1.0, 0.46), 2.0)
+		EnemyVisualDetails.draw_slow_fragments(self)
 	if is_elite:
 		_draw_elite_aura()
 	_draw_body(metrics, shown_color)
+	EnemyVisualDetails.draw_ability_overlay(self, metrics)
 	if health < max_health:
 		_draw_health_bar(metrics)
 
 
 func _visual_metrics() -> Dictionary:
-	var texture_size := Vector2(70.0, 58.8)
-	var texture_y := -30.0
-	var shadow_width := 25.0
-	var bar_y := -42.0
+	var texture_size := Vector2(82.0, 69.0)
+	var texture_y := -35.0
+	var shadow_width := 29.0
+	var bar_y := -48.0
 	if kind == "green_grub":
-		texture_size = Vector2(76.0, 56.0)
-		texture_y = -29.0
-		shadow_width = 24.0
-		bar_y = -41.0
+		texture_size = Vector2(88.0, 65.0)
+		texture_y = -34.0
+		shadow_width = 28.0
+		bar_y = -47.0
 	elif kind == "bat":
-		texture_size = Vector2(92.0, 58.4)
-		texture_y = -33.0
-		bar_y = -44.0
+		texture_size = Vector2(105.0, 67.0)
+		texture_y = -38.0
+		bar_y = -50.0
 	elif kind == "brute":
-		texture_size = Vector2(118.0, 102.3)
-		texture_y = -61.0
-		shadow_width = 43.0
-		bar_y = -70.0
+		texture_size = Vector2(126.0, 109.0)
+		texture_y = -65.0
+		shadow_width = 46.0
+		bar_y = -75.0
 	return {"size": texture_size * visual_scale, "y": texture_y * visual_scale, "shadow": shadow_width * visual_scale, "bar_y": bar_y * visual_scale}
 
 
@@ -163,11 +185,14 @@ func _draw_body(metrics: Dictionary, shown_color: Color) -> void:
 	var data := EnemyCatalog.enemy(kind)
 	var size: Vector2 = metrics["size"]
 	var hit_scale := Vector2(1.14, 0.74) if kind == "green_grub" and hit_flash > 0.0 else Vector2.ONE
+	hit_scale *= EnemyVisualDetails.body_scale(self)
 	if side_blend < 1.0:
 		var front_color := shown_color
 		front_color.a *= 1.0 - side_blend
 		draw_set_transform(Vector2.ZERO, 0.0, hit_scale)
-		draw_texture_rect(data["front"], Rect2(-size.x * 0.5, metrics["y"] + bob, size.x, size.y), false, front_color)
+		var front_rect := Rect2(-size.x * 0.5, metrics["y"] + bob, size.x, size.y)
+		EnemyVisualDetails.draw_texture_outline(self, data["front"], front_rect, front_color.a)
+		draw_texture_rect(data["front"], front_rect, false, front_color)
 		draw_set_transform(Vector2.ZERO)
 	if side_blend > 0.0:
 		_draw_side(data["side"], metrics, shown_color, bob, hit_scale)
@@ -180,7 +205,9 @@ func _draw_side(texture: Texture2D, metrics: Dictionary, shown_color: Color, bob
 	side_color.a *= side_blend
 	var turn_width := lerpf(0.2, 1.0, sin(turn_progress * PI * 0.5))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2((1.0 if horizontal_facing < 0 else -1.0) * turn_width * hit_scale.x, hit_scale.y))
-	draw_texture_rect(texture, Rect2(-side_size.x * 0.5, metrics["y"] + bob, side_size.x, side_size.y), false, side_color)
+	var side_rect := Rect2(-side_size.x * 0.5, metrics["y"] + bob, side_size.x, side_size.y)
+	EnemyVisualDetails.draw_texture_outline(self, texture, side_rect, side_color.a)
+	draw_texture_rect(texture, side_rect, false, side_color)
 	draw_set_transform(Vector2.ZERO)
 
 

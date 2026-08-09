@@ -76,6 +76,7 @@ func start_run(hero_id: String, level_id: String) -> void:
 	start_screen.visible = false
 	feedback.configure(session.camera, hud.damage_flash)
 	audio_manager.set_music_ducked(false)
+	audio_manager.play_music(level_id)
 	audio_manager.play_sfx("ui_confirm", 2.0)
 	refresh_presentation()
 
@@ -105,6 +106,7 @@ func _on_upgrade_selected(choice_id: String) -> void:
 	upgrade_overlay.visible = false
 	if not session.select_upgrade(choice_id):
 		upgrade_overlay.visible = true
+		upgrade_overlay.restore_selection()
 		return
 	audio_manager.play_sfx("ui_confirm", 0.0)
 	if not upgrade_overlay.visible:
@@ -122,6 +124,7 @@ func _show_result(presentation: Dictionary) -> void:
 	pause_overlay.visible = false
 	upgrade_overlay.visible = false
 	audio_manager.set_music_ducked(true)
+	audio_manager.play_sfx("result_victory" if bool(presentation.get("won", false)) else "result_failure", 0.0)
 	result_overlay.show_result(presentation)
 
 

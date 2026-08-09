@@ -1,0 +1,176 @@
+# 《星潮守望者》运行时素材清单
+
+> 方向：D「日光远征动画」  
+> 状态：当前工作区唯一素材基线  
+> 视觉标准：[ART_DIRECTION.md](./ART_DIRECTION.md)  
+> UI 标准：[UI_SPEC.md](./UI_SPEC.md)
+
+本清单只记录当前运行时、导出、自动化测试和正式设计审阅所需素材。未列出的旧方案、生成源图、中间图、导出包和一次性审阅图不得留在项目工作区；需要追溯时使用 Git 历史。
+
+## 1. 入库规则
+
+- `docs/references/` 只保存三张正式审阅图，不得被运行时代码引用。
+- 运行时图片只保存最终裁切版本；生成源、色键图、图集母版和处理中间件不入库。
+- 文字、数字、品质、按钮文案和倒计时由 Godot 渲染，不烘焙进图片。
+- 可稳定程序绘制的边框、扣件、分隔线、进度与简单图标优先使用共享组件。
+- 新素材使用语义文件名与稳定路径，不使用 `final2`、模型名、日期或随机编号。
+- 新增、替换或删除正式素材时，必须同步更新本文件。
+
+## 2. 当前目录
+
+```text
+assets/
+├── art/
+│   ├── app_icon.png
+│   ├── characters/        # 角色展示图
+│   ├── enemies/           # 怪物正面与侧面图
+│   ├── environment/       # 三生态战斗地面
+│   ├── items/             # 物品图集
+│   ├── pickups/           # 拾取物
+│   ├── skills/            # 六项技能图标
+│   ├── sunlit/backgrounds/# 当前远征地图环境底板
+│   └── ui/home/           # 当前独立 UI 位图
+├── audio/                 # 4 条音乐与 39 个 Cue
+├── fonts/                 # 两套运行时字体及许可
+└── generated/
+    ├── equipment/         # 六件装备图标
+    ├── hero_chibi/        # 两名英雄各六张完整动作帧
+    └── ui/                # 胜利徽章
+```
+
+## 3. 应用、字体与许可
+
+| 路径 | 用途 |
+|---|---|
+| `assets/art/app_icon.png` | 项目与 Android 启动图标 |
+| `assets/fonts/NotoSansSC-Regular.otf` | 正文、按钮、数字、战斗文字 |
+| `assets/fonts/NotoSerifSC-UI.otf` | 展示标题与章节标题 |
+| `assets/fonts/NotoSansSC-OFL.txt` | Noto Sans SC 许可 |
+| `assets/fonts/NotoSerifSC-OFL.txt` | Noto Serif SC 许可 |
+
+字体角色只由 [ART_DIRECTION.md](./ART_DIRECTION.md) 定义；不得再引入未使用的可变字体副本。
+
+## 4. 角色与怪物
+
+### 4.1 角色展示图
+
+| 角色 | 路径 | 规则 |
+|---|---|---|
+| 星潮守望者 | `assets/art/characters/star_tide_warden.png` | 保留造型、比例、五官、服装和武器 |
+| 烬羽游侠 | `assets/art/characters/emberwing_ranger.png` | 保留造型、比例、五官、服装和武器 |
+
+局外页面优先复用 HeroRig 动作帧；展示图只用于图鉴、状态与确认等需要清晰头像的场景。
+
+### 4.2 英雄动作帧
+
+| 英雄 | 目录 | 当前帧 |
+|---|---|---|
+| 星潮守望者 | `assets/generated/hero_chibi/star_warden/` | `idle`、`run_contact`、`run_pass`、`cast`、`hit`、`victory` |
+| 烬羽游侠 | `assets/generated/hero_chibi/ember_ranger/` | `idle`、`run_contact`、`run_pass`、`cast`、`hit`、`victory` |
+
+共 12 张最终帧。源图集和色键中间图不属于运行时资产，不得重新放回该目录。
+
+### 4.3 怪物
+
+| 怪物 | 正面 | 侧面 |
+|---|---|---|
+| 青叶团团 | `assets/art/enemies/green_grub.png` | `assets/art/enemies/green_grub_side.png` |
+| 星蚀史莱姆 | `assets/art/enemies/starblight_slime.png` | `assets/art/enemies/starblight_slime_side.png` |
+| 暮翼蝠 | `assets/art/enemies/duskwing_bat.png` | `assets/art/enemies/duskwing_bat_side.png` |
+| 陨岩巨怪 | `assets/art/enemies/meteor_brute.png` | `assets/art/enemies/meteor_brute_side.png` |
+
+普通、技能与精英状态复用主体图，通过运行时徽记、轮廓、色阶和短动画表达，不复制换色版本。
+
+## 5. 技能、装备与拾取物
+
+### 5.1 技能图标
+
+以下六张图为唯一技能图标主体：
+
+- `assets/art/skills/star_lance.png`
+- `assets/art/skills/sun_orbit.png`
+- `assets/art/skills/frost_tide.png`
+- `assets/art/skills/ember_volley.png`
+- `assets/art/skills/meteor_rain.png`
+- `assets/art/skills/phoenix_heart.png`
+
+卡框、品质、等级和冷却由运行时组件表达，不复制带底框版本。
+
+### 5.2 装备
+
+| 装备 | 路径 |
+|---|---|
+| 学徒星杖 | `assets/generated/equipment/apprentice_starwand.png` |
+| 风弦弓 | `assets/generated/equipment/windstring_bow.png` |
+| 草原护甲 | `assets/generated/equipment/meadow_guard.png` |
+| 晶纹背心 | `assets/generated/equipment/crystal_vest.png` |
+| 风铃护符 | `assets/generated/equipment/windbell_charm.png` |
+| 时砂护符 | `assets/generated/equipment/timeglass_charm.png` |
+
+不同品质复用同一主体图；`common`、`rare`、`top` 由边框层数、徽章、挂扣和揭示节奏表达。
+
+### 5.3 拾取物与物品图集
+
+| 路径 | 用途 |
+|---|---|
+| `assets/art/pickups/experience_shard.png` | 经验拾取与结算经验图标 |
+| `assets/art/pickups/healing_heart.png` | 治疗拾取与恢复选项 |
+| `assets/art/pickups/magnet_charm.png` | 磁吸拾取 |
+| `assets/art/items/item_atlas.png` | 遗物与没有独立主体图的物品区域 |
+
+加速、爆破、锁定、空槽、声音、暂停、导航和装备部位由正式程序图标绘制；不得用 Emoji 代替。
+
+## 6. 场景与 UI 位图
+
+| 路径 | 用途 | 边界 |
+|---|---|---|
+| `assets/art/environment/windbell_meadow_floor.png` | 风铃草原战斗地面 | 中心降噪由运行时完成 |
+| `assets/art/environment/golden_oasis_floor.png` | 黄金绿洲战斗地面 | 暖色不得吞没火焰和危险 |
+| `assets/art/environment/crystal_volcano_floor.png` | 水晶火山战斗地面 | 裂隙常态亮度低于危险预警 |
+| `assets/art/sunlit/backgrounds/expedition_route_map.png` | 远征大厅三生态环境底板 | 无角色、关卡钉、文字和导航 |
+| `assets/art/ui/home/expedition_brief_frame.png` | 远征简报独立框体 | 只承载材质，不烘焙数据 |
+| `assets/generated/ui/victory_crest.png` | 胜利与高价值奖励徽章 | 不作为普通装饰重复使用 |
+
+程序组件 `SunlitFrame`、`SunlitCardStyle`、`SunlitGlyph` 和 `SunlitLockBadge` 负责边框、状态、触控与响应式，不生成整页 UI 位图。
+
+## 7. 音频
+
+### 7.1 音乐
+
+| 场景 | 路径 |
+|---|---|
+| 远征大厅 | `assets/audio/bgm_lobby.wav` |
+| 风铃草原 | `assets/audio/bgm_windbell.wav` |
+| 黄金绿洲 | `assets/audio/bgm_oasis.wav` |
+| 水晶火山 | `assets/audio/bgm_volcano.wav` |
+
+### 7.2 Cue
+
+`assets/audio/` 中除上述 4 条音乐外保留 39 个由 `scripts/audio_cue_catalog.gd` 明确引用的 Cue，覆盖：
+
+- UI 选择、确认、导航、打开、返回、锁定、装备、技能培养和升级。
+- 经验、治疗、磁吸、加速、爆破与通用拾取。
+- 玩家受伤、敌人击败、通用命中与危险预警。
+- 青叶团团冲刺、暮翼蝠光弹、阶段、精英、胜利与失败。
+- 六项技能施放，以及冰霜、陨星和凤凰的独立命中。
+
+音频路径和 Cue ID 是稳定接口。`tools/generate_audio.py` 是当前波形再生成工具；替换内容不得改变事件时机、总线、优先级和并发契约。
+
+## 8. 正式审阅图
+
+| 路径 | 用途 |
+|---|---|
+| `docs/references/battle-reference.png` | 战斗层级、开放混战、HUD 与三槽材质参考 |
+| `docs/references/reward-reference.png` | 三选一结构、品质层级与帆布卡参考 |
+| `docs/references/map-reference.png` | 三生态关系、路线、局外层级与氛围参考 |
+
+三张图均为 941×1672 竖屏概念图，只用于方向判断。运行时不得直接切用整张设计稿，也不得照搬其中的烘焙动态内容。
+
+## 9. 素材变更验收
+
+- 运行时不存在对 `docs/references/`、`preview/` 或生成源文件的资源引用。
+- 每项正式素材至少有一个运行时、导出、测试或许可用途。
+- 新图在目标尺寸、50%、32/64 px 和灰度下通过辨识检查。
+- 无伪文字、水印、色键残留、脏边、重复副本和只换色版本。
+- 角色和怪物保留身份，描边、光源、接地阴影和场景色阶一致。
+- 删除素材后进行全项目残留引用检查与全量测试。

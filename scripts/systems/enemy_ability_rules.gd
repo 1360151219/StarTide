@@ -15,6 +15,14 @@ static func is_visible(position: Vector2, focus: Vector2, viewport_size: Vector2
 	return Rect2(focus - viewport_size * 0.5, viewport_size).grow(36.0).has_point(position)
 
 
+static func update_visibility(state: Dictionary, position: Vector2, focus: Vector2, viewport_size: Vector2, elapsed: float) -> void:
+	if is_visible(position, focus, viewport_size):
+		if float(state["visible_since"]) < 0.0:
+			state["visible_since"] = elapsed
+	else:
+		state["visible_since"] = -1.0
+
+
 static func phase_count(states: Dictionary, include_executing: bool) -> int:
 	var count := 0
 	for state in states.values():

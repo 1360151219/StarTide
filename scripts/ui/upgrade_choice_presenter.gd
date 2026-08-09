@@ -71,11 +71,11 @@ static func _name_text(choice: Dictionary) -> String:
 static func _special_text(choice: Dictionary) -> String:
 	var kind := str(choice.get("kind", ""))
 	if kind == "skill_branch":
-		return "◇ 选择分支"
+		return "选择分支"
 	if kind == "skill_upgrade":
 		var skill := SkillCatalog.skill(str(choice.get("content_id", "")))
 		if not skill.is_empty() and int(choice.get("target_level", 0)) >= int(skill["max_level"]):
-			return "✦ 终极进化"
+			return "终极进化"
 	return ""
 
 
@@ -90,19 +90,19 @@ static func _metrics(choice: Dictionary) -> Array[Dictionary]:
 	if kind == "relic_upgrade":
 		return _relic_metrics(content_id, target_level)
 	if kind == "utility_recovery":
-		return [_metric("恢复", "+45", "♥"), _metric("生命上限", "+10", "♥")]
-	return [_metric("强化", "立即", "✦")]
+		return [_metric("恢复", "+45", "heal"), _metric("生命上限", "+10", "heal")]
+	return [_metric("强化", "立即", "confirm")]
 
 
 static func _skill_metrics(skill_id: String, target_level: int) -> Array[Dictionary]:
 	var skill := SkillCatalog.skill(skill_id)
 	if skill.is_empty() or not skill.has("runtime"):
-		return [_metric("等级", "Lv.%s" % _level_mark(target_level), "◆")]
+		return [_metric("等级", "Lv.%s" % _level_mark(target_level), "level")]
 	var result: Array[Dictionary] = []
 	var definitions := [
-		["count", "数量", "✦"], ["damage", "伤害", "◆"], ["healing", "恢复", "♥"],
-		["cooldown", "间隔", "↻"], ["hit_interval", "间隔", "↻"],
-		["radius", "范围", "◎"], ["blast_radius", "爆炸", "◎"], ["orbit_radius", "环绕", "◎"],
+		["count", "数量", "level"], ["damage", "伤害", "enemy"], ["healing", "恢复", "heal"],
+		["cooldown", "间隔", "clock"], ["hit_interval", "间隔", "clock"],
+		["radius", "范围", "magnet"], ["blast_radius", "爆炸", "bomb"], ["orbit_radius", "环绕", "expedition"],
 	]
 	var runtime: Dictionary = skill["runtime"]
 	for definition in definitions:
@@ -118,15 +118,15 @@ static func _skill_metrics(skill_id: String, target_level: int) -> Array[Diction
 		if result.size() >= 3:
 			break
 	if result.is_empty():
-		result.append(_metric("等级", "Lv.%s" % _level_mark(target_level), "◆"))
+		result.append(_metric("等级", "Lv.%s" % _level_mark(target_level), "level"))
 	return result
 
 
 static func _branch_metrics(skill_id: String, branch_id: String, target_level: int) -> Array[Dictionary]:
 	var branch := SkillCatalog.branch(skill_id, branch_id)
-	var result: Array[Dictionary] = [_metric("阶段", "Lv.%s" % _level_mark(target_level), "◆")]
+	var result: Array[Dictionary] = [_metric("阶段", "Lv.%s" % _level_mark(target_level), "level")]
 	for tag in branch.get("visual_tags", []):
-		result.append(_metric("特性" if result.size() == 1 else "定位", str(tag), "✦" if result.size() == 1 else "◎"))
+		result.append(_metric("特性" if result.size() == 1 else "定位", str(tag), "confirm" if result.size() == 1 else "expedition"))
 		if result.size() >= 3:
 			break
 	return result
@@ -135,7 +135,7 @@ static func _branch_metrics(skill_id: String, branch_id: String, target_level: i
 static func _relic_metrics(relic_id: String, target_level: int) -> Array[Dictionary]:
 	var relic := RelicCatalog.relic(relic_id)
 	if relic.is_empty():
-		return [_metric("等级", "Lv.%s" % _level_mark(target_level), "◆")]
+		return [_metric("等级", "Lv.%s" % _level_mark(target_level), "level")]
 	var modifiers: Dictionary = relic.get("modifiers_per_level", {})
 	var result: Array[Dictionary] = []
 	var seen_labels := {}
@@ -151,9 +151,9 @@ static func _relic_metrics(relic_id: String, target_level: int) -> Array[Diction
 		result.append(_metric(label, _transition(_modifier_value(key, before), _modifier_value(key, after), before), _modifier_symbol(key)))
 	var healing := float(relic.get("acquire_effects", {}).get("heal", 0.0))
 	if healing > 0.0 and result.size() < 3:
-		result.append(_metric("恢复", "+%.0f" % healing, "♥"))
+		result.append(_metric("恢复", "+%.0f" % healing, "heal"))
 	if result.is_empty():
-		result.append(_metric("等级", "Lv.%s" % _level_mark(target_level), "◆"))
+		result.append(_metric("等级", "Lv.%s" % _level_mark(target_level), "level"))
 	return result
 
 
@@ -199,14 +199,14 @@ static func _modifier_name(key: String) -> String:
 
 static func _modifier_symbol(key: String) -> String:
 	if key == "max_health_flat":
-		return "♥"
+		return "heal"
 	if key == "move_speed_multiplier":
-		return "➹"
+		return "haste"
 	if key in ["cooldown_multiplier", "hit_interval_multiplier"]:
-		return "↻"
+		return "clock"
 	if key in ["range_multiplier", "pickup_radius_multiplier"]:
-		return "◎"
-	return "✦"
+		return "magnet"
+	return "confirm"
 
 
 static func _modifier_value(key: String, value: float) -> String:

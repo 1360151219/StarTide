@@ -34,8 +34,10 @@ func intersects_circle(center: Vector2, combined_radius: float) -> bool:
 
 func _draw() -> void:
 	var pulse := 1.0 + sin(age * 16.0) * 0.08
-	draw_line(Vector2(-30, 0), Vector2(-5, 0), Color(0.55, 0.25, 0.85, 0.38), radius * 1.2, true)
+	draw_line(Vector2(-30, 0), Vector2(-5, 0), Color(0.13, 0.06, 0.2, 0.58), radius * 1.65, true)
+	draw_line(Vector2(-30, 0), Vector2(-5, 0), Color(0.55, 0.25, 0.85, 0.46), radius * 1.0, true)
+	draw_circle(Vector2.ZERO, radius * 1.58 * pulse, Color(0.13, 0.06, 0.2, 0.86))
 	draw_circle(Vector2.ZERO, radius * 1.35 * pulse, Color(1.0, 0.5, 0.24, 0.42))
 	draw_circle(Vector2.ZERO, radius * pulse, Color("8d55d9"))
-	draw_arc(Vector2.ZERO, radius * 1.05, 0.0, TAU, 24, Color("fff3cf"), 2.0)
+	draw_arc(Vector2.ZERO, radius * 1.08, 0.0, TAU, 24, Color("fff3cf"), 2.4)
 	draw_circle(Vector2(-2, -3), radius * 0.28, Color.WHITE)

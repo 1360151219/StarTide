@@ -113,12 +113,14 @@ spawn_distance_min = 520.0
 spawn_distance_max = 620.0
 elite_spawn_distance_min = 470.0
 elite_spawn_distance_max = 520.0
-background_color = Color(0.9, 0.38, 0.31, 1)
-floor_tint = Color(1, 0.93, 0.88, 0.86)
+background_color = Color(0.61, 0.31, 0.34, 1)
+floor_tint = Color(0.84, 0.76, 0.78, 0.94)
 border_color = Color(0.3, 0.83, 0.79, 0.82)
 glow_color = Color(0.35, 0.93, 0.86, 0.065)
-decoration_count = 80
-environment_particle_color = Color(0.72, 1, 0.91, 0.78)
+scene_saturation = 0.66
+scene_exposure = 0.91
+decoration_count = 64
+environment_particle_color = Color(0.72, 1, 0.91, 0.6)
 
 [sub_resource type="Resource" id="FirstClearEquipmentEntry"]
 script = ExtResource("16_grant")

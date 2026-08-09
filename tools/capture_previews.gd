@@ -112,6 +112,8 @@ func _on_process_frame() -> void:
 			},
 		})
 	elif frame_count == 282:
+		game.result_overlay.finish_reveal()
+	elif frame_count == 286:
 		if _capture("result_victory.png"):
 			print("CAPTURE_OK set=previews")
 			quit()
@@ -139,13 +141,21 @@ func _prepare_ember_showcase(game: Node) -> void:
 	session.pickups.spawn_pickup("xp", Vector2(-55, 110), 8)
 	session.pickups.spawn_pickup("heart", Vector2(25, 130), 22)
 	session.pickups.spawn_pickup("magnet", Vector2(78, 90), 1)
+	session.skills.runtime.volley_timer = 0.0
+	session.skills.advance(0.01, 0.01, session.state.elapsed)
+	session.projectiles.advance(0.06)
 	session.pause()
+	game.hud.tutorial_step = 1
+	game.hud.tutorial_time = 0.0
+	game.hud.tutorial_panel.visible = false
+	game.hud.stage_hud.banner_time = 0.0
+	game.hud.stage_hud.advance(0.0)
 	game.refresh_presentation()
 
 
 func _prepare_ember_ultimate(game: Node) -> void:
 	if game.upgrade_overlay.visible:
-		game.upgrade_overlay.buttons[0].pressed.emit()
+		game.upgrade_overlay.choice_selected.emit(str(game.upgrade_overlay.buttons[0].get_meta("choice_id")))
 	var session: Node = game.session
 	for skill_id in session.skills.active_skill_ids:
 		session.skills.levels[skill_id] = 3
@@ -160,7 +170,7 @@ func _prepare_ember_ultimate(game: Node) -> void:
 func _settle_character_page(game: Node) -> void:
 	var page: Control = game.start_screen.character_page
 	var panel: Control = page.section_panels[page.current_section]
-	panel.position.y = 254.0
+	panel.position.y = page.PANEL_Y
 	panel.modulate = Color.WHITE
 
 

@@ -8,12 +8,13 @@ const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
 const ResultCardSections = preload("res://scripts/ui/result_card_sections.gd")
 const ResultRevealAnimator = preload("res://scripts/ui/result_reveal_animator.gd")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 
-const CARD_SURFACE := Color(1.0, 0.98, 0.9, 0.97)
-const INK := Color(0.07, 0.2, 0.24, 1.0)
-const MUTED_INK := Color(0.25, 0.39, 0.42, 1.0)
-const AMBER := Color(1.0, 0.67, 0.2, 1.0)
-const TEAL := Color(0.08, 0.55, 0.57, 1.0)
+const CARD_SURFACE := UiFactory.SURFACE
+const INK := UiFactory.INK
+const MUTED_INK := UiFactory.MUTED_INK
+const AMBER := UiFactory.ACCENT
+const TEAL := UiFactory.PRIMARY_DARK
 
 var heading: Label
 var summary: Label
@@ -31,7 +32,7 @@ var build_icons: HBoxContainer
 var replay_button: Button
 var home_button: Button
 var victory_crest: TextureRect
-var celebration_stars: Array[Label] = []
+var celebration_stars: Array[Control] = []
 var reveal_tween: Tween
 
 var _sections := ResultCardSections.new()
@@ -55,9 +56,9 @@ func _ready() -> void:
 func show_result(presentation: Dictionary) -> void:
 	var won := bool(presentation.get("won", false))
 	heading.text = str(presentation.get("heading", "远征结算"))
-	heading.add_theme_color_override("font_color", TEAL if won else UiFactory.CORAL)
-	result_state_label.text = "✦  新纪录  ✦" if bool(presentation.get("new_record", false)) else ("✦  星门凯旋  ✦" if won else "◇  守望未竟  ◇")
-	result_state_label.add_theme_color_override("font_color", TEAL if won else UiFactory.CORAL)
+	heading.add_theme_color_override("font_color", TEAL if won else UiFactory.DANGER_DARK)
+	result_state_label.text = "新纪录" if bool(presentation.get("new_record", false)) else ("远征凯旋" if won else "本次未完成")
+	result_state_label.add_theme_color_override("font_color", TEAL if won else UiFactory.DANGER_DARK)
 	summary.text = str(presentation.get("outcome_hint", ""))
 	stat_values[0].text = str(presentation.get("duration_text", "--:--"))
 	stat_values[1].text = str(int(presentation.get("kills", 0)))
@@ -84,7 +85,7 @@ func _build_result_card() -> void:
 	result_card.position = Vector2(30, 40)
 	result_card.size = Vector2(480, 690)
 	result_card.pivot_offset = result_card.size * 0.5
-	result_card.add_theme_stylebox_override("panel", UiFactory.panel_style(CARD_SURFACE, 28.0, UiFactory.GOLD))
+	SunlitCardStyle.apply_panel(result_card, Color(CARD_SURFACE, 0.98), UiFactory.PRIMARY, 12.0, true, false, "canvas")
 	design_frame.add_child(result_card)
 	content_margin = MarginContainer.new()
 	content_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -107,6 +108,7 @@ func _build_result_card() -> void:
 	content_stack.add_child(heading)
 	hero_preview = _build_hero_stage()
 	content_stack.add_child(hero_preview)
+	content_stack.add_child(_build_reward_panel())
 	content_stack.add_child(_build_stat_row())
 	summary = _surface_label("", 14, MUTED_INK)
 	summary.custom_minimum_size = Vector2(0, 42)
@@ -117,7 +119,6 @@ func _build_result_card() -> void:
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.clip_text = true
 	content_stack.add_child(summary)
-	content_stack.add_child(_build_reward_panel())
 	content_stack.add_child(_build_build_panel())
 
 
@@ -161,22 +162,46 @@ func _add_button(parent: Control, text: String, at: Vector2, primary: bool, call
 	button.add_theme_font_size_override("font_size", 22)
 	button.add_theme_constant_override("outline_size", 0)
 	if primary:
-		button.add_theme_color_override("font_color", INK)
-		button.add_theme_color_override("font_hover_color", INK)
-		button.add_theme_color_override("font_pressed_color", INK)
-		UiFactory.apply_button_styles(button, AMBER, Color(1.0, 0.82, 0.43, 1.0))
+		UiFactory.apply_primary_button(button)
 	else:
-		button.add_theme_color_override("font_color", UiFactory.CREAM)
-		button.add_theme_color_override("font_hover_color", Color.WHITE)
-		button.add_theme_color_override("font_pressed_color", UiFactory.CREAM)
-		UiFactory.apply_button_styles(button, Color(0.05, 0.37, 0.42, 0.96), Color(0.3, 0.79, 0.74, 0.95))
+		UiFactory.apply_secondary_button(button)
 	button.pressed.connect(callback)
 	parent.add_child(button)
 	return button
 
 
 func _play_reveal(won: bool) -> void:
-	reveal_tween = ResultRevealAnimator.play(self, reveal_tween, result_card, victory_crest, celebration_stars, won)
+	reveal_tween = ResultRevealAnimator.play(self, reveal_tween, result_card, victory_crest, celebration_stars, content_stack.get_children(), [replay_button, home_button], won)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible or reveal_tween == null or not reveal_tween.is_valid() or not reveal_tween.is_running():
+		return
+	var wants_skip := false
+	if event is InputEventScreenTouch:
+		wants_skip = event.pressed
+	elif event is InputEventMouseButton:
+		wants_skip = event.pressed
+	elif event is InputEventKey:
+		wants_skip = event.pressed
+	if not wants_skip:
+		return
+	finish_reveal()
+	get_viewport().set_input_as_handled()
+
+
+func finish_reveal() -> void:
+	if not visible:
+		return
+	if reveal_tween != null and reveal_tween.is_valid() and reveal_tween.is_running():
+		reveal_tween.kill()
+	result_card.scale = Vector2.ONE
+	for node in content_stack.get_children():
+		if node is CanvasItem:
+			node.modulate.a = 1.0
+	for button in [replay_button, home_button]:
+		button.modulate.a = 1.0
+		button.disabled = false
 
 
 func _surface_label(text: String, font_size: int, color: Color) -> Label:

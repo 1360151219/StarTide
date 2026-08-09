@@ -71,13 +71,13 @@ func _test_compact_ui(game: Node) -> void:
 	_require(_contains_rect(game.hud.tutorial_panel.get_global_rect(), game.hud.tutorial_label.get_global_rect(), 0.01), "新手提示文字越过深色承载底板")
 	_require(game.start_screen.lobby_view.visible and not game.start_screen.character_page.visible, "开始页没有默认停留在关卡大厅")
 	_require(game.start_screen.bottom_bar.size.y >= 96.0, "悬浮底栏高度不足")
-	_require(game.start_screen.bottom_bar.buttons.size() == 3, "绘本底栏不是三个等权主入口")
+	_require(game.start_screen.bottom_bar.buttons.size() == 3, "远征底栏不是三个等权主入口")
 	for button in game.start_screen.character_page.equipment_panel.inventory_buttons + game.start_screen.character_page.equipment_panel.filter_buttons.values() + [
 		game.start_screen.character_page.equipment_panel.detail_sheet.action_button,
 		game.start_screen.character_page.skill_panel.reset_button,
 	]:
 		_require(button.size.y >= 48.0, "角色页存在不足 48 像素的触控区域")
-	_require(game.start_screen.level_preview.animation_player.is_playing(), "关卡预览动画没有播放")
+	_require(game.start_screen.route_map.animation_player.is_playing(), "远征路线动画没有播放")
 	game.result_overlay.show_result({
 		"heading": "完美远征", "outcome_hint": "彩晶火山 · 精英已击破", "won": true,
 		"new_record": true, "duration_text": "02:00", "kills": 123, "player_level": 11,

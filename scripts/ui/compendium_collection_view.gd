@@ -4,6 +4,7 @@ signal close_requested
 signal category_requested(category: String)
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 
 var list: GridContainer
 var tab_buttons: Dictionary = {}
@@ -66,32 +67,26 @@ func set_selected_tab(category: String) -> void:
 func _build_paper_sheet() -> void:
 	paper_sheet = Panel.new()
 	paper_sheet.position = Vector2(10, 16)
-	paper_sheet.add_theme_stylebox_override(
-		"panel",
-		UiFactory.panel_style(Color(UiFactory.GLASS, 0.995), 28.0, UiFactory.GOLD)
-	)
+	SunlitCardStyle.apply_panel(paper_sheet, UiFactory.SURFACE, UiFactory.PRIMARY, 14.0)
 	add_child(paper_sheet)
 	top_wash = Panel.new()
 	top_wash.position = Vector2(20, 94)
 	top_wash.size = Vector2(500, 86)
-	top_wash.add_theme_stylebox_override(
-		"panel",
-		UiFactory.panel_style(UiFactory.GLASS_ALT, 19.0, Color(UiFactory.GOLD, 0.62))
-	)
+	SunlitCardStyle.apply_panel(top_wash, UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.72), 10.0, false, true, "map_tag")
 	add_child(top_wash)
 
 
 func _build_header() -> void:
-	var kicker := _plain_label("✦ 远征收藏册", 15, UiFactory.CYAN)
+	var kicker := _plain_label("远征收藏册", 15, UiFactory.PRIMARY_DARK)
 	kicker.position = Vector2(30, 30)
 	kicker.size = Vector2(250, 24)
 	add_child(kicker)
-	var title := _plain_label("星潮图鉴", 34, UiFactory.GOLD_LIGHT)
+	var title := _plain_label("远征图鉴", 34, UiFactory.INK)
 	title.position = Vector2(28, 52)
 	title.size = Vector2(300, 46)
 	UiFactory.apply_inner_page_title(title)
 	add_child(title)
-	progress_label = _plain_label("", 14, UiFactory.PALE_MUTED)
+	progress_label = _plain_label("", 14, UiFactory.MUTED_INK)
 	progress_label.position = Vector2(252, 62)
 	progress_label.size = Vector2(176, 28)
 	progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -101,9 +96,7 @@ func _build_header() -> void:
 	close_button.size = Vector2(62, 58)
 	close_button.text = "×"
 	close_button.add_theme_font_size_override("font_size", 28)
-	close_button.add_theme_color_override("font_color", UiFactory.CREAM)
-	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
-	UiFactory.apply_glass_button(close_button, false, UiFactory.GOLD)
+	SunlitCardStyle.apply_button(close_button, false, UiFactory.PRIMARY)
 	close_button.pressed.connect(close_requested.emit)
 	add_child(close_button)
 
@@ -151,15 +144,7 @@ func _layout() -> void:
 
 
 func _apply_tab_style(button: Button, selected: bool) -> void:
-	var text_color := UiFactory.CREAM if selected else UiFactory.INK
-	button.add_theme_color_override("font_color", text_color)
-	button.add_theme_color_override("font_hover_color", Color.WHITE if selected else UiFactory.INK)
-	button.add_theme_color_override("font_pressed_color", text_color)
-	UiFactory.apply_button_styles(
-		button,
-		UiFactory.ACTION if selected else UiFactory.SURFACE,
-		UiFactory.GOLD_LIGHT if selected else UiFactory.GOLD
-	)
+	SunlitCardStyle.apply_button(button, selected, UiFactory.PRIMARY, UiFactory.PRIMARY_DARK, UiFactory.SURFACE_ALT, "ribbon")
 
 
 func _plain_label(text: String, font_size: int, color: Color) -> Label:

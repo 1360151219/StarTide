@@ -24,6 +24,7 @@ func build(parent: Node2D, state: RefCounted, build_state: RefCounted, level: Le
 	player.apply_build_modifiers(build_state)
 	player.z_index = level.map.depth_index(player.position.y)
 	parent.add_child(player)
+	world.track_player(player)
 	var camera := _create_camera(player, level.map)
 	var enemies := EnemySystem.new()
 	parent.add_child(enemies)
@@ -31,18 +32,18 @@ func build(parent: Node2D, state: RefCounted, build_state: RefCounted, level: Le
 	var enemy_projectiles := EnemyProjectileSystem.new()
 	enemy_projectiles.z_index = 3875
 	parent.add_child(enemy_projectiles)
-	enemy_projectiles.configure(player, level.enemy_ability_budget.max_projectiles)
+	enemy_projectiles.configure(player, level.enemy_ability_budget.max_projectiles, effects, audio)
 	var enemy_abilities := EnemyAbilitySystem.new()
 	enemy_abilities.z_index = 0
 	parent.add_child(enemy_abilities)
-	enemy_abilities.configure(level, state, player, enemies, enemy_projectiles, stage_director, random_streams["enemy_ability"], audio)
+	enemy_abilities.configure(level, state, player, enemies, enemy_projectiles, stage_director, random_streams["enemy_ability"], audio, effects)
 	var projectiles := ProjectileSystem.new()
 	projectiles.z_index = 3900
 	parent.add_child(projectiles)
 	projectiles.configure(enemies, effects, audio, random_streams["skill"])
 	var pickups := PickupSystem.new()
 	parent.add_child(pickups)
-	pickups.configure(level, state, build_state, player, enemies, random_streams["loot"], audio, progression)
+	pickups.configure(level, state, build_state, player, enemies, random_streams["loot"], audio, effects, progression)
 	var skills := SkillController.new()
 	skills.z_index = 3850
 	parent.add_child(skills)

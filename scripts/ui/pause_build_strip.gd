@@ -79,7 +79,7 @@ func _build_icon(entry: Dictionary) -> Panel:
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	slot.add_child(icon)
-	var level := UiFactory.surface_label(_level_mark(int(entry["level"])), 11, UiFactory.CREAM)
+	var level := UiFactory.surface_label(_level_mark(int(entry["level"])), 11, UiFactory.HUD_TEXT)
 	level.position = Vector2(27, 35)
 	level.size = Vector2(20, 20)
 	level.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -94,7 +94,7 @@ func _empty_slot() -> Panel:
 		"panel",
 		UiFactory.panel_style(Color(1.0, 0.99, 0.94, 0.72), 14.0, Color("aec8b9"))
 	)
-	var label := UiFactory.surface_label("✦  等待第一份星潮强化", 15, UiFactory.MUTED_INK)
+	var label := UiFactory.surface_label("等待获得第一份远征强化", 15, UiFactory.MUTED_INK)
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

@@ -7,6 +7,7 @@ const RunRecords = preload("res://scripts/run_records.gd")
 const RunSession = preload("res://scripts/run/run_session.gd")
 const PlayerEntity = preload("res://scripts/player.gd")
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
+const TestRandomStreams = preload("res://tools/support/test_random_streams.gd")
 
 var failed := false
 
@@ -74,6 +75,8 @@ func _test_frost_tide(host: Node2D, effects: Node2D) -> void:
 	var health_before: float = enemy.health
 	session.skills.runtime.pulse_timer = 0.0
 	session.skills.advance(0.0, 0.0, 2.0)
+	_require(enemy.health == health_before and session.skills.runtime.timeline.pending_count("frost_tide") == 1, "时凝星海在波前抵达前提前结算伤害")
+	session.skills.advance(0.0, 0.04, 2.04)
 	_require(enemy.health == health_before - 49.0, "时凝星海没有造成独立范围伤害")
 	_require(is_equal_approx(enemy.slow_factor, 0.28) and session.skills.runtime.pulse_visual_time > 0.0, "时凝星海减速或视觉没有生效")
 	session.free()
@@ -120,6 +123,11 @@ func _test_meteor_rain(host: Node2D, effects: Node2D) -> void:
 	var effect_count: int = effects.effects.size()
 	session.skills.runtime.meteor_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
+	var damaged_before_impact := 0
+	for enemy in targets:
+		damaged_before_impact += int(enemy.health < enemy.max_health)
+	_require(damaged_before_impact == 0 and session.skills.runtime.timeline.pending_count("meteor_rain") == 3, "天火坠世在陨星落地前提前结算伤害")
+	session.skills.advance(0.0, 0.52, 1.52)
 	var damaged := 0
 	for enemy in targets:
 		damaged += int(enemy.health < enemy.max_health)
@@ -136,6 +144,8 @@ func _test_phoenix_heart(host: Node2D, effects: Node2D) -> void:
 	var enemy_health_before: float = enemy.health
 	session.skills.runtime.phoenix_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
+	_require(session.player.health == 900.0 and enemy.health == enemy_health_before, "不灭炎翼在凤凰展开前提前结算效果")
+	session.skills.advance(0.0, 0.19, 1.19)
 	_require(session.player.health == 902.5, "不灭炎翼没有独立治疗 2.5 点生命")
 	_require(enemy.health == enemy_health_before - 38.0, "不灭炎翼没有独立造成范围伤害")
 	session.free()
@@ -176,12 +186,13 @@ func _test_frame_stops_on_upgrade(host: Node2D, effects: Node2D) -> void:
 	elite.is_elite = true
 	session.elite_enemy = elite
 	session.safety.opening_movement_observed = true
+	session.skills.runtime.pulse_timer = 0.0
+	session.skills.advance(0.0, 0.0, 0.0)
 	var projectile = session.projectiles.spawn_projectile({
 		"position": Vector2.ZERO, "angle": 0.0, "speed": 100.0, "damage": 1.0,
 		"radius": 2.0, "pierce": 0, "visual_kind": "star_lance",
 	})
 	session.pickups.spawn_pickup("xp", session.player.position, 8)
-	session.skills.runtime.pulse_timer = 0.0
 	session.advance(0.1, Vector2.ZERO)
 	_require(session.state.paused and session.state.pending_upgrades == 1, "精英击破没有进入额外升级暂停")
 	_require(projectile.position == Vector2.ZERO, "升级暂停触发后本帧投射物仍然推进")
@@ -201,17 +212,8 @@ func _create_session(host: Node2D, effects: Node2D, hero_id: String, seed_value:
 	host.add_child(session)
 	var audio := AudioStub.new()
 	session.add_child(audio)
-	session.configure(hero_id, LevelCatalog.first(), RunRecords.new(""), audio, effects, _random_streams(seed_value))
+	session.configure(hero_id, LevelCatalog.first(), RunRecords.new(""), audio, effects, TestRandomStreams.create(seed_value))
 	return session
-
-
-func _random_streams(seed_value: int) -> Dictionary:
-	var streams := {}
-	for stream_id in ["spawn", "loot", "skill", "upgrade", "enemy_ability"]:
-		var rng := RandomNumberGenerator.new()
-		rng.seed = seed_value + streams.size()
-		streams[stream_id] = rng
-	return streams
 
 
 func _select_only_skill(session: Node, selected_skill_id: String) -> void:

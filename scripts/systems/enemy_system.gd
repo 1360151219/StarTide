@@ -163,7 +163,7 @@ func damage_area(center: Vector2, radius: float, damage: float, excluded: Node =
 func damage_enemy(enemy: Node, damage: float, number_color := Color("e6fbff")) -> void:
 	if not is_combat_active() or not is_active(enemy):
 		return
-	effects.add_damage_number(enemy.position - Vector2(18, enemy.radius + 4.0), damage, number_color)
+	effects.add_damage_number(enemy.position - Vector2(18, enemy.radius + 4.0), damage, number_color, false, enemy.get_instance_id())
 	if enemy.take_damage(damage):
 		audio.play_sfx("enemy_defeat", -2.0, rng.randf_range(0.9, 1.1))
 		var defeat_kind := "grub_defeat" if enemy.kind == "green_grub" else "defeat"

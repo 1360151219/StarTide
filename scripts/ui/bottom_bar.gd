@@ -4,55 +4,45 @@ signal page_selected(page_id: String)
 signal navigation_reserve_changed(reserve: float)
 
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
+const UiFactory = preload("res://scripts/ui/ui_factory.gd")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
+const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
 const PAGE_START := "start"
 const PAGE_CHARACTER := "character"
 const PAGE_COMPENDIUM := "compendium"
-const BASE_TEXTURE := preload("res://assets/art/ui/navigation/bottom_bar_base.png")
-const SELECTION_TEXTURE := preload("res://assets/art/ui/navigation/bottom_bar_selection.png")
-const CONTENT_TEXTURES := {
-	PAGE_START: preload("res://assets/art/ui/navigation/bottom_bar_content_start.png"),
-	PAGE_CHARACTER: preload("res://assets/art/ui/navigation/bottom_bar_content_character.png"),
-	PAGE_COMPENDIUM: preload("res://assets/art/ui/navigation/bottom_bar_content_compendium.png"),
-}
-const SELECTION_CENTERS := {
-	PAGE_START: 118.0,
-	PAGE_CHARACTER: 270.0,
-	PAGE_COMPENDIUM: 408.0,
-}
 const PAGE_DEFINITIONS := [
 	{
 		"id": PAGE_START,
 		"caption": "远征",
-		"description": "选择关卡并踏入星门",
-		"rect": Rect2(34, 0, 160, 120),
+		"description": "选择关卡并开始远征",
+		"glyph": "expedition",
 	},
 	{
 		"id": PAGE_CHARACTER,
 		"caption": "角色",
 		"description": "选择英雄并配置成长",
-		"rect": Rect2(194, 0, 154, 120),
+		"glyph": "character",
 	},
 	{
 		"id": PAGE_COMPENDIUM,
 		"caption": "图鉴",
-		"description": "查看已经发现的星潮记录",
-		"rect": Rect2(348, 0, 158, 120),
+		"description": "查看旅途中发现的记录",
+		"glyph": "compendium",
 	},
 ]
 
 var current_page := PAGE_START
 var buttons: Dictionary = {}
-var skin: TextureRect
-var selection: TextureRect
-var active_content: TextureRect
+var tab_plates: Dictionary = {}
+var glyphs: Dictionary = {}
+var captions: Dictionary = {}
 
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(540, 120)
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	clip_contents = false
-	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	_build_skin()
+	SunlitCardStyle.apply_panel(self, Color(UiFactory.HUD_SURFACE, 0.98), Color("8d7248"), 8.0, false, true, "ribbon")
 	_build_buttons()
 	_link_focus()
 	select_page(current_page, false)
@@ -67,8 +57,6 @@ func select_page(page_id: String, emit_change := true) -> void:
 		return
 	var changed := page_id != current_page
 	current_page = page_id
-	selection.position.x = SELECTION_CENTERS[page_id] - selection.size.x * 0.5
-	active_content.texture = CONTENT_TEXTURES[page_id]
 	for id in buttons:
 		var button: Button = buttons[id]
 		var selected: bool = id == current_page
@@ -78,20 +66,31 @@ func select_page(page_id: String, emit_change := true) -> void:
 			if selected
 			else "切换到%s页面，%s" % [button.text, button.get_meta("page_description")]
 		)
+		SunlitCardStyle.apply_panel(
+			tab_plates[id],
+			UiFactory.SURFACE if selected else Color(UiFactory.PRIMARY_DARK, 0.96),
+			UiFactory.ACCENT if selected else Color(UiFactory.ACCENT_LIGHT, 0.52),
+			6.0,
+			selected,
+			true,
+			"ribbon"
+		)
+		glyphs[id].set_selected(selected)
+		captions[id].add_theme_color_override("font_color", UiFactory.INK if selected else UiFactory.HUD_TEXT)
 	if emit_change and changed:
 		page_selected.emit(page_id)
 
 
 func base_texture_path() -> String:
-	return skin.texture.resource_path if is_instance_valid(skin) and skin.texture != null else ""
+	return ""
 
 
 func selection_texture_path() -> String:
-	return selection.texture.resource_path if is_instance_valid(selection) and selection.texture != null else ""
+	return ""
 
 
 func active_content_texture_path() -> String:
-	return active_content.texture.resource_path if is_instance_valid(active_content) and active_content.texture != null else ""
+	return ""
 
 
 func layout_in_safe_rect(safe_rect: Rect2) -> void:
@@ -111,44 +110,29 @@ func _layout_for_viewport() -> void:
 		layout_in_safe_rect(ScreenLayout.current_safe_rect(viewport))
 
 
-func _build_skin() -> void:
-	skin = TextureRect.new()
-	skin.name = "StateSkin"
-	skin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	skin.stretch_mode = TextureRect.STRETCH_SCALE
-	skin.texture = BASE_TEXTURE
-	skin.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	skin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(skin)
-	selection = TextureRect.new()
-	selection.name = "Selection"
-	selection.position = Vector2.ZERO
-	selection.size = Vector2(SELECTION_TEXTURE.get_width(), SELECTION_TEXTURE.get_height())
-	selection.texture = SELECTION_TEXTURE
-	selection.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	selection.stretch_mode = TextureRect.STRETCH_SCALE
-	selection.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	selection.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(selection)
-	active_content = TextureRect.new()
-	active_content.name = "ActiveContent"
-	active_content.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	active_content.stretch_mode = TextureRect.STRETCH_SCALE
-	active_content.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	active_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	active_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(active_content)
-
-
 func _build_buttons() -> void:
-	for definition in PAGE_DEFINITIONS:
+	var tab_width := 102.0
+	var gap := 12.0
+	var start_x := 20.0
+	for index in range(PAGE_DEFINITIONS.size()):
+		var definition: Dictionary = PAGE_DEFINITIONS[index]
 		var page_id := str(definition["id"])
+		var plate := Panel.new()
+		plate.position = Vector2(start_x + index * (tab_width + gap), 8)
+		plate.size = Vector2(tab_width, 104)
+		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(plate)
+		tab_plates[page_id] = plate
+		var glyph := SunlitGlyph.new()
+		glyph.glyph_id = str(definition["glyph"])
+		glyph.position = Vector2(35, 13)
+		glyph.size = Vector2(32, 32)
+		plate.add_child(glyph)
+		glyphs[page_id] = glyph
 		var button := Button.new()
-		var rect: Rect2 = definition["rect"]
 		button.name = page_id.capitalize() + "Tab"
-		button.position = rect.position
-		button.size = rect.size
+		button.position = plate.position
+		button.size = plate.size
 		button.text = str(definition["caption"])
 		button.tooltip_text = str(definition["description"])
 		button.accessibility_name = button.text
@@ -156,18 +140,24 @@ func _build_buttons() -> void:
 		button.focus_mode = Control.FOCUS_ALL
 		button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.add_theme_font_size_override("font_size", 1)
+		button.add_theme_constant_override("outline_size", 0)
+		button.add_theme_constant_override("icon_max_width", 0)
 		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 			button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-		for color_name in [
-			"font_color",
-			"font_hover_color",
-			"font_pressed_color",
-			"font_focus_color",
-			"font_disabled_color",
-		]:
+		for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 			button.add_theme_color_override(color_name, Color.TRANSPARENT)
 		button.pressed.connect(select_page.bind(page_id))
 		add_child(button)
+		var caption := UiFactory.surface_label(str(definition["caption"]), 15, UiFactory.MUTED_INK)
+		caption.position = Vector2(0, 56)
+		caption.size = Vector2(tab_width, 34)
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(caption)
+		captions[page_id] = caption
 		buttons[page_id] = button
 
 

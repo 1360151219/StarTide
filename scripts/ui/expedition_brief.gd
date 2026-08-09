@@ -29,11 +29,11 @@ func configure(level: LevelConfig, current_power: int, unlocked: bool, cleared: 
 	var reached := current_power >= recommended_power
 	current_power_label.add_theme_color_override(
 		"font_color",
-		UiFactory.PRIMARY_DARK if reached else UiFactory.CORAL.darkened(0.12)
+		UiFactory.PRIMARY_DARK if reached else UiFactory.DANGER_DARK
 	)
 	reward_label.add_theme_color_override(
 		"font_color",
-		UiFactory.PRIMARY_DARK if cleared else UiFactory.ACTION_DARK
+		UiFactory.PRIMARY_DARK if cleared else UiFactory.ACCENT_DARK
 	)
 	modulate = Color(1, 1, 1, 1.0 if unlocked else 0.78)
 	tooltip_text = "推荐战力%d，当前战力%d，%s" % [recommended_power, current_power, "胜利掉落一到四件随机装备" if cleared else "首通奖励%s一份，另掉落一到四件随机装备" % reward_name]
@@ -65,7 +65,7 @@ func _build_rows() -> void:
 	recommended_label = _add_label(Vector2(65.5, 10), Vector2(126, 34), 16, UiFactory.INK)
 	current_power_label = _add_label(Vector2(250.5, 10), Vector2(126, 34), 16, UiFactory.PRIMARY_DARK)
 	reward_title_label = _add_label(Vector2(65.5, 60), Vector2(126, 34), 16, UiFactory.INK)
-	reward_label = _add_label(Vector2(250.5, 60), Vector2(126, 34), 15, UiFactory.ACTION_DARK)
+	reward_label = _add_label(Vector2(250.5, 60), Vector2(126, 34), 15, UiFactory.ACCENT_DARK)
 
 
 func _add_glyph(glyph_id: String, at: Vector2) -> Control:

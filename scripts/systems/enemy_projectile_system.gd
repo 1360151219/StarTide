@@ -8,11 +8,15 @@ const PlayerHitData = preload("res://scripts/combat/player_hit.gd")
 var player: Node2D
 var max_projectiles := 2
 var projectiles: Array[Node] = []
+var effects: Node2D
+var audio: Node
 
 
-func configure(player_node: Node2D, projectile_limit: int) -> void:
+func configure(player_node: Node2D, projectile_limit: int, combat_effects: Node2D, audio_manager: Node) -> void:
 	player = player_node
 	max_projectiles = projectile_limit
+	effects = combat_effects
+	audio = audio_manager
 
 
 func spawn_bolt(source: Node, origin: Vector2, direction: Vector2, config: Dictionary, damage_multiplier: float) -> Node:
@@ -42,8 +46,11 @@ func advance(delta: float) -> void:
 		if projectile.intersects_circle(player.position, projectile.radius + 21.0):
 			var hit := PlayerHitData.create(projectile.damage, projectile.source, projectile.hit_type, projectile.position)
 			player_hit_requested.emit(hit)
+			effects.add_effect(projectile.position, projectile.radius + 22.0, Color("9b67df"), 0.3, "bat_impact")
+			audio.play_sfx("bat_bolt_impact", -2.0, 0.98)
 			_remove(projectile)
 		elif expired:
+			effects.add_effect(projectile.position, projectile.radius + 16.0, Color("9b67df"), 0.28, "bat_dissolve")
 			_remove(projectile)
 
 

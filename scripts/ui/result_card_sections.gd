@@ -3,20 +3,21 @@ extends RefCounted
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const HeroRigScene = preload("res://scenes/presentation/hero_rig_2d.tscn")
-const StarTideGlyph = preload("res://scripts/ui/star_tide_glyph.gd")
+const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
 const ResultRewardStrip = preload("res://scripts/ui/result_reward_strip.gd")
 const PauseBuildStrip = preload("res://scripts/ui/pause_build_strip.gd")
 const VICTORY_CREST := preload("res://assets/generated/ui/victory_crest.png")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 
-const MINT_SURFACE := Color(0.88, 0.97, 0.91, 0.98)
-const INK := Color(0.07, 0.2, 0.24, 1.0)
-const AMBER := Color(1.0, 0.67, 0.2, 1.0)
-const TEAL := Color(0.08, 0.55, 0.57, 1.0)
+const RESULT_SURFACE_ALT := UiFactory.SURFACE_ALT
+const INK := UiFactory.INK
+const AMBER := UiFactory.ACCENT
+const TEAL := UiFactory.PRIMARY_DARK
 
 var result_state_label: Label
 var hero_rig: HeroRig2D
 var victory_crest: TextureRect
-var celebration_stars: Array[Label] = []
+var celebration_stars: Array[Control] = []
 var stat_values: Array[Label] = []
 var reward_strip: Control
 var build_icons: HBoxContainer
@@ -27,7 +28,7 @@ func build_state_pill() -> CenterContainer:
 	center.custom_minimum_size = Vector2(0, 26)
 	var pill := Panel.new()
 	pill.custom_minimum_size = Vector2(176, 26)
-	pill.add_theme_stylebox_override("panel", UiFactory.panel_style(MINT_SURFACE, 13.0, Color(0.3, 0.72, 0.66, 0.72)))
+	SunlitCardStyle.apply_panel(pill, RESULT_SURFACE_ALT, Color(UiFactory.PRIMARY, 0.72), 6.0, false, true, "enamel")
 	center.add_child(pill)
 	result_state_label = surface_label("", 13, TEAL)
 	result_state_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -41,7 +42,7 @@ func build_hero_stage() -> Panel:
 	var stage := Panel.new()
 	stage.custom_minimum_size = Vector2(0, 196)
 	stage.clip_contents = true
-	stage.add_theme_stylebox_override("panel", UiFactory.panel_style(Color(0.85, 0.96, 0.93, 0.9), 22.0, Color(0.29, 0.72, 0.67, 0.75)))
+	SunlitCardStyle.apply_panel(stage, Color(UiFactory.SURFACE_ALT, 0.92), Color(UiFactory.PRIMARY, 0.72), 10.0, false, true, "ribbon")
 	victory_crest = TextureRect.new()
 	victory_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	victory_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -65,12 +66,12 @@ func _add_celebration_stars(stage: Panel) -> void:
 	var positions := [Vector2(68, 38), Vector2(354, 32), Vector2(104, 138), Vector2(332, 142)]
 	var sizes := [28, 22, 18, 24]
 	for index in range(positions.size()):
-		var star := surface_label("✦", sizes[index], AMBER if index % 2 == 0 else TEAL)
+		var star := SunlitGlyph.new()
+		star.glyph_id = "expedition"
+		star.set_selected(index % 2 == 0)
 		star.position = positions[index]
-		star.size = Vector2(36, 36)
-		star.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		star.pivot_offset = Vector2(18, 18)
+		star.size = Vector2(sizes[index], sizes[index])
+		star.pivot_offset = star.size * 0.5
 		stage.add_child(star)
 		celebration_stars.append(star)
 
@@ -93,8 +94,8 @@ func _build_stat_chip(definition: Dictionary) -> Panel:
 	chip.custom_minimum_size = Vector2(0, 62)
 	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chip.tooltip_text = str(definition["tooltip"])
-	chip.add_theme_stylebox_override("panel", UiFactory.panel_style(Color(1.0, 0.95, 0.78, 0.95), 15.0, Color(0.9, 0.67, 0.25, 0.76)))
-	var glyph := StarTideGlyph.new()
+	SunlitCardStyle.apply_panel(chip, UiFactory.ACCENT_LIGHT, Color(UiFactory.ACCENT_DARK, 0.72), 7.0, false, true, "enamel")
+	var glyph := SunlitGlyph.new()
 	glyph.glyph_id = str(definition["glyph"])
 	glyph.position = Vector2(10, 15)
 	glyph.size = Vector2(32, 32)
@@ -113,7 +114,7 @@ func _build_stat_chip(definition: Dictionary) -> Panel:
 func build_reward_panel() -> Panel:
 	var panel := Panel.new()
 	panel.custom_minimum_size = Vector2(0, 140)
-	panel.add_theme_stylebox_override("panel", UiFactory.panel_style(MINT_SURFACE, 18.0, Color(0.28, 0.68, 0.62, 0.7)))
+	SunlitCardStyle.apply_panel(panel, RESULT_SURFACE_ALT, Color(UiFactory.PRIMARY, 0.68), 8.0, false, true, "ribbon")
 	reward_strip = ResultRewardStrip.new()
 	reward_strip.position = Vector2(12, 18)
 	reward_strip.size = Vector2(420, 104)
@@ -125,7 +126,7 @@ func build_build_panel() -> Panel:
 	var panel := Panel.new()
 	panel.custom_minimum_size = Vector2(0, 82)
 	panel.tooltip_text = "本局技能与遗物"
-	panel.add_theme_stylebox_override("panel", UiFactory.panel_style(Color(0.95, 0.95, 0.83, 0.94), 16.0, Color(0.48, 0.67, 0.57, 0.6)))
+	SunlitCardStyle.apply_panel(panel, Color(UiFactory.SURFACE, 0.94), Color(UiFactory.SUPPORTING, 0.68), 8.0, false, true, "ribbon")
 	build_icons = PauseBuildStrip.new()
 	build_icons.position = Vector2(26, 12)
 	build_icons.size = Vector2(392, 58)

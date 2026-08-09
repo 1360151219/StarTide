@@ -2,17 +2,20 @@ extends Panel
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
+const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
 
 var skill_ids: Array = []
 var icons: Array[TextureRect] = []
 var badges: Array[Label] = []
 var cooldown_bars: Array[ColorRect] = []
+var empty_glyphs: Array[Control] = []
 
 
 func _ready() -> void:
 	size = Vector2(286, 88)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_theme_stylebox_override("panel", UiFactory.panel_style(UiFactory.SURFACE, 20.0, UiFactory.GOLD))
+	SunlitCardStyle.apply_panel(self, Color(UiFactory.SURFACE, 0.96), UiFactory.PRIMARY, 10.0, false, true, "ribbon")
 	for index in range(3):
 		_build_slot(index)
 
@@ -22,6 +25,7 @@ func configure(active_skill_ids: Array) -> void:
 	for index in range(3):
 		var skill_id := str(skill_ids[index]) if index < skill_ids.size() else ""
 		icons[index].texture = SkillCatalog.skill(skill_id).get("icon") if SkillCatalog.has(skill_id) else null
+		empty_glyphs[index].visible = skill_id.is_empty()
 
 
 func refresh(skills: Node2D, elapsed: float) -> void:
@@ -31,10 +35,12 @@ func refresh(skills: Node2D, elapsed: float) -> void:
 		var skill_id: String = skill_ids[index]
 		if skill_id.is_empty():
 			icons[index].modulate = Color(0.3, 0.4, 0.43, 0.28)
-			badges[index].text = "＋"
+			badges[index].text = ""
+			empty_glyphs[index].visible = true
 			cooldown_bars[index].size.x = 0.0
 			continue
 		var skill_level: int = skills.levels[skill_id]
+		empty_glyphs[index].visible = false
 		var color := Color("fff1a8") if skills.is_flashing(skill_id, elapsed) else Color.WHITE
 		icons[index].modulate = color if skill_level > 0 else Color(0.38, 0.48, 0.5, 0.38)
 		badges[index].text = _badge(skill_level)
@@ -45,7 +51,7 @@ func _build_slot(index: int) -> void:
 	var slot := Panel.new()
 	slot.position = Vector2(10 + index * 91, 7)
 	slot.size = Vector2(84, 74)
-	slot.add_theme_stylebox_override("panel", UiFactory.panel_style(Color(0.91, 0.97, 0.91, 0.92), 15.0, Color(0.3, 0.7, 0.63, 0.54)))
+	SunlitCardStyle.apply_panel(slot, UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.68), 8.0, false, true, "enamel")
 	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(slot)
 	var icon := TextureRect.new()
@@ -56,6 +62,13 @@ func _build_slot(index: int) -> void:
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot.add_child(icon)
 	icons.append(icon)
+	var empty_glyph := SunlitGlyph.new()
+	empty_glyph.glyph_id = "empty"
+	empty_glyph.position = Vector2(25, 17)
+	empty_glyph.size = Vector2(34, 34)
+	empty_glyph.modulate = Color(1, 1, 1, 0.58)
+	slot.add_child(empty_glyph)
+	empty_glyphs.append(empty_glyph)
 	var badge := UiFactory.surface_label("—", 12, UiFactory.PRIMARY_DARK)
 	badge.position = Vector2(56, 43)
 	badge.size = Vector2(25, 22)

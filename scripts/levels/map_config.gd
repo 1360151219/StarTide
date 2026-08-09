@@ -15,6 +15,8 @@ extends Resource
 @export var floor_tint := Color(0.82, 0.87, 1.0, 0.92)
 @export var border_color := Color(0.76, 0.62, 0.3, 0.6)
 @export var glow_color := Color(0.18, 0.72, 0.82, 0.025)
+@export_range(0.4, 1.0, 0.01) var scene_saturation := 0.72
+@export_range(0.6, 1.1, 0.01) var scene_exposure := 0.92
 @export_range(48, 96, 8) var decoration_count := 72
 @export var environment_particle_color := Color(1.0, 0.98, 0.74, 0.68)
 

@@ -53,13 +53,14 @@ func _draw_frost_pulse() -> void:
 		return
 	var data: Dictionary = SkillCatalog.skill("frost_tide")["runtime"]
 	var radius: float = data["radius"][skill_level] * _range_multiplier("frost_tide") * runtime._branch_multiplier("frost_tide", "radius_multiplier")
-	var progress: float = 1.0 - runtime.pulse_visual_time / 0.3
+	var progress: float = 1.0 - runtime.pulse_visual_time / runtime.FROST_TRAVEL_TIME
 	var alpha := 1.0 - progress
-	draw_arc(player.position, radius * progress, 0.0, TAU, 72, Color(0.55, 0.95, 1.0, alpha), 8.0)
-	draw_arc(player.position, radius * progress * 0.86, 0.0, TAU, 64, Color(0.78, 0.98, 1.0, alpha * 0.55), 2.0)
+	draw_arc(runtime.pulse_center, radius * progress, 0.0, TAU, 72, Color(0.03, 0.27, 0.38, alpha * 0.82), 11.0)
+	draw_arc(runtime.pulse_center, radius * progress, 0.0, TAU, 72, Color(0.55, 0.95, 1.0, alpha), 6.0)
+	draw_arc(runtime.pulse_center, radius * progress * 0.86, 0.0, TAU, 64, Color(0.78, 0.98, 1.0, alpha * 0.55), 2.0)
 	for index in range(12):
 		var angle := index * TAU / 12.0 + progress * 0.3
-		var position := player.position + Vector2.from_angle(angle) * radius * progress
+		var position: Vector2 = runtime.pulse_center + Vector2.from_angle(angle) * radius * progress
 		var direction := Vector2.from_angle(angle)
 		draw_line(position - direction * (8.0 + skill_level * 2.0), position + direction * (8.0 + skill_level * 2.0), Color(0.8, 0.98, 1.0, alpha), 2.6, true)
 		draw_line(position - direction.rotated(PI * 0.5) * 5.0, position + direction.rotated(PI * 0.5) * 5.0, Color(0.68, 0.92, 1.0, alpha), 2.0, true)

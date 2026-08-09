@@ -29,6 +29,10 @@ run_and_check() {
   fi
 }
 
+if [ ! -d "$ROOT/.godot/imported" ]; then
+  "$GODOT" --headless --path "$ROOT" --editor --quit >/dev/null 2>&1
+fi
+
 run_and_check editor "" --editor --quit
 run_and_check levels LEVELS_OK --script res://tools/test_level_catalog.gd
 run_and_check content_pools CONTENT_POOLS_OK --script res://tools/test_content_pools.gd
@@ -49,8 +53,9 @@ run_and_check run_build RUN_BUILD_OK --script res://tools/test_run_build.gd
 run_and_check content_runtime CONTENT_RUNTIME_OK --script res://tools/test_content_runtime.gd
 run_and_check balance BALANCE_OK --script res://tools/test_balance_contracts.gd
 run_and_check start_ui START_UI_OK --script res://tools/test_start_ui.gd
-run_and_check home_continuity HOME_CONTINUITY_OK --script res://tools/test_home_carousel_continuity.gd
+run_and_check home_continuity HOME_CONTINUITY_OK --script res://tools/test_home_route_continuity.gd
 run_and_check character_ui CHARACTER_UI_OK --script res://tools/test_character_ui.gd
+run_and_check presentation PRESENTATION_OK --script res://tools/test_presentation_systems.gd
 run_and_check campaign CAMPAIGN_OK --script res://tools/smoke_campaign.gd
 run_and_check smoke SMOKE_OK --script res://tools/smoke_game.gd
 run_and_check responsive RESPONSIVE_OK --script res://tools/test_responsive_layout.gd
@@ -60,4 +65,4 @@ if [ "$FAILED" -ne 0 ]; then
   exit 1
 fi
 
-printf 'ALL_TESTS_OK suites=26 responsive_profiles=4 content_catalogs=data_driven home_carousel=stable_shell engine_errors=false\n'
+printf 'ALL_TESTS_OK suites=27 responsive_profiles=4 content_catalogs=data_driven expedition_route=stable_shell presentation=budgeted engine_errors=false\n'

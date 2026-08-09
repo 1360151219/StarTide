@@ -8,6 +8,7 @@ signal closed
 const EquipmentCatalog = preload("res://scripts/equipment_catalog.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const CharacterStyle = preload("res://scripts/ui/character_ui_style.gd")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 
 var item: Dictionary = {}
 var icon_view: TextureRect
@@ -26,7 +27,7 @@ func _ready() -> void:
 	position = Vector2(10, 8)
 	size = Vector2(484, 282)
 	z_index = 20
-	add_theme_stylebox_override("panel", CharacterStyle.paper_card(false, 22.0))
+	CharacterStyle.apply_panel(self, false, 22.0)
 	var close_button := Button.new()
 	close_button.position = Vector2(424, 10)
 	close_button.size = Vector2(48, 48)
@@ -76,6 +77,7 @@ func show_item(target: Dictionary, owner_name: String, action_text: String, can_
 	icon_view.texture = item.get("icon")
 	var rarity_id := str(item.get("rarity", "common"))
 	add_theme_stylebox_override("panel", CharacterStyle.quality_card(rarity_id, 22.0))
+	SunlitCardStyle.decorate(self, CharacterStyle.rarity_border(rarity_id), 22.0, false, true, UiFactory.ACCENT, "canvas", CharacterStyle.rarity_level(rarity_id))
 	name_label.text = str(item.get("name", "未知装备"))
 	meta_label.text = "%s · %s · Lv.%d/%d" % [
 		EquipmentCatalog.rarity_name(rarity_id), EquipmentCatalog.slot_name(str(item.get("slot", ""))),
@@ -96,16 +98,10 @@ func show_item(target: Dictionary, owner_name: String, action_text: String, can_
 		EquipmentCatalog.rarity_name(str(upgrade_material.get("rarity", "common"))),
 		upgrade_material.get("name", "同名装备"), int(upgrade_material.get("level", 1)),
 	]
-	UiFactory.apply_button_styles(
-		upgrade_button, UiFactory.PRIMARY, UiFactory.GOLD,
-		Color(0.72, 0.76, 0.7, 0.9), CharacterStyle.LOCKED
-	)
+	SunlitCardStyle.apply_button(upgrade_button, false, CharacterStyle.rarity_border(rarity_id))
 	action_button.text = action_text
 	action_button.disabled = not can_action
-	UiFactory.apply_button_styles(
-		action_button, UiFactory.PRIMARY, UiFactory.GOLD,
-		Color(0.72, 0.76, 0.7, 0.9), CharacterStyle.LOCKED
-	)
+	SunlitCardStyle.apply_button(action_button, true, UiFactory.ACCENT)
 	visible = true
 
 

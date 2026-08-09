@@ -11,8 +11,12 @@ const EquipmentPanel = preload("res://scripts/ui/character_equipment_panel.gd")
 const SkillPanel = preload("res://scripts/ui/character_skill_panel.gd")
 const SECTION_IDS := ["status", "equipment", "skills"]
 const SECTION_NAMES := {"status": "状态", "equipment": "装备", "skills": "技能"}
+const HERO_SWITCHER_Y := 88.0
+const SECTION_TABS_Y := 142.0
+const PANEL_Y := 198.0
 
 var records: RefCounted
+var audio: Node
 var selected_hero_id := "star_warden"
 var current_section := "equipment"
 var pending_initial_hero_id := ""
@@ -20,7 +24,6 @@ var content_active := false
 var hero_buttons: Dictionary = {}
 var section_buttons: Dictionary = {}
 var section_panels: Dictionary = {}
-var power_label: Label
 var status_panel: Panel
 var equipment_panel: Panel
 var skill_panel: Panel
@@ -40,8 +43,9 @@ func _ready() -> void:
 	set_active(content_active)
 
 
-func configure(run_records: RefCounted, initial_hero_id := "") -> void:
+func configure(run_records: RefCounted, initial_hero_id := "", audio_manager: Node = null) -> void:
 	records = run_records
+	audio = audio_manager
 	pending_initial_hero_id = initial_hero_id
 	if is_node_ready():
 		_apply_configuration()
@@ -74,8 +78,6 @@ func refresh() -> void:
 	if not is_instance_valid(records):
 		return
 	var snapshot := _snapshot()
-	var power: Dictionary = snapshot.get("power", {})
-	power_label.text = "当前战力  %d" % int(power.get("total", snapshot.get("combat_power", 0)))
 	status_panel.show_for(selected_hero_id, snapshot)
 	equipment_panel.show_for(selected_hero_id, snapshot)
 	skill_panel.show_for(selected_hero_id, snapshot)
@@ -98,9 +100,10 @@ func set_active(active: bool) -> void:
 
 func _build_hero_switcher() -> void:
 	var plate := Panel.new()
-	plate.position = Vector2(18, 144)
-	plate.size = Vector2(300, 46)
-	plate.add_theme_stylebox_override("panel", CharacterStyle.surface(UiFactory.GLASS, 18.0, UiFactory.GOLD))
+	plate.name = "HeroSwitcher"
+	plate.position = Vector2(18, HERO_SWITCHER_Y)
+	plate.size = Vector2(504, 46)
+	CharacterStyle.apply_surface_panel(plate, UiFactory.SURFACE_ALT, 18.0, UiFactory.PRIMARY)
 	add_child(plate)
 	var row := HBoxContainer.new()
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -116,24 +119,14 @@ func _build_hero_switcher() -> void:
 		button.custom_minimum_size = Vector2(0, 40)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 14)
-		button.pressed.connect(select_hero.bind(hero_id))
+		button.pressed.connect(_select_hero_from_ui.bind(hero_id))
 		row.add_child(button)
 		hero_buttons[hero_id] = button
-	var power_plate := Panel.new()
-	power_plate.position = Vector2(328, 144)
-	power_plate.size = Vector2(194, 46)
-	power_plate.add_theme_stylebox_override("panel", CharacterStyle.paper_card())
-	add_child(power_plate)
-	power_label = CharacterStyle.add_label(
-		power_plate, "当前战力  0", 16, UiFactory.INK,
-		Vector2.ZERO, power_plate.size, HORIZONTAL_ALIGNMENT_CENTER
-	)
-	power_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 
 func _build_sections() -> void:
 	var row := HBoxContainer.new()
-	row.position = Vector2(18, 198)
+	row.position = Vector2(18, SECTION_TABS_Y)
 	row.size = Vector2(504, 48)
 	row.add_theme_constant_override("separation", 8)
 	add_child(row)
@@ -143,7 +136,7 @@ func _build_sections() -> void:
 		button.custom_minimum_size = Vector2(0, 48)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 16)
-		button.pressed.connect(show_section.bind(section_id))
+		button.pressed.connect(_show_section_from_ui.bind(section_id))
 		row.add_child(button)
 		section_buttons[section_id] = button
 
@@ -154,7 +147,7 @@ func _build_panels() -> void:
 	skill_panel = SkillPanel.new()
 	for pair in [["status", status_panel], ["equipment", equipment_panel], ["skills", skill_panel]]:
 		var panel: Panel = pair[1]
-		panel.position = Vector2(18, 254)
+		panel.position = Vector2(18, PANEL_Y)
 		add_child(panel)
 		section_panels[pair[0]] = panel
 	hero_rig = equipment_panel.hero_rig
@@ -175,11 +168,11 @@ func _update_section() -> void:
 		section_panels[section_id].visible = selected
 		CharacterStyle.apply_segment(section_buttons[section_id], selected)
 	var panel: Control = section_panels[current_section]
-	panel.position.y = 260.0
+	panel.position.y = PANEL_Y + 6.0
 	panel.modulate.a = 0.0
 	section_tween = create_tween().set_parallel(true)
 	section_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	section_tween.tween_property(panel, "position:y", 254.0, 0.2)
+	section_tween.tween_property(panel, "position:y", PANEL_Y, 0.2)
 	section_tween.tween_property(panel, "modulate:a", 1.0, 0.18)
 	if is_instance_valid(equipment_panel):
 		equipment_panel.set_active(content_active and current_section == "equipment")
@@ -195,7 +188,23 @@ func _active_hero_id() -> String:
 	return str(records.last_hero_id) if is_instance_valid(records) else ""
 
 
+func _select_hero_from_ui(hero_id: String) -> void:
+	if is_instance_valid(audio):
+		audio.play_sfx("ui_select", -2.0)
+	select_hero(hero_id)
+
+
+func _show_section_from_ui(section_id: String) -> void:
+	if section_id == current_section:
+		return
+	if is_instance_valid(audio):
+		audio.play_sfx("ui_navigate", -2.0)
+	show_section(section_id)
+
+
 func _on_profile_changed(_message := "") -> void:
+	if is_instance_valid(audio):
+		audio.play_sfx("ui_equip" if current_section == "equipment" else "ui_upgrade_skill", -1.0)
 	refresh()
 	if current_section == "equipment":
 		equipment_panel.hero_stage.react()

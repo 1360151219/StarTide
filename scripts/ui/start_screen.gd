@@ -2,43 +2,27 @@ extends CanvasLayer
 
 signal start_requested(hero_id: String, level_id: String)
 
-const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
-const LevelPresentationCatalog = preload("res://scripts/levels/level_presentation_catalog.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const HomeHeader = preload("res://scripts/ui/home_header.gd")
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
 const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
-const LevelSelector = preload("res://scripts/ui/level_selector.gd")
-const LevelPreview = preload("res://scripts/ui/level_preview.gd")
+const ExpeditionRouteMap = preload("res://scripts/ui/expedition_route_map.gd")
 const HomePrimaryButton = preload("res://scripts/ui/home_primary_button.gd")
-const HeroSelector = preload("res://scripts/ui/hero_selector.gd")
-const HeroTrainingPanel = preload("res://scripts/ui/hero_training_panel.gd")
 const CompendiumOverlay = preload("res://scripts/ui/compendium_overlay.gd")
-const HOME_BACKGROUND := preload("res://assets/art/ui/home/star_harbor_background.png")
+const HOME_BACKGROUND := preload("res://assets/art/sunlit/backgrounds/expedition_route_map.png")
 
 var records: RefCounted
 var audio: Node
 var selected_hero_id := "star_warden"
 var selected_level_id := "level_01"
-var hero_panels: Dictionary = {}
-var hero_record_labels: Dictionary = {}
 var start_button: HomePrimaryButton
-var confirm_button: Button
-var level_selector: Control
-var level_preview: Control
-var hero_selector: Control
-var training_panel: Panel
+var route_map: Control
 var compendium: ColorRect
 var audio_settings: Control
 var screen_background: TextureRect
 var design_frame: Control
 var lobby_view: Control
-var hero_view: Control
-var title_label: Label
-var subtitle_label: Label
-var selected_level_label: Label
 
 
 func configure(run_records: RefCounted, audio_manager: Node) -> void:
@@ -50,7 +34,6 @@ func configure(run_records: RefCounted, audio_manager: Node) -> void:
 	design_frame = _build_background()
 	_build_header(design_frame)
 	_build_lobby(design_frame)
-	_build_hero_view(design_frame)
 	compendium = CompendiumOverlay.new()
 	add_child(compendium)
 	compendium.configure(records)
@@ -61,11 +44,8 @@ func configure(run_records: RefCounted, audio_manager: Node) -> void:
 
 func select_hero(hero_id: String) -> void:
 	selected_hero_id = hero_id
-	if is_instance_valid(level_preview):
-		level_preview.set_preview_hero(hero_id)
-	if is_instance_valid(hero_selector):
-		hero_selector.select_hero(hero_id, false)
-	confirm_button.text = "使用%s出发" % HeroCatalog.hero(hero_id)["name"]
+	if is_instance_valid(route_map):
+		route_map.set_preview_hero(hero_id)
 
 
 func select_level(level_id: String) -> void:
@@ -73,20 +53,16 @@ func select_level(level_id: String) -> void:
 	if level == null:
 		return
 	selected_level_id = level_id
-	if is_instance_valid(level_selector) and level_selector.selected_level_id != level_id:
-		level_selector.select_level(level_id, false)
+	if is_instance_valid(route_map) and route_map.selected_level_id != level_id:
+		route_map.select_level(level_id, false)
 	var unlocked: bool = records.is_level_unlocked(level_id)
-	level_preview.show_level(level, LevelPresentationCatalog.by_id(level_id), records.level_summary(level_id), unlocked)
-	selected_level_label.text = "%s  ·  %s" % [level.display_name, level.subtitle]
-	start_button.set_caption("踏入星门" if unlocked else "完成上一关后解锁", unlocked)
+	route_map.show_level(level, unlocked)
+	start_button.set_caption("开始远征" if unlocked else "完成上一关后解锁", unlocked)
 
 
 func refresh_progress() -> void:
-	hero_selector.refresh()
-	level_selector.refresh()
+	route_map.refresh()
 	select_level(selected_level_id)
-	if training_panel.visible:
-		training_panel.refresh()
 
 
 func open_compendium(category := "heroes") -> void:
@@ -104,7 +80,7 @@ func _build_background() -> Control:
 	add_child(screen_background)
 	ScreenLayout.fill(screen_background)
 	var veil := ColorRect.new()
-	veil.color = Color(0.015, 0.09, 0.14, 0.13)
+	veil.color = Color(UiFactory.BACKGROUND, 0.32)
 	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	screen_background.add_child(veil)
 	ScreenLayout.fill(veil)
@@ -115,77 +91,27 @@ func _build_background() -> Control:
 
 func _build_header(parent: Control) -> void:
 	audio_settings = AudioSettingsPanel.new()
-	audio_settings.position = Vector2(395, 18)
+	audio_settings.position = Vector2(462, 18)
 	parent.add_child(audio_settings)
 	audio_settings.configure(audio, true)
-	var header := HomeHeader.new()
-	parent.add_child(header)
-	title_label = header.title_label
-	subtitle_label = header.subtitle_label
 
 
 func _build_lobby(parent: Control) -> void:
 	lobby_view = Control.new()
 	parent.add_child(lobby_view)
 	ScreenLayout.fill(lobby_view)
-	level_preview = LevelPreview.new()
-	level_preview.position = Vector2(18, 168)
-	level_preview.size = Vector2(504, 474)
-	lobby_view.add_child(level_preview)
-	level_selector = LevelSelector.new()
-	level_selector.position = Vector2(18, 640)
-	lobby_view.add_child(level_selector)
-	level_selector.configure(LevelCatalog.all(), records, selected_level_id)
-	selected_level_id = level_selector.selected_level_id
-	level_selector.level_selected.connect(_on_level_selected)
-	level_preview.swipe_requested.connect(level_selector.move_by)
+	route_map = ExpeditionRouteMap.new()
+	lobby_view.add_child(route_map)
+	route_map.configure(LevelCatalog.all(), records, selected_level_id)
+	selected_level_id = route_map.selected_level_id
+	route_map.level_selected.connect(_on_level_selected)
 	start_button = HomePrimaryButton.new()
-	start_button.position = Vector2(111, 746)
-	start_button.size = Vector2(318, 122)
+	start_button.position = Vector2(374, 704)
+	start_button.size = Vector2(154, 154)
+	start_button.z_index = 120
 	lobby_view.add_child(start_button)
-	start_button.set_caption("踏入星门", true)
+	start_button.set_caption("开始远征", true)
 	start_button.pressed.connect(_show_hero_selection)
-
-
-func _build_hero_view(parent: Control) -> void:
-	hero_view = Control.new()
-	parent.add_child(hero_view)
-	ScreenLayout.fill(hero_view)
-	selected_level_label = UiFactory.label("", 16, UiFactory.PALE_MUTED)
-	selected_level_label.position = Vector2(20, 170)
-	selected_level_label.size = Vector2(500, 34)
-	selected_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hero_view.add_child(selected_level_label)
-	hero_selector = HeroSelector.new()
-	hero_selector.position = Vector2(18, 218)
-	hero_view.add_child(hero_selector)
-	hero_selector.configure(records, selected_hero_id)
-	hero_selector.hero_selected.connect(_on_hero_selected)
-	hero_panels = hero_selector.hero_panels
-	hero_record_labels = hero_selector.hero_record_labels
-	var train_button := _make_button(hero_view, "培养英雄技能", Vector2(126, 620), Vector2(288, 54), false)
-	train_button.pressed.connect(_open_training)
-	confirm_button = _make_button(hero_view, "出发", Vector2(72, 692), Vector2(396, 68), true)
-	confirm_button.pressed.connect(_request_start)
-	var back_button := _make_button(hero_view, "返回选择关卡", Vector2(150, 784), Vector2(240, 52), false)
-	back_button.pressed.connect(_show_lobby)
-	training_panel = HeroTrainingPanel.new()
-	training_panel.position = Vector2(18, 166)
-	hero_view.add_child(training_panel)
-	training_panel.configure(records)
-	training_panel.closed.connect(_close_training)
-	training_panel.progression_changed.connect(_on_progression_changed)
-
-
-func _make_button(parent: Control, text: String, at: Vector2, button_size: Vector2, primary: bool) -> Button:
-	var button := Button.new()
-	button.position = at
-	button.size = button_size
-	button.text = text
-	button.add_theme_font_size_override("font_size", 22 if primary else 18)
-	UiFactory.apply_glass_button(button, primary, UiFactory.GOLD if primary else UiFactory.STROKE)
-	parent.add_child(button)
-	return button
 
 
 func _on_level_selected(level_id: String) -> void:
@@ -194,41 +120,16 @@ func _on_level_selected(level_id: String) -> void:
 	select_level(level_id)
 
 
-func _on_hero_selected(hero_id: String) -> void:
-	if is_instance_valid(audio):
-		audio.play_sfx("ui_select", -2.0)
-	select_hero(hero_id)
-
-
 func _show_lobby() -> void:
 	lobby_view.visible = true
-	hero_view.visible = false
-	training_panel.visible = false
-	level_preview.set_active(true)
-	subtitle_label.text = "远征大厅  ·  选择今天要守护的世界"
+	route_map.set_active(true)
 
 
 func _show_hero_selection() -> void:
 	if not records.is_level_unlocked(selected_level_id):
 		return
 	audio_settings.close_popup()
-	lobby_view.visible = false
-	hero_view.visible = true
-	level_preview.set_active(false)
-	subtitle_label.text = "选择出征英雄"
-	hero_selector.refresh()
-
-
-func _open_training() -> void:
-	training_panel.show_for(selected_hero_id)
-
-
-func _close_training() -> void:
-	hero_selector.refresh()
-
-
-func _on_progression_changed() -> void:
-	hero_selector.refresh()
+	_request_start()
 
 
 func _request_start() -> void:

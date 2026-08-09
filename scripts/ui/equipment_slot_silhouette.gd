@@ -17,7 +17,7 @@ func present(value: String) -> void:
 
 func _draw() -> void:
 	var ink := Color(UiFactory.PRIMARY, 0.86)
-	var glow := Color(UiFactory.GOLD, 0.48)
+	var glow := Color(UiFactory.ACCENT, 0.48)
 	match slot_id:
 		"armor":
 			_draw_armor(ink, glow)
@@ -32,9 +32,9 @@ func _draw_weapon(ink: Color, glow: Color) -> void:
 	draw_line(Vector2(14, 34), Vector2(36, 12), glow, 6.0, true)
 	draw_line(Vector2(14, 34), Vector2(36, 12), ink, 3.0, true)
 	var head := PackedVector2Array([Vector2(34, 5), Vector2(43, 8), Vector2(40, 17), Vector2(32, 13)])
-	draw_colored_polygon(head, Color(UiFactory.SKY, 0.82))
+	draw_colored_polygon(head, Color(UiFactory.PRIMARY_LIGHT, 0.82))
 	draw_polyline(PackedVector2Array([head[0], head[1], head[2], head[3], head[0]]), ink, 2.0, true)
-	draw_circle(Vector2(13, 35), 4.0, Color(UiFactory.GOLD, 0.9))
+	draw_circle(Vector2(13, 35), 4.0, Color(UiFactory.ACCENT, 0.9))
 
 
 func _draw_armor(ink: Color, glow: Color) -> void:
@@ -42,7 +42,7 @@ func _draw_armor(ink: Color, glow: Color) -> void:
 		Vector2(12, 13), Vector2(22, 7), Vector2(30, 7), Vector2(40, 13),
 		Vector2(36, 36), Vector2(16, 36),
 	])
-	draw_colored_polygon(body, Color(UiFactory.SKY, 0.28))
+	draw_colored_polygon(body, Color(UiFactory.PRIMARY_LIGHT, 0.28))
 	draw_polyline(PackedVector2Array([body[0], body[1], body[2], body[3], body[4], body[5], body[0]]), ink, 2.5, true)
 	draw_line(Vector2(18, 16), Vector2(34, 16), glow, 3.0, true)
 	draw_line(Vector2(26, 10), Vector2(26, 34), ink, 2.0, true)
@@ -55,7 +55,7 @@ func _draw_charm(ink: Color, glow: Color) -> void:
 		Vector2(26, 9), Vector2(29, 18), Vector2(38, 21), Vector2(29, 24),
 		Vector2(26, 33), Vector2(23, 24), Vector2(14, 21), Vector2(23, 18),
 	])
-	draw_colored_polygon(star, Color(UiFactory.GOLD, 0.74))
+	draw_colored_polygon(star, Color(UiFactory.ACCENT, 0.74))
 	var outline := star.duplicate()
 	outline.append(star[0])
 	draw_polyline(outline, ink, 1.5, true)

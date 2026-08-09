@@ -21,7 +21,6 @@ func configure(run_records: RefCounted, audio_manager: Node) -> void:
 	_build_character_page()
 	_build_navigation()
 	_build_expedition_confirm()
-	_replace_legacy_footer()
 	compendium.set_navigation_mode(true)
 	_show_page(BottomBar.PAGE_START)
 	visibility_changed.connect(_on_visibility_changed)
@@ -35,7 +34,7 @@ func select_hero(hero_id: String) -> void:
 
 
 func refresh_progress() -> void:
-	level_selector.refresh()
+	route_map.refresh()
 	select_level(selected_level_id)
 	if is_instance_valid(character_page):
 		character_page.refresh()
@@ -56,7 +55,7 @@ func _build_character_page() -> void:
 	character_page = CharacterPage.new()
 	character_page.z_index = 4
 	design_frame.add_child(character_page)
-	character_page.configure(records, selected_hero_id)
+	character_page.configure(records, selected_hero_id, audio)
 	character_page.hero_selected.connect(_on_character_selected)
 	character_page.profile_changed.connect(refresh_progress)
 
@@ -70,7 +69,7 @@ func _build_navigation() -> void:
 	global_chrome.z_index = 100
 	add_child(global_chrome)
 	audio_settings.reparent(global_chrome, false)
-	audio_settings.position = Vector2(395, 18)
+	audio_settings.position = Vector2(462, 18)
 	audio_settings.z_index = 10
 	bottom_bar = BottomBar.new()
 	bottom_bar.position = Vector2(0, 840)
@@ -78,7 +77,7 @@ func _build_navigation() -> void:
 	bottom_bar.z_index = 0
 	bottom_bar.navigation_reserve_changed.connect(compendium.set_navigation_reserve)
 	global_chrome.add_child(bottom_bar)
-	bottom_bar.page_selected.connect(_show_page)
+	bottom_bar.page_selected.connect(_on_bottom_bar_page_selected)
 
 
 func _build_expedition_confirm() -> void:
@@ -91,15 +90,6 @@ func _build_expedition_confirm() -> void:
 	expedition_confirm.closed.connect(_close_expedition_confirm)
 
 
-func _replace_legacy_footer() -> void:
-	for child in lobby_view.get_children():
-		if child is Button and child.text.contains("星潮图鉴"):
-			child.visible = false
-		elif child is Label and child.text.contains("选择远征地后"):
-			child.visible = false
-	hero_view.visible = false
-
-
 func _show_page(page_id: String) -> void:
 	if page_id not in [BottomBar.PAGE_START, BottomBar.PAGE_CHARACTER, BottomBar.PAGE_COMPENDIUM]:
 		return
@@ -108,16 +98,13 @@ func _show_page(page_id: String) -> void:
 	var showing_start := page_id == BottomBar.PAGE_START
 	var showing_character := page_id == BottomBar.PAGE_CHARACTER
 	var showing_compendium := page_id == BottomBar.PAGE_COMPENDIUM
-	title_label.visible = not showing_compendium
-	subtitle_label.visible = not showing_compendium
 	audio_settings.visible = true
 	lobby_view.visible = showing_start
-	hero_view.visible = false
 	if is_instance_valid(character_page):
 		character_page.visible = showing_character
 		character_page.set_active(showing_character and visible)
-	if is_instance_valid(level_preview):
-		level_preview.set_active(showing_start and visible)
+	if is_instance_valid(route_map):
+		route_map.set_active(showing_start and visible)
 	if showing_compendium:
 		compendium.open(compendium.current_category)
 	elif compendium.visible:
@@ -126,15 +113,12 @@ func _show_page(page_id: String) -> void:
 		bottom_bar.select_page(page_id, false)
 	if is_instance_valid(audio_settings):
 		audio_settings.close_popup()
-	if showing_start:
-		title_label.text = "星潮守望者"
-		subtitle_label.text = "✦  远征大厅  ·  选择今天要守护的世界  ✦"
-	elif showing_character:
-		title_label.text = "角色中心"
-		subtitle_label.text = "选择英雄  ·  配置装备与专属技能"
-	else:
-		title_label.text = "星潮图鉴"
-		subtitle_label.text = "星潮图鉴  ·  记录旅途中发现的一切"
+
+
+func _on_bottom_bar_page_selected(page_id: String) -> void:
+	if is_instance_valid(audio):
+		audio.play_sfx("ui_navigate", -1.0)
+	_show_page(page_id)
 
 
 func _show_lobby() -> void:
@@ -152,7 +136,7 @@ func _show_hero_selection() -> void:
 	if not active_hero.is_empty():
 		super.select_hero(active_hero)
 	expedition_confirm.show_for(selected_hero_id, LevelCatalog.by_id(selected_level_id))
-	level_preview.set_active(false)
+	route_map.set_active(false)
 	bottom_bar.visible = false
 
 
@@ -178,13 +162,13 @@ func _close_expedition_confirm() -> void:
 		expedition_confirm.visible = false
 	if is_instance_valid(bottom_bar):
 		bottom_bar.visible = visible
-	if is_instance_valid(level_preview):
-		level_preview.set_active(visible and current_page == BottomBar.PAGE_START and lobby_view.visible)
+	if is_instance_valid(route_map):
+		route_map.set_active(visible and current_page == BottomBar.PAGE_START and lobby_view.visible)
 
 
 func _on_character_selected(hero_id: String) -> void:
 	super.select_hero(hero_id)
-	level_selector.refresh()
+	route_map.refresh()
 	if is_instance_valid(audio):
 		audio.play_sfx("ui_select", -2.0)
 
@@ -192,8 +176,8 @@ func _on_character_selected(hero_id: String) -> void:
 func _on_visibility_changed() -> void:
 	if is_instance_valid(character_page):
 		character_page.set_active(visible and current_page == BottomBar.PAGE_CHARACTER)
-	if is_instance_valid(level_preview):
-		level_preview.set_active(visible and current_page == BottomBar.PAGE_START)
+	if is_instance_valid(route_map):
+		route_map.set_active(visible and current_page == BottomBar.PAGE_START)
 	if is_instance_valid(navigation_safe_area):
 		navigation_safe_area.visible = visible and not expedition_confirm.visible
 	if is_instance_valid(bottom_bar):

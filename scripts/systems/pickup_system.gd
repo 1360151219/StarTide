@@ -14,6 +14,7 @@ var player: Node2D
 var enemies: Node2D
 var rng: RandomNumberGenerator
 var audio: Node
+var effects: Node2D
 var pickups: Array[Node] = []
 var magnet_until := 0.0
 var haste_until := 0.0
@@ -21,7 +22,7 @@ var drop_counts: Dictionary = {}
 var permanent_pickup_radius_multiplier := 1.0
 
 
-func configure(level_config: LevelConfig, state: RefCounted, build: RefCounted, player_node: Node2D, enemy_system: Node2D, random: RandomNumberGenerator, audio_manager: Node, progression: Dictionary = {}) -> void:
+func configure(level_config: LevelConfig, state: RefCounted, build: RefCounted, player_node: Node2D, enemy_system: Node2D, random: RandomNumberGenerator, audio_manager: Node, combat_effects: Node2D, progression: Dictionary = {}) -> void:
 	level = level_config
 	run_state = state
 	build_state = build
@@ -29,6 +30,7 @@ func configure(level_config: LevelConfig, state: RefCounted, build: RefCounted, 
 	enemies = enemy_system
 	rng = random
 	audio = audio_manager
+	effects = combat_effects
 	magnet_until = 0.0
 	haste_until = 0.0
 	drop_counts.clear()
@@ -99,20 +101,32 @@ func remaining_magnet_seconds(elapsed: float) -> int:
 
 
 func _collect(pickup: Node, elapsed: float) -> void:
-	audio.play_sfx("pickup", -2.0, rng.randf_range(0.95, 1.08))
 	var data := PickupCatalog.pickup(pickup.kind)
 	match data.get("effect", ""):
 		"experience":
+			audio.play_sfx("pickup_xp", -3.0, rng.randf_range(0.97, 1.07))
+			effects.add_follow_effect(player, 30.0, data["accent"], 0.3, "pickup_xp")
 			experience_collected.emit(pickup.value)
 		"heal":
+			audio.play_sfx("pickup_heal", -1.0, rng.randf_range(0.98, 1.04))
+			effects.add_follow_effect(player, 42.0, data["accent"], 0.52, "pickup_heal")
+			effects.add_heal_number(player.position - Vector2(18.0, 34.0), float(data["amount"]))
 			heal_requested.emit(float(data["amount"]))
 		"magnet":
+			audio.play_sfx("pickup_magnet", -1.0)
+			effects.add_follow_effect(player, 150.0, data["accent"], 0.62, "pickup_magnet")
 			activate_magnet(elapsed, float(data["duration"]))
 		"speed_boost":
+			audio.play_sfx("pickup_haste", -1.0)
+			effects.add_follow_effect(player, 48.0, data["accent"], float(data["duration"]), "pickup_haste")
 			haste_until = maxf(haste_until, elapsed + float(data["duration"]))
 			player.set_temporary_speed_multiplier(1.0 + float(data["amount"]))
 		"area_damage":
+			audio.play_sfx("pickup_bomb", 0.0, rng.randf_range(0.97, 1.03))
+			effects.add_effect(pickup.position, float(data["effect_radius"]), data["accent"], 0.48, "pickup_bomb")
 			enemies.damage_area(pickup.position, float(data["effect_radius"]), float(data["amount"]))
+		_:
+			audio.play_sfx("pickup", -2.0, rng.randf_range(0.95, 1.08))
 	pickup_collected.emit(pickup.kind)
 	pickups.erase(pickup)
 	pickup.queue_free()

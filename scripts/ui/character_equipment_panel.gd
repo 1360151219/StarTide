@@ -33,10 +33,7 @@ var detail_sheet: Panel
 
 func _ready() -> void:
 	size = Vector2(504, 574)
-	add_theme_stylebox_override(
-		"panel",
-		CharacterStyle.surface(UiFactory.GLASS, 22.0, UiFactory.GOLD)
-	)
+	CharacterStyle.apply_surface_panel(self, UiFactory.SURFACE, 22.0, UiFactory.PRIMARY)
 	hero_stage = HeroStage.new()
 	hero_stage.slot_selected.connect(_select_slot)
 	add_child(hero_stage)
@@ -64,7 +61,7 @@ func _build_inventory_sheet() -> void:
 	var sheet := Panel.new()
 	sheet.position = Vector2(0, 286)
 	sheet.size = Vector2(504, 288)
-	sheet.add_theme_stylebox_override("panel", CharacterStyle.paper_card(false, 22.0))
+	CharacterStyle.apply_panel(sheet, false, 22.0)
 	add_child(sheet)
 	var filters := HBoxContainer.new()
 	filters.position = Vector2(14, 8)

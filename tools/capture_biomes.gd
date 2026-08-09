@@ -59,6 +59,8 @@ func _prepare_scene(game: Node) -> void:
 	session.player.health = 999.0
 	var kinds := ["green_grub", "slime", "bat", "brute"]
 	var positions := [Vector2(-135, -95), Vector2(135, -105), Vector2(-145, 155), Vector2(135, 155)]
+	while session.enemies.enemies.size() < kinds.size():
+		session.enemies.spawn_enemy(kinds[session.enemies.enemies.size()], null, session.state.elapsed)
 	for index in range(kinds.size()):
 		var enemy: Node = session.enemies.enemies[index]
 		enemy.configure(kinds[index], {"health": 1.0, "speed": 1.0, "damage": 1.0})

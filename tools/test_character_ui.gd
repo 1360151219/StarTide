@@ -34,6 +34,22 @@ func _on_process_frame() -> void:
 	var page = screen.character_page
 	var equipment = page.equipment_panel
 	_require(page.current_section == "equipment", "角色中心没有默认展示装备舞台")
+	_require(
+		page.get_node("HeroSwitcher").size.x == 504.0
+		and equipment.hero_stage.power_label.text.is_valid_int(),
+		"角色页右上角仍保留重复战力，或角色下方战力不是独立主数值"
+	)
+	_require(
+		equipment.hero_stage.power_label.get_theme_font_size("font_size") == 30
+		and equipment.hero_stage.power_label.get_theme_color("font_color").is_equal_approx(CharacterStyle.POWER),
+		"角色下方战力没有使用醒目的专属字体样式"
+	)
+	_require(
+		page.hero_buttons["star_warden"].get_node_or_null("SunlitFrame") != null
+		and page.section_buttons["equipment"].get_node_or_null("SunlitFrame") != null
+		and equipment.get_node_or_null("SunlitFrame") != null,
+		"角色中心没有复用日光远征装饰组件"
+	)
 	_require(equipment.hero_stage.hero_rig.display_height >= 180.0, "装备舞台英雄仍是缩略头像")
 	_require(equipment.slot_buttons.size() == 3, "装备槽没有按目录完整生成")
 	_require(not equipment.slot_buttons["weapon"].empty_mark is Label, "空装备槽仍使用文字占位符")
@@ -51,6 +67,12 @@ func _on_process_frame() -> void:
 	var top_card: Button = _card_by_id(equipment, str(top["instance_id"]))
 	_require(common_card != null and top_card != null, "普通或顶级装备没有进入背包")
 	_require(rare_card != null, "稀有装备没有进入背包")
+	_require(
+		common_card.get_node_or_null("SunlitFrame") != null
+		and rare_card.get_node_or_null("SunlitFrame") != null
+		and top_card.get_node_or_null("SunlitFrame") != null,
+		"装备品质卡没有复用日光远征装饰组件"
+	)
 	_require(common_card.get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.COMMON_BACKGROUND), "普通装备没有使用灰色背景")
 	_require(rare_card.get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.RARE_BACKGROUND), "稀有装备没有使用绿色背景")
 	_require(top_card.get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.TOP_BACKGROUND), "顶级装备没有使用紫色背景")
@@ -64,6 +86,12 @@ func _on_process_frame() -> void:
 	_require(str(records.equipment_loadout_snapshot("star_warden")["weapon"]).is_empty(), "选择装备就错误修改了装配")
 	equipment.detail_sheet.action_button.pressed.emit()
 	_require(str(records.equipment_loadout_snapshot("star_warden")["weapon"]) == str(rare["instance_id"]), "确认装备没有写入装配")
+	_require(
+		equipment.hero_stage.power_delta_label.visible
+		and equipment.hero_stage.power_delta_label.text.begins_with("▲")
+		and equipment.hero_stage.power_tween != null,
+		"战力提升后没有播放数值增长提示动画"
+	)
 	_require(equipment.slot_buttons["weapon"].get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.RARE_BACKGROUND), "已装备槽位没有复用品质背景")
 	page.select_hero("ember_ranger")
 	var occupied_card: Button = _card_by_id(equipment, str(rare["instance_id"]))

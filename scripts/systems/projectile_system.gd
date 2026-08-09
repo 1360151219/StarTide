@@ -28,7 +28,7 @@ func spawn_projectile(config: Dictionary) -> Node:
 	if projectile.visual_kind == "ember_arrow":
 		projectile.trail_color = Color("ff743c")
 		projectile.core_color = Color("fff0b0")
-		projectile.outline_color = Color("f29a3c")
+		projectile.outline_color = Color("4b263d")
 	add_child(projectile)
 	projectiles.append(projectile)
 	return projectile

@@ -44,7 +44,7 @@ func configure(selected_hero_id: String, hero_data: Dictionary, map_config: MapC
 	build_speed_bonus = 0.0
 	temporary_speed_multiplier = 1.0
 	_refresh_speed()
-	hero_rig.configure(hero_id, 96.0)
+	hero_rig.configure(hero_id, 108.0)
 	hero_rig.play_state("idle", true)
 	queue_redraw()
 

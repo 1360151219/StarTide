@@ -150,13 +150,6 @@ func summary(hero_id: String) -> String:
 	if record["runs"] <= 0:
 		return "Lv.%d · 尚未出征 · 技能点 %d" % [progress["level"], progress["available_skill_points"]]
 	return "Lv.%d · 通关 %d · 精英 %d · 最高击败 %d" % [progress["level"], record["wins"], record["elite_kills"], record["best_kills"]]
-func level_summary(level_id: String) -> String:
-	if not is_level_unlocked(level_id):
-		return "尚未解锁"
-	var record := level_record(level_id)
-	if record["runs"] <= 0:
-		return "等待首次远征"
-	return "通关 %d · 精英 %d · 最高击败 %d" % [record["wins"], record["elite_kills"], record["best_kills"]]
 func _award_progression(hero_id: String, won: bool, survival_seconds: float) -> Dictionary:
 	if not hero_progressions.has(hero_id):
 		return {}

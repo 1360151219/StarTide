@@ -3,7 +3,8 @@ extends Control
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const EquipmentCatalog = preload("res://scripts/equipment_catalog.gd")
 const CharacterStyle = preload("res://scripts/ui/character_ui_style.gd")
-const StarTideGlyph = preload("res://scripts/ui/star_tide_glyph.gd")
+const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 const EXPERIENCE_ICON := preload("res://assets/art/pickups/experience_shard.png")
 const VICTORY_CREST := preload("res://assets/generated/ui/victory_crest.png")
 const VISIBLE_TILES := 6
@@ -115,10 +116,10 @@ func _build_tile(entry: Dictionary) -> Panel:
 	if kind == "equipment":
 		tile.add_theme_stylebox_override("panel", CharacterStyle.quality_card(str(entry.get("rarity", "common")), 14.0))
 	else:
-		var background := Color("fff0bd") if kind in ["xp", "first_clear"] else Color("dcefeb")
-		tile.add_theme_stylebox_override("panel", UiFactory.panel_style(background, 14.0, UiFactory.GOLD))
+		var background := UiFactory.ACCENT_LIGHT if kind in ["xp", "first_clear"] else UiFactory.SURFACE_ALT
+		SunlitCardStyle.apply_panel(tile, background, UiFactory.ACCENT if kind in ["xp", "first_clear"] else UiFactory.PRIMARY, 7.0, false, true, "enamel", 2 if kind == "first_clear" else 1)
 	if entry.has("glyph"):
-		var glyph := StarTideGlyph.new()
+		var glyph := SunlitGlyph.new()
 		glyph.glyph_id = str(entry["glyph"])
 		glyph.position = Vector2(14, 14)
 		glyph.size = Vector2(38, 38)
@@ -151,7 +152,7 @@ func _refresh_content_width() -> void:
 
 
 func _build_scroll_hint(text: String, on_left: bool) -> Label:
-	var hint := UiFactory.surface_label(text, 24, UiFactory.CREAM)
+	var hint := UiFactory.surface_label(text, 24, UiFactory.HUD_TEXT)
 	hint.anchor_left = 0.0 if on_left else 1.0
 	hint.anchor_right = 0.0 if on_left else 1.0
 	hint.anchor_top = 0.5

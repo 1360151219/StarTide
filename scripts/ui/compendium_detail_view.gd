@@ -3,6 +3,7 @@ extends Control
 signal close_requested
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
+const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 
 var detail_icon: TextureRect
 var detail_title: Label
@@ -75,10 +76,7 @@ func hide_detail() -> void:
 func _build_panel() -> Panel:
 	var panel := Panel.new()
 	panel.position = Vector2(22, 14)
-	panel.add_theme_stylebox_override(
-		"panel",
-		UiFactory.paper_panel_style(UiFactory.PAPER_STROKE, false, 22.0)
-	)
+	SunlitCardStyle.apply_panel(panel, UiFactory.SURFACE, UiFactory.PRIMARY, 14.0, true, false, "map_tag")
 	return panel
 
 
@@ -92,9 +90,7 @@ func _build_header(panel: Panel) -> void:
 	close_button.size = Vector2(60, 48)
 	close_button.text = "×"
 	close_button.add_theme_font_size_override("font_size", 25)
-	close_button.add_theme_color_override("font_color", UiFactory.INK)
-	close_button.add_theme_color_override("font_hover_color", UiFactory.INK)
-	UiFactory.apply_secondary_button(close_button, false)
+	SunlitCardStyle.apply_button(close_button, false, UiFactory.PRIMARY)
 	close_button.pressed.connect(close_requested.emit)
 	panel.add_child(close_button)
 
@@ -120,7 +116,7 @@ func _build_record(panel: Panel) -> void:
 	var divider := ColorRect.new()
 	divider.position = Vector2(24, 218)
 	divider.size = Vector2(448, 2)
-	divider.color = Color(0.08, 0.55, 0.59, 0.28)
+	divider.color = Color(UiFactory.PRIMARY, 0.42)
 	panel.add_child(divider)
 
 
@@ -150,9 +146,7 @@ func _build_footer(panel: Panel) -> void:
 	back_button.size = Vector2(440, 52)
 	back_button.text = "返回收藏"
 	back_button.add_theme_font_size_override("font_size", 18)
-	back_button.add_theme_color_override("font_color", UiFactory.INK)
-	back_button.add_theme_color_override("font_hover_color", UiFactory.INK)
-	UiFactory.apply_secondary_button(back_button, false)
+	SunlitCardStyle.apply_button(back_button, true, UiFactory.PRIMARY)
 	back_button.pressed.connect(close_requested.emit)
 	panel.add_child(back_button)
 

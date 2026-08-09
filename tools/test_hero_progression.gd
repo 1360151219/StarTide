@@ -117,6 +117,7 @@ func _test_star_skill_modifiers(host: Node2D, effects: Node2D) -> void:
 	var frost_enemy = _durable_enemy(frost, frost.player.position + Vector2(frost_data["radius"][1] * 1.04, 0.0))
 	frost.skills.runtime.pulse_timer = 0.0
 	frost.skills.advance(0.0, 0.0, 1.0)
+	frost.skills.advance(0.0, 0.37, 1.37)
 	_require(_close(999.0 - frost_enemy.health, frost_data["damage"][1] * 1.135 * 1.04), "霜潮伤害或范围训练未应用")
 	_require(_close(frost.skills.runtime.pulse_timer, frost_data["cooldown"][1] * 0.96), "霜潮冷却训练未应用")
 	frost.free()
@@ -138,8 +139,9 @@ func _test_ember_skill_modifiers(host: Node2D, effects: Node2D) -> void:
 	var meteor_enemy = _durable_enemy(meteor, meteor.player.position)
 	meteor.skills.runtime.meteor_timer = 0.0
 	meteor.skills.advance(0.0, 0.0, 1.0)
+	_require(_has_effect_radius(effects, "meteor_warning", meteor_data["radius"][1] * 1.08), "陨星雨范围训练未应用")
+	meteor.skills.advance(0.0, 0.5, 1.5)
 	_require(_close(999.0 - meteor_enemy.health, meteor_data["damage"][1] * 1.135 * 1.04), "陨星雨伤害训练未应用")
-	_require(_has_effect_radius(effects, "meteor", meteor_data["radius"][1] * 1.08), "陨星雨范围训练未应用")
 	_require(_close(meteor.skills.runtime.meteor_timer, meteor_data["cooldown"][1] * 0.96), "陨星雨冷却训练未应用")
 	meteor.free()
 
@@ -150,6 +152,7 @@ func _test_ember_skill_modifiers(host: Node2D, effects: Node2D) -> void:
 	var health_before: float = phoenix.player.health
 	phoenix.skills.runtime.phoenix_timer = 0.0
 	phoenix.skills.advance(0.0, 0.0, 1.0)
+	phoenix.skills.advance(0.0, 0.19, 1.19)
 	_require(_close(phoenix.player.health - health_before, phoenix_data["healing"][1] * 1.04), "凤凰之心治疗训练未应用")
 	_require(_close(999.0 - phoenix_enemy.health, phoenix_data["damage"][1] * 1.135 * 1.04), "凤凰之心伤害训练未应用")
 	_require(_has_effect_radius(effects, "phoenix", phoenix_data["radius"][1] * 1.08), "凤凰之心范围训练未应用")

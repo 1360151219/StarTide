@@ -1,6 +1,7 @@
 extends Node2D
 
 var map: MapConfig
+var tracked_player: Node2D
 var phase := 0.0
 var redraw_elapsed := 0.0
 
@@ -8,6 +9,10 @@ var redraw_elapsed := 0.0
 func configure(map_config: MapConfig) -> void:
 	map = map_config
 	queue_redraw()
+
+
+func track_player(player: Node2D) -> void:
+	tracked_player = player
 
 
 func _process(delta: float) -> void:
@@ -30,6 +35,8 @@ func _draw() -> void:
 			map.world_bounds.position.y + fposmod(float(index * 887 + 251) - phase * speed, map.world_bounds.size.y)
 		)
 		var alpha := 0.34 + sin(phase * 1.8 + index) * 0.14
+		if is_instance_valid(tracked_player) and position.distance_to(tracked_player.position) < 180.0:
+			alpha *= 0.22
 		var color := map.environment_particle_color
 		color.a *= alpha
 		match map.biome_id:

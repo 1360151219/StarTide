@@ -1,58 +1,198 @@
-extends Node2D
+extends "res://scripts/presentation/combat_effect_draw_combat.gd"
 
-const GAME_FONT := preload("res://assets/fonts/NotoSansSC-Regular.otf")
+const MAX_EFFECTS := 64
+const MAX_DAMAGE_NUMBERS := 18
+const DAMAGE_MERGE_WINDOW := 0.12
 
-var effects: Array = []
+var effects: Array[Dictionary] = []
+var next_serial := 0
 
 
-func add_effect(center: Vector2, radius: float, color: Color, duration: float, kind: String) -> void:
-	effects.append({
+func add_effect(center: Vector2, radius: float, color: Color, duration: float, kind: String, data := {}) -> void:
+	var effect := {
 		"position": center,
 		"radius": radius,
 		"color": color,
-		"duration": duration,
-		"time": duration,
+		"duration": maxf(duration, 0.01),
+		"time": maxf(duration, 0.01),
 		"kind": kind,
-	})
-	queue_redraw()
+		"priority": _priority_for(kind),
+		"serial": next_serial,
+		"data": data,
+	}
+	next_serial += 1
+	_append_with_budget(effect)
 
 
-func add_damage_number(center: Vector2, amount: float, color: Color, is_player := false) -> void:
-	effects.append({
+func add_follow_effect(target: Node2D, radius: float, color: Color, duration: float, kind: String, data := {}) -> void:
+	var payload: Dictionary = data.duplicate()
+	payload["follow"] = target
+	add_effect(target.position, radius, color, duration, kind, payload)
+
+
+func add_damage_number(center: Vector2, amount: float, color: Color, is_player := false, target_id := 0) -> void:
+	if _merge_damage_number(center, amount, color, is_player, target_id):
+		queue_redraw()
+		return
+	_trim_damage_numbers()
+	var duration := 0.62 if is_player else 0.46
+	var effect := {
 		"position": center,
 		"radius": 0.0,
 		"color": color,
-		"duration": 0.62 if is_player else 0.46,
-		"time": 0.62 if is_player else 0.46,
+		"duration": duration,
+		"time": duration,
 		"kind": "damage_text",
+		"amount": amount,
 		"text": "-%d" % roundi(amount) if is_player else "%d" % roundi(amount),
 		"is_player": is_player,
+		"target_id": target_id,
+		"priority": 84 if is_player else 46,
+		"serial": next_serial,
+		"data": {},
+	}
+	next_serial += 1
+	_append_with_budget(effect)
+
+
+func add_heal_number(center: Vector2, amount: float) -> void:
+	_trim_damage_numbers()
+	var duration := 0.72
+	_append_with_budget({
+		"position": center,
+		"radius": 0.0,
+		"color": Color("7ee69b"),
+		"duration": duration,
+		"time": duration,
+		"kind": "heal_text",
+		"text": "+%d" % roundi(amount),
+		"is_player": true,
+		"priority": 82,
+		"serial": next_serial,
+		"data": {},
 	})
-	queue_redraw()
+	next_serial += 1
 
 
 func advance(delta: float) -> void:
-	for effect in effects.duplicate():
-		effect["time"] -= delta
-		if effect["time"] <= 0.0:
-			effects.erase(effect)
+	for index in range(effects.size() - 1, -1, -1):
+		effects[index]["time"] = float(effects[index]["time"]) - delta
+		if float(effects[index]["time"]) <= 0.0:
+			effects.remove_at(index)
 	queue_redraw()
+
+
+func clear_all() -> void:
+	effects.clear()
+	queue_redraw()
+
+
+func _append_with_budget(effect: Dictionary) -> void:
+	if effects.size() >= MAX_EFFECTS:
+		var removable_index := -1
+		var removable_priority := INF
+		var removable_serial := INF
+		for index in range(effects.size()):
+			var candidate := effects[index]
+			var priority := int(candidate["priority"])
+			var serial := int(candidate["serial"])
+			if priority < removable_priority or priority == removable_priority and serial < removable_serial:
+				removable_index = index
+				removable_priority = priority
+				removable_serial = serial
+		if removable_index < 0 or int(effect["priority"]) <= removable_priority:
+			return
+		effects.remove_at(removable_index)
+	effects.append(effect)
+	queue_redraw()
+
+
+func _merge_damage_number(center: Vector2, amount: float, color: Color, is_player: bool, target_id: int) -> bool:
+	for effect in effects:
+		if effect["kind"] != "damage_text" or bool(effect["is_player"]) != is_player:
+			continue
+		var same_target := target_id != 0 and int(effect.get("target_id", 0)) == target_id
+		var same_position := Vector2(effect["position"]).distance_squared_to(center) <= 34.0 * 34.0
+		var recent := float(effect["time"]) >= float(effect["duration"]) - DAMAGE_MERGE_WINDOW
+		if not recent or not (same_target or target_id == 0 and same_position):
+			continue
+		effect["amount"] = float(effect.get("amount", 0.0)) + amount
+		effect["text"] = "-%d" % roundi(effect["amount"]) if is_player else "%d" % roundi(effect["amount"])
+		effect["position"] = center
+		effect["color"] = color
+		effect["time"] = effect["duration"]
+		return true
+	return false
+
+
+func _trim_damage_numbers() -> void:
+	var count := 0
+	var oldest_index := -1
+	var oldest_serial := INF
+	for index in range(effects.size()):
+		if effects[index]["kind"] not in ["damage_text", "heal_text"]:
+			continue
+		count += 1
+		if int(effects[index]["serial"]) < oldest_serial:
+			oldest_serial = int(effects[index]["serial"])
+			oldest_index = index
+	if count >= MAX_DAMAGE_NUMBERS and oldest_index >= 0:
+		effects.remove_at(oldest_index)
+
+
+func _priority_for(kind: String) -> int:
+	match kind:
+		"meteor_warning", "meteor_impact", "phoenix", "phoenix_impact", "pickup_bomb", "elite_appear", "elite_defeat":
+			return 88
+		"pickup_heal", "pickup_magnet", "pickup_haste", "bat_impact", "grub_recover":
+			return 74
+		"frost_hit", "bat_launch", "grub_roll_trail", "star_hit", "sun_hit", "ember":
+			return 58
+		"defeat", "grub_defeat", "pickup_xp", "bat_dissolve":
+			return 42
+	return 36
 
 
 func _draw() -> void:
 	for effect in effects:
-		var progress: float = 1.0 - effect["time"] / effect["duration"]
+		var progress: float = 1.0 - float(effect["time"]) / float(effect["duration"])
 		var alpha: float = 1.0 - progress
 		var color: Color = effect["color"]
-		var center: Vector2 = effect["position"]
+		var center := _effect_center(effect)
 		var radius: float = effect["radius"]
 		match effect["kind"]:
-			"damage_text":
-				_draw_damage_text(effect, progress, alpha)
-			"meteor":
-				_draw_meteor(center, radius, progress, alpha, color)
+			"damage_text", "heal_text":
+				_draw_floating_text(effect, center, progress, alpha)
+			"meteor_warning":
+				_draw_meteor_warning(center, radius, progress, alpha)
+			"meteor", "meteor_impact":
+				_draw_meteor_impact(center, radius, progress, alpha, color)
 			"phoenix":
 				_draw_phoenix(center, radius, progress, alpha, color)
+			"phoenix_impact":
+				_draw_phoenix_impact(center, radius, progress, alpha)
+			"frost_hit":
+				_draw_frost_hit(center, radius, progress, alpha)
+			"pickup_xp":
+				_draw_pickup_xp(center, radius, progress, alpha)
+			"pickup_heal":
+				_draw_pickup_heal(center, radius, progress, alpha)
+			"pickup_magnet":
+				_draw_pickup_magnet(center, radius, progress, alpha)
+			"pickup_haste":
+				_draw_pickup_haste(center, radius, progress, alpha)
+			"pickup_bomb":
+				_draw_pickup_bomb(center, radius, progress, alpha)
+			"grub_roll_trail":
+				_draw_grub_trail(center, radius, progress, alpha, effect["data"])
+			"grub_recover":
+				_draw_grub_recover(center, radius, progress, alpha)
+			"bat_launch":
+				_draw_bat_launch(center, radius, progress, alpha)
+			"bat_impact", "bat_dissolve":
+				_draw_bat_impact(center, radius, progress, alpha, effect["kind"] == "bat_dissolve")
+			"elite_appear", "elite_defeat":
+				_draw_elite_burst(center, radius, progress, alpha, effect["kind"] == "elite_defeat")
 			"ember":
 				_draw_ember_bloom(center, radius, progress, alpha, color)
 			"star_hit":
@@ -65,106 +205,7 @@ func _draw() -> void:
 				_draw_grub_defeat(center, radius, progress, alpha)
 
 
-func _draw_damage_text(effect: Dictionary, progress: float, alpha: float) -> void:
-	var is_player: bool = effect["is_player"]
-	var font_size := 27 if is_player else 20
-	var position: Vector2 = effect["position"] + Vector2(0, -28.0 - progress * (42.0 if is_player else 27.0))
-	var color: Color = effect["color"]
-	color.a = alpha
-	var shadow := Color(0.015, 0.02, 0.06, alpha * 0.9)
-	draw_string(GAME_FONT, position + Vector2(2, 2), effect["text"], HORIZONTAL_ALIGNMENT_CENTER, 54.0, font_size, shadow)
-	draw_string(GAME_FONT, position, effect["text"], HORIZONTAL_ALIGNMENT_CENTER, 54.0, font_size, color)
-
-
-func _draw_meteor(center: Vector2, radius: float, progress: float, alpha: float, color: Color) -> void:
-	var impact_progress := clampf(progress / 0.38, 0.0, 1.0)
-	var fall_position := center + Vector2(78.0, -260.0).lerp(Vector2.ZERO, impact_progress)
-	if progress < 0.45:
-		draw_line(fall_position - Vector2(64, -120), fall_position, Color(1.0, 0.35, 0.12, alpha * 0.32), 24.0, true)
-		draw_line(fall_position - Vector2(38, -76), fall_position, Color(1.0, 0.86, 0.42, alpha), 9.0, true)
-		draw_circle(fall_position, 10.0 + radius * 0.035, Color(1.0, 0.88, 0.48, alpha * 0.9))
-	var ring_progress := clampf((progress - 0.25) / 0.75, 0.0, 1.0)
-	var ring_radius := radius * (0.18 + ring_progress * 0.82)
-	draw_circle(center, ring_radius, Color(color.r, color.g, color.b, alpha * 0.14))
-	draw_arc(center, ring_radius, 0.0, TAU, 56, Color(color.r, color.g, color.b, alpha * 0.9), 7.0)
-	for index in range(10):
-		var angle := index * TAU / 10.0 + 0.17
-		var start := center + Vector2.from_angle(angle) * ring_radius * 0.35
-		var finish := center + Vector2.from_angle(angle) * ring_radius * (0.75 + index % 3 * 0.12)
-		draw_line(start, finish, Color(1.0, 0.68, 0.28, alpha * 0.8), 3.0, true)
-
-
-func _draw_phoenix(center: Vector2, radius: float, progress: float, alpha: float, color: Color) -> void:
-	var spread := radius * (0.25 + progress * 0.75)
-	var body_color := Color(1.0, 0.88, 0.42, alpha)
-	var flame_color := Color(color.r, color.g, color.b, alpha * 0.8)
-	draw_arc(center, spread, 0.0, TAU, 64, flame_color, 8.0)
-	for side in [-1.0, 1.0]:
-		var wing := PackedVector2Array([
-			center + Vector2(0, -spread * 0.12),
-			center + Vector2(side * spread * 0.35, -spread * 0.42),
-			center + Vector2(side * spread * 0.9, -spread * 0.18),
-			center + Vector2(side * spread * 0.48, spread * 0.04),
-			center + Vector2(side * spread * 0.82, spread * 0.32),
-		])
-		draw_polyline(wing, body_color, 6.0, true)
-		for feather in range(3):
-			var offset := spread * (0.18 + feather * 0.14)
-			draw_arc(center + Vector2(side * offset, 0), spread * (0.34 + feather * 0.06), PI * 1.05 if side < 0 else -PI * 0.05, PI * 1.5 if side < 0 else PI * 0.45, 18, flame_color, 2.5)
-	draw_circle(center + Vector2(0, -spread * 0.18), 7.0 + 5.0 * alpha, body_color)
-	draw_line(center + Vector2(0, -spread * 0.08), center + Vector2(0, spread * 0.45), body_color, 5.0, true)
-
-
-func _draw_ember_bloom(center: Vector2, radius: float, progress: float, alpha: float, color: Color) -> void:
-	var bloom_radius := radius * (0.15 + progress * 0.85)
-	draw_circle(center, bloom_radius, Color(color.r, color.g, color.b, alpha * 0.16))
-	for index in range(8):
-		var angle := index * TAU / 8.0 + progress * 0.8
-		var inner := center + Vector2.from_angle(angle) * bloom_radius * 0.25
-		var tip := center + Vector2.from_angle(angle) * bloom_radius
-		draw_line(inner, tip, Color(1.0, 0.42 + index % 2 * 0.2, 0.16, alpha), 5.0 - progress * 2.0, true)
-		draw_circle(tip, 3.5 * alpha, Color(1.0, 0.92, 0.58, alpha))
-	draw_arc(center, bloom_radius * 0.72, -progress * PI, TAU - progress * PI, 36, Color(1.0, 0.82, 0.36, alpha), 3.0)
-
-
-func _draw_star_hit(center: Vector2, radius: float, progress: float, alpha: float, color: Color) -> void:
-	var outer := radius * (0.25 + progress * 0.75)
-	var points := PackedVector2Array()
-	for index in range(16):
-		var point_radius := outer if index % 2 == 0 else outer * 0.34
-		points.append(center + Vector2.from_angle(index * TAU / 16.0 - PI * 0.5) * point_radius)
-	points.append(points[0])
-	draw_polyline(points, Color(color.r, color.g, color.b, alpha), 3.0, true)
-	draw_circle(center, outer * 0.22, Color(0.86, 0.98, 1.0, alpha * 0.8))
-
-
-func _draw_sun_hit(center: Vector2, radius: float, progress: float, alpha: float, color: Color) -> void:
-	var size := radius * (0.45 + progress * 0.55)
-	draw_circle(center, size * 0.36, Color(1.0, 0.88, 0.36, alpha * 0.82))
-	for index in range(12):
-		var direction := Vector2.from_angle(index * TAU / 12.0 + progress)
-		draw_line(center + direction * size * 0.45, center + direction * size, Color(color.r, color.g, color.b, alpha), 2.5, true)
-
-
-func _draw_defeat(center: Vector2, radius: float, progress: float, alpha: float, color: Color) -> void:
-	for index in range(9):
-		var angle := index * TAU / 9.0 + index * 0.21
-		var distance := radius * (0.3 + progress * (0.8 + index % 3 * 0.25))
-		var fragment := center + Vector2.from_angle(angle) * distance + Vector2(0, progress * progress * 18.0)
-		draw_circle(fragment, maxf(1.0, 5.0 * alpha), Color(color.r, color.g, color.b, alpha))
-	draw_arc(center, radius * (0.4 + progress * 0.8), 0.0, TAU, 32, Color(color.r, color.g, color.b, alpha * 0.55), 2.5)
-
-
-func _draw_grub_defeat(center: Vector2, radius: float, progress: float, alpha: float) -> void:
-	for index in range(8):
-		var angle := index * TAU / 8.0 + 0.22
-		var fragment := center + Vector2.from_angle(angle) * radius * (0.25 + progress)
-		if index % 2 == 0:
-			var leaf := PackedVector2Array([fragment + Vector2(-5, 0), fragment + Vector2(0, -8), fragment + Vector2(5, 0), fragment + Vector2(0, 5)])
-			draw_colored_polygon(leaf, Color(0.48, 0.86, 0.29, alpha))
-		else:
-			var star := PackedVector2Array()
-			for point in range(10):
-				star.append(fragment + Vector2.from_angle(point * TAU / 10.0) * (6.0 if point % 2 == 0 else 2.5))
-			star.append(star[0])
-			draw_polyline(star, Color(1.0, 0.88, 0.34, alpha), 2.0)
+func _effect_center(effect: Dictionary) -> Vector2:
+	var data: Dictionary = effect.get("data", {})
+	var follow: Node2D = data.get("follow")
+	return follow.position if is_instance_valid(follow) else Vector2(effect["position"])

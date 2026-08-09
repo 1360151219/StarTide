@@ -3,6 +3,8 @@ extends Node
 signal skill_released(skill_id: String)
 
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
+const CombatTimeline = preload("res://scripts/combat/combat_timeline.gd")
+const FROST_TRAVEL_TIME := 0.36
 
 var player: Node2D
 var enemies: Node2D
@@ -18,6 +20,8 @@ var orbit_hit_timer := 0.0
 var orbit_phase := 0.0
 var pulse_timer := 1.0
 var pulse_visual_time := 0.0
+var pulse_center := Vector2.ZERO
+var timeline := CombatTimeline.new()
 
 
 func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Node2D, combat_effects: Node2D, audio_manager: Node, random: RandomNumberGenerator, skill_levels: Dictionary, permanent_modifiers: Dictionary, build: RefCounted) -> void:
@@ -33,6 +37,7 @@ func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Nod
 
 
 func advance(skill_delta: float, real_delta: float, elapsed: float) -> void:
+	timeline.advance(real_delta)
 	pulse_visual_time = maxf(0.0, pulse_visual_time - real_delta)
 	_update_star_lance(skill_delta)
 	_update_sun_orbit(skill_delta)
@@ -118,15 +123,35 @@ func _update_frost_tide(delta: float, elapsed: float) -> void:
 		return
 	var data: Dictionary = SkillCatalog.skill("frost_tide")["runtime"]
 	pulse_timer = data["cooldown"][skill_level] * _multiplier("frost_tide", "cooldown_multiplier")
-	pulse_visual_time = 0.3
+	pulse_visual_time = FROST_TRAVEL_TIME
+	pulse_center = player.position
 	skill_released.emit("frost_tide")
 	audio.play_sfx("skill_frost_tide", 0.0, rng.randf_range(0.97, 1.03))
+	var radius: float = data["radius"][skill_level] * _multiplier("frost_tide", "range_multiplier") * _branch_multiplier("frost_tide", "radius_multiplier")
 	for enemy in enemies.snapshot():
-		var radius: float = data["radius"][skill_level] * _multiplier("frost_tide", "range_multiplier") * _branch_multiplier("frost_tide", "radius_multiplier")
-		if is_instance_valid(enemy) and enemy.position.distance_to(player.position) <= radius + enemy.radius:
+		if is_instance_valid(enemy) and enemy.position.distance_to(pulse_center) <= radius + enemy.radius:
 			var slow_duration: float = data["slow_duration"][skill_level] * _branch_multiplier("frost_tide", "slow_duration_multiplier")
-			enemy.apply_slow(data["slow_factor"][skill_level], slow_duration, elapsed)
-			enemies.damage_enemy(enemy, data["damage"][skill_level] * _multiplier("frost_tide", "damage_multiplier"), Color("9ff4ff"))
+			var travel_delay := clampf(enemy.position.distance_to(pulse_center) / maxf(radius, 1.0), 0.08, 1.0) * FROST_TRAVEL_TIME
+			timeline.schedule(
+				travel_delay,
+				_resolve_frost_hit.bind(
+					enemy, pulse_center, radius,
+					data["damage"][skill_level] * _multiplier("frost_tide", "damage_multiplier"),
+					data["slow_factor"][skill_level], slow_duration, elapsed + travel_delay
+				),
+				"frost_tide"
+			)
+
+
+func _resolve_frost_hit(enemy: Node, center: Vector2, radius: float, damage: float, slow_factor: float, slow_duration: float, impact_elapsed: float) -> void:
+	if not is_instance_valid(enemy) or not enemies.is_active(enemy):
+		return
+	if enemy.position.distance_to(center) > radius + enemy.radius:
+		return
+	enemy.apply_slow(slow_factor, slow_duration, impact_elapsed)
+	effects.add_effect(enemy.position, enemy.radius + 18.0, Color("9ff4ff"), 0.34, "frost_hit")
+	enemies.damage_enemy(enemy, damage, Color("9ff4ff"))
+	audio.play_sfx("frost_hit", -4.0, rng.randf_range(0.96, 1.05))
 
 
 func _multiplier(skill_id: String, field: String) -> float:
