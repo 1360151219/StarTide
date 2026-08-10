@@ -25,7 +25,6 @@ func _draw() -> void:
 			_draw_charm(ink, glow)
 		_:
 			_draw_weapon(ink, glow)
-	_draw_add_mark()
 
 
 func _draw_weapon(ink: Color, glow: Color) -> void:
@@ -59,11 +58,3 @@ func _draw_charm(ink: Color, glow: Color) -> void:
 	var outline := star.duplicate()
 	outline.append(star[0])
 	draw_polyline(outline, ink, 1.5, true)
-
-
-func _draw_add_mark() -> void:
-	var center := Vector2(43, 35)
-	draw_circle(center, 8.0, UiFactory.SURFACE)
-	draw_arc(center, 8.0, 0.0, TAU, 20, UiFactory.PRIMARY, 2.0, true)
-	draw_line(center - Vector2(4, 0), center + Vector2(4, 0), UiFactory.PRIMARY_DARK, 2.0, true)
-	draw_line(center - Vector2(0, 4), center + Vector2(0, 4), UiFactory.PRIMARY_DARK, 2.0, true)

@@ -61,12 +61,12 @@ func _build_inventory_sheet() -> void:
 	var sheet := Panel.new()
 	sheet.position = Vector2(0, 286)
 	sheet.size = Vector2(504, 288)
-	CharacterStyle.apply_panel(sheet, false, 22.0)
+	CharacterStyle.apply_continuous_panel(sheet, Color(UiFactory.SURFACE, 0.94), Color(UiFactory.PRIMARY, 0.58), 8.0)
 	add_child(sheet)
 	var filters := HBoxContainer.new()
 	filters.position = Vector2(14, 8)
 	filters.size = Vector2(476, 48)
-	filters.add_theme_constant_override("separation", 6)
+	filters.add_theme_constant_override("separation", 4)
 	sheet.add_child(filters)
 	for filter_id in FILTERS:
 		var button := Button.new()
@@ -78,20 +78,20 @@ func _build_inventory_sheet() -> void:
 		filters.add_child(button)
 		filter_buttons[filter_id] = button
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(14, 64)
+	scroll.position = Vector2(14, 62)
 	scroll.size = Vector2(476, 184)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sheet.add_child(scroll)
 	inventory_grid = GridContainer.new()
 	inventory_grid.columns = 4
 	inventory_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	inventory_grid.add_theme_constant_override("h_separation", 8)
-	inventory_grid.add_theme_constant_override("v_separation", 8)
+	inventory_grid.add_theme_constant_override("h_separation", 6)
+	inventory_grid.add_theme_constant_override("v_separation", 6)
 	scroll.add_child(inventory_grid)
 	empty_label = CharacterStyle.add_label(sheet, "背包还是空的\n完成关卡可获得新装备", 17, CharacterStyle.MUTED, Vector2(36, 94), Vector2(432, 82), HORIZONTAL_ALIGNMENT_CENTER)
 	empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	count_label = CharacterStyle.add_label(sheet, "", 13, CharacterStyle.MUTED, Vector2(18, 250), Vector2(210, 24))
-	status_label = CharacterStyle.add_label(sheet, "选择装备查看属性", 13, CharacterStyle.MUTED, Vector2(224, 250), Vector2(262, 24), HORIZONTAL_ALIGNMENT_RIGHT)
+	count_label = CharacterStyle.add_label(sheet, "", 14, CharacterStyle.MUTED, Vector2(18, 250), Vector2(210, 24))
+	status_label = CharacterStyle.add_label(sheet, "选择装备查看属性", 14, CharacterStyle.MUTED, Vector2(224, 250), Vector2(262, 24), HORIZONTAL_ALIGNMENT_RIGHT)
 	detail_sheet = DetailSheet.new()
 	detail_sheet.action_requested.connect(_perform_selected_action)
 	detail_sheet.upgrade_requested.connect(_upgrade_selected_item)
@@ -211,7 +211,7 @@ func _set_filter(filter_id: String) -> void:
 
 func _refresh_filter_buttons() -> void:
 	for filter_id in filter_buttons:
-		CharacterStyle.apply_segment(filter_buttons[filter_id], filter_id == current_filter)
+		CharacterStyle.apply_ribbon_tab(filter_buttons[filter_id], filter_id == current_filter)
 
 
 func _refresh_card_selection() -> void:

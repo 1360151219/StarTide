@@ -27,13 +27,13 @@
 ```text
 main.tscn
 └── scripts/game.gd                 # 应用编排：大厅、局内、暂停、升级、结算
-    ├── scripts/run/                # 单局状态、阶段、构筑、内容解析与结算
-    ├── scripts/systems/            # 敌人、投射物、拾取与升级系统
-    ├── scripts/skills/             # 两名英雄的技能运行时
-    ├── scripts/passives/           # 英雄固有被动
-    ├── scripts/presentation/       # 世界、角色、预警和战斗反馈
-    ├── scripts/ui/                 # 远征、角色、图鉴、HUD 与覆盖层
-    └── scripts/profile/            # 本地档案、装备、成长与发现
+	├── scripts/run/                # 单局状态、阶段、构筑、内容解析与结算
+	├── scripts/systems/            # 敌人、投射物、拾取与升级系统
+	├── scripts/skills/             # 两名英雄的技能运行时
+	├── scripts/passives/           # 英雄固有被动
+	├── scripts/presentation/       # 世界、角色、预警和战斗反馈
+	├── scripts/ui/                 # 远征、角色、图鉴、HUD 与覆盖层
+	└── scripts/profile/            # 本地档案、装备、成长与发现
 ```
 
 数据与运行时分离：

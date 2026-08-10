@@ -21,6 +21,8 @@ var summary: Label
 var screen_overlay: ColorRect
 var design_frame: Control
 var result_card: Panel
+var full_canvas: Panel
+var first_beat_canvas: Panel
 var content_margin: MarginContainer
 var content_stack: VBoxContainer
 var hero_preview: Panel
@@ -48,8 +50,8 @@ func _ready() -> void:
 	design_frame = DesignFrame.new()
 	screen_overlay.add_child(design_frame)
 	_build_result_card()
-	replay_button = _add_button(design_frame, "再战一次", Vector2(54, 752), true, replay_requested.emit)
-	home_button = _add_button(design_frame, "返回关卡大厅", Vector2(54, 838), false, home_requested.emit)
+	replay_button = _add_button(design_frame, "再战一次", Vector2(54, 704), true, replay_requested.emit)
+	home_button = _add_button(design_frame, "返回关卡大厅", Vector2(54, 786), false, home_requested.emit)
 	visible = false
 
 
@@ -62,7 +64,7 @@ func show_result(presentation: Dictionary) -> void:
 	summary.text = str(presentation.get("outcome_hint", ""))
 	stat_values[0].text = str(presentation.get("duration_text", "--:--"))
 	stat_values[1].text = str(int(presentation.get("kills", 0)))
-	stat_values[2].text = "Lv.%d" % int(presentation.get("player_level", 1))
+	stat_values[2].text = "LV.%d" % int(presentation.get("player_level", 1))
 	reward_strip.present(presentation)
 	build_icons.present_snapshot(presentation.get("build_snapshot", {}))
 	var hero_id := str(presentation.get("hero_id", ""))
@@ -82,11 +84,23 @@ func show_result(presentation: Dictionary) -> void:
 
 func _build_result_card() -> void:
 	result_card = Panel.new()
-	result_card.position = Vector2(30, 40)
-	result_card.size = Vector2(480, 690)
+	result_card.position = Vector2(30, 44)
+	result_card.size = Vector2(480, 640)
 	result_card.pivot_offset = result_card.size * 0.5
-	SunlitCardStyle.apply_panel(result_card, Color(CARD_SURFACE, 0.98), UiFactory.PRIMARY, 12.0, true, false, "canvas")
+	result_card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	design_frame.add_child(result_card)
+	full_canvas = Panel.new()
+	full_canvas.name = "FullCanvas"
+	full_canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	full_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	SunlitCardStyle.apply_panel(full_canvas, Color(CARD_SURFACE, 0.98), UiFactory.PRIMARY, 12.0, true, false, "canvas")
+	result_card.add_child(full_canvas)
+	first_beat_canvas = Panel.new()
+	first_beat_canvas.name = "FirstBeatCanvas"
+	first_beat_canvas.size = Vector2(480, 442)
+	first_beat_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	SunlitCardStyle.apply_panel(first_beat_canvas, Color(CARD_SURFACE, 0.98), UiFactory.PRIMARY, 12.0, true, false, "canvas")
+	result_card.add_child(first_beat_canvas)
 	content_margin = MarginContainer.new()
 	content_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content_margin.add_theme_constant_override("margin_left", 18)
@@ -95,10 +109,11 @@ func _build_result_card() -> void:
 	content_margin.add_theme_constant_override("margin_bottom", 14)
 	result_card.add_child(content_margin)
 	content_stack = VBoxContainer.new()
-	content_stack.add_theme_constant_override("separation", 7)
+	content_stack.add_theme_constant_override("separation", 6)
 	content_margin.add_child(content_stack)
 	content_stack.add_child(_build_state_pill())
-	heading = _surface_label("", 30, TEAL)
+	heading = _surface_label("", 32, TEAL)
+	heading.add_theme_font_override("font", UiFactory.ceremonial_font(800))
 	heading.custom_minimum_size = Vector2(0, 48)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -196,6 +211,14 @@ func finish_reveal() -> void:
 	if reveal_tween != null and reveal_tween.is_valid() and reveal_tween.is_running():
 		reveal_tween.kill()
 	result_card.scale = Vector2.ONE
+	full_canvas.modulate.a = 1.0
+	first_beat_canvas.modulate.a = 0.0
+	victory_crest.scale = Vector2.ONE
+	if victory_crest.visible:
+		victory_crest.modulate.a = 0.34
+	for star in celebration_stars:
+		star.scale = Vector2.ONE
+		star.modulate.a = 0.88
 	for node in content_stack.get_children():
 		if node is CanvasItem:
 			node.modulate.a = 1.0

@@ -1,6 +1,6 @@
 extends RefCounted
 
-signal hit_feedback_requested(damage: float)
+signal hit_feedback_requested(damage: float, source_direction: Vector2)
 
 const PlayerHitData = preload("res://scripts/combat/player_hit.gd")
 
@@ -42,7 +42,7 @@ func apply(hit: PlayerHit, elapsed: float, finished: bool) -> bool:
 	invulnerable_until = elapsed + 0.46
 	audio.play_sfx("hero_hurt", 0.0)
 	effects.add_damage_number(player.position - Vector2(22, 14), hit.damage, Color("ff6c7f"), true)
-	hit_feedback_requested.emit(hit.damage)
+	hit_feedback_requested.emit(hit.damage, player.position.direction_to(hit.origin))
 	_apply_displacement(hit)
 	player_defeated = player.take_damage(hit.damage)
 	return true

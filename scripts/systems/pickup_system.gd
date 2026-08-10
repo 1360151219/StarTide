@@ -86,9 +86,10 @@ func advance(delta: float, elapsed: float) -> void:
 		if not is_instance_valid(pickup):
 			continue
 		var distance: float = pickup.position.distance_to(player.position)
-		if distance < pickup_radius:
-			var pull_speed := 760.0 if active else lerpf(140.0, 520.0, 1.0 - distance / pickup_radius)
-			pickup.position = pickup.position.move_toward(player.position, pull_speed * delta)
+		if distance < pickup_radius and not pickup.is_pulling:
+			_begin_pull(pickup, distance, pickup_radius)
+		if pickup.is_pulling:
+			_advance_pull(pickup, delta)
 			pickup.z_index = level.map.depth_index(pickup.position.y)
 		if pickup.position.distance_to(player.position) <= 28.0:
 			_collect(pickup, elapsed)
@@ -98,6 +99,30 @@ func advance(delta: float, elapsed: float) -> void:
 
 func remaining_magnet_seconds(elapsed: float) -> int:
 	return maxi(0, ceili(magnet_until - elapsed))
+
+
+func _begin_pull(pickup: Node, distance: float, pickup_radius: float) -> void:
+	pickup.is_pulling = true
+	pickup.pull_origin = pickup.position
+	pickup.pull_elapsed = 0.0
+	pickup.pull_duration = lerpf(0.18, 0.22, clampf(distance / maxf(pickup_radius, 1.0), 0.0, 1.0))
+	pickup.pull_arc_side = -1.0 if pickup.get_instance_id() % 2 == 0 else 1.0
+
+
+func _advance_pull(pickup: Node, delta: float) -> void:
+	pickup.pull_elapsed = minf(pickup.pull_duration, pickup.pull_elapsed + delta)
+	var progress: float = pickup.pull_elapsed / maxf(pickup.pull_duration, 0.001)
+	var eased := 1.0 - pow(1.0 - progress, 2.0)
+	var to_player: Vector2 = player.position - pickup.pull_origin
+	var normal := Vector2(-to_player.y, to_player.x).normalized()
+	var arc_height: float = minf(28.0, to_player.length() * 0.18) * float(pickup.pull_arc_side)
+	var control: Vector2 = Vector2(pickup.pull_origin) + to_player * 0.5 + normal * arc_height
+	pickup.position = _quadratic_bezier(pickup.pull_origin, control, player.position, eased)
+
+
+func _quadratic_bezier(start: Vector2, control: Vector2, finish: Vector2, weight: float) -> Vector2:
+	var inverse := 1.0 - weight
+	return inverse * inverse * start + 2.0 * inverse * weight * control + weight * weight * finish
 
 
 func _collect(pickup: Node, elapsed: float) -> void:

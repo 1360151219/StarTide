@@ -46,12 +46,10 @@ func _ready() -> void:
 	add_child(safe_area)
 	content = Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.anchor_left = 0.5
-	content.anchor_right = 0.5
-	content.anchor_bottom = 1.0
-	content.offset_left = -270.0
-	content.offset_right = 270.0
+	content.size = ScreenLayout.DESIGN_SIZE
 	safe_area.add_child(content)
+	safe_area.resized.connect(_layout_content)
+	_layout_content()
 	_build_collection_view()
 	_build_detail_view()
 
@@ -81,10 +79,19 @@ func set_navigation_mode(enabled: bool) -> void:
 
 
 func set_navigation_reserve(reserve: float) -> void:
+	var design_reserve := minf(reserve, 120.0) if navigation_mode else reserve
 	if is_instance_valid(collection_view):
-		collection_view.set_navigation_reserve(reserve)
+		collection_view.set_navigation_reserve(design_reserve)
 	if is_instance_valid(detail_view):
-		detail_view.set_navigation_reserve(reserve)
+		detail_view.set_navigation_reserve(design_reserve)
+
+
+func _layout_content() -> void:
+	if not is_instance_valid(content):
+		return
+	var local_safe_rect := Rect2(Vector2.ZERO, safe_area.size)
+	content.position = ScreenLayout.design_position(local_safe_rect)
+	content.size = Vector2(ScreenLayout.DESIGN_SIZE.x, minf(ScreenLayout.DESIGN_SIZE.y, safe_area.size.y))
 
 
 func close_detail_if_open() -> bool:

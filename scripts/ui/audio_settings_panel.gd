@@ -2,12 +2,13 @@ extends Control
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
-const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
+const SETTINGS_MEDALLION := preload("res://assets/art/ui/home/settings_medallion.png")
 
 var audio: Node
 var compact_mode := false
 var launcher_button: Button
-var launcher_glyph: Control
+var launcher_glyph: TextureRect
+var launcher_tween: Tween
 var settings_card: Panel
 var close_button: Button
 var music_button: Button
@@ -49,7 +50,6 @@ func refresh() -> void:
 	_refresh_channel("sfx", audio.sfx_enabled, audio.sfx_volume)
 	if is_instance_valid(launcher_button):
 		var muted: bool = not audio.music_enabled and not audio.sfx_enabled
-		launcher_glyph.set_selected(not muted)
 		launcher_glyph.modulate = Color(0.62, 0.66, 0.63, 0.78) if muted else Color.WHITE
 
 
@@ -65,29 +65,46 @@ func close_popup() -> void:
 
 func _build_launcher() -> void:
 	launcher_button = Button.new()
+	launcher_button.name = "SettingsButton"
 	launcher_button.size = size
+	launcher_button.tooltip_text = "声音设置"
+	launcher_button.accessibility_name = "声音设置"
 	launcher_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	var normal := UiFactory.panel_style(UiFactory.HUD_SURFACE, 30.0, UiFactory.ACCENT)
-	normal.set_border_width_all(3)
-	normal.shadow_color = Color(UiFactory.INK, 0.28)
-	normal.shadow_size = 4
-	normal.shadow_offset = Vector2(0, 2)
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = UiFactory.HUD_SURFACE_ALT
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.shadow_size = 1
-	pressed.shadow_offset = Vector2.ZERO
-	for state in ["normal", "focus", "disabled"]:
-		launcher_button.add_theme_stylebox_override(state, normal)
-	launcher_button.add_theme_stylebox_override("hover", hover)
-	launcher_button.add_theme_stylebox_override("pressed", pressed)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		launcher_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	launcher_button.pressed.connect(_toggle_popup)
+	launcher_button.button_down.connect(_set_launcher_pressed.bind(true))
+	launcher_button.button_up.connect(_set_launcher_pressed.bind(false))
+	launcher_button.mouse_entered.connect(_set_launcher_hovered.bind(true))
+	launcher_button.mouse_exited.connect(_set_launcher_hovered.bind(false))
+	launcher_button.focus_entered.connect(_set_launcher_hovered.bind(true))
+	launcher_button.focus_exited.connect(_set_launcher_hovered.bind(false))
 	add_child(launcher_button)
-	launcher_glyph = SunlitGlyph.new()
-	launcher_glyph.glyph_id = "settings"
-	launcher_glyph.position = Vector2(15, 15)
-	launcher_glyph.size = Vector2(30, 30)
+	launcher_glyph = TextureRect.new()
+	launcher_glyph.name = "SettingsMedallion"
+	launcher_glyph.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	launcher_glyph.texture = SETTINGS_MEDALLION
+	launcher_glyph.size = size
+	launcher_glyph.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	launcher_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	launcher_button.add_child(launcher_glyph)
+	_set_launcher_hovered(false)
+
+
+func _set_launcher_pressed(pressed: bool) -> void:
+	if not is_instance_valid(launcher_glyph):
+		return
+	if is_instance_valid(launcher_tween) and launcher_tween.is_valid():
+		launcher_tween.kill()
+	launcher_tween = create_tween()
+	launcher_tween.set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	launcher_tween.tween_property(launcher_glyph, "position", Vector2(1, 2) if pressed else Vector2.ZERO, 0.08 if pressed else 0.12)
+	launcher_tween.tween_property(launcher_glyph, "size", Vector2(58, 58) if pressed else size, 0.08 if pressed else 0.12)
+
+
+func _set_launcher_hovered(hovered: bool) -> void:
+	if is_instance_valid(launcher_glyph):
+		launcher_glyph.self_modulate = Color.WHITE if hovered else Color(0.94, 0.97, 0.96, 1.0)
 
 
 func _build_card(at: Vector2, card_size: Vector2, closable: bool) -> Panel:

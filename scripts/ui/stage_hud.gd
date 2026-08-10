@@ -24,37 +24,33 @@ func _ready() -> void:
 	ScreenLayout.fill(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	status_panel = Panel.new()
-	status_panel.position = Vector2(18, 86)
-	status_panel.size = Vector2(504, 64)
+	status_panel.anchor_left = 0.5
+	status_panel.anchor_right = 0.5
+	status_panel.offset_left = -252.0
+	status_panel.offset_top = 86.0
+	status_panel.offset_right = 252.0
+	status_panel.offset_bottom = 134.0
 	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	SunlitCardStyle.apply_panel(status_panel, Color(UiFactory.HUD_SURFACE, 0.82), Color(UiFactory.PRIMARY_LIGHT, 0.42), 8.0, false, true, "ribbon")
+	SunlitCardStyle.apply_panel(status_panel, Color(UiFactory.HUD_SURFACE, 0.68), Color(UiFactory.PRIMARY_LIGHT, 0.34), 6.0, false, true, "ribbon")
 	add_child(status_panel)
 	route_progress = BattleRouteProgress.new()
-	route_progress.position = Vector2(14, 6)
-	route_progress.size = Vector2(476, 36)
+	route_progress.position = Vector2(14, 0)
+	route_progress.size = Vector2(476, 25)
 	status_panel.add_child(route_progress)
-	stage_label = UiFactory.label("", 13, UiFactory.HUD_TEXT)
-	stage_label.position = Vector2(28, 127)
-	stage_label.size = Vector2(180, 20)
-	add_child(stage_label)
-	passive_label = UiFactory.label("", 13, UiFactory.HUD_TEXT)
-	passive_label.anchor_left = 1.0
-	passive_label.anchor_right = 1.0
-	passive_label.offset_left = -342.0
-	passive_label.offset_top = 127.0
-	passive_label.offset_right = -26.0
-	passive_label.offset_bottom = 147.0
+	stage_label = UiFactory.label("", 14, UiFactory.HUD_TEXT)
+	stage_label.position = Vector2(14, 25)
+	stage_label.size = Vector2(176, 20)
+	status_panel.add_child(stage_label)
+	passive_label = UiFactory.label("", 14, UiFactory.HUD_TEXT)
+	passive_label.position = Vector2(188, 25)
+	passive_label.size = Vector2(298, 20)
 	passive_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	add_child(passive_label)
+	status_panel.add_child(passive_label)
 	item_label = UiFactory.label("", 14, UiFactory.HUD_TEXT)
-	item_label.anchor_left = 1.0
-	item_label.anchor_right = 1.0
-	item_label.offset_left = -216.0
-	item_label.offset_top = 119.0
-	item_label.offset_right = -26.0
-	item_label.offset_bottom = 147.0
+	item_label.position = Vector2(272, 25)
+	item_label.size = Vector2(214, 20)
 	item_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	add_child(item_label)
+	status_panel.add_child(item_label)
 	_build_elite_panel()
 	_build_banner()
 
@@ -66,14 +62,17 @@ func refresh(stage: StageConfig, passive_text: String, passive_color: Color, mag
 	passive_label.add_theme_color_override("font_color", passive_color)
 	item_label.visible = magnet_seconds > 0 and banner_time <= 0.0
 	item_label.text = "磁吸状态  %ds" % magnet_seconds
+	passive_label.visible = not item_label.visible
 	elite_active = is_instance_valid(elite)
 	if is_instance_valid(elite):
 		elite_panel.visible = banner_time <= 0.0
+		status_panel.visible = false
 		elite_name.text = "精英 · %s" % elite.display_name
 		elite_health.max_value = elite.max_health
 		elite_health.value = elite.health
 	else:
 		elite_panel.visible = false
+		status_panel.visible = banner_time <= 0.0
 
 
 func show_banner(title: String, subtitle: String, duration: float) -> void:
@@ -92,9 +91,9 @@ func show_banner(title: String, subtitle: String, duration: float) -> void:
 func advance(delta: float) -> void:
 	if banner_time <= 0.0:
 		banner.visible = false
-		status_panel.visible = true
+		status_panel.visible = not elite_active
 		stage_label.visible = true
-		passive_label.visible = true
+		passive_label.visible = not item_label.visible
 		elite_panel.visible = elite_active
 		return
 	status_panel.visible = false
@@ -110,9 +109,9 @@ func _build_elite_panel() -> void:
 	elite_panel.anchor_left = 0.5
 	elite_panel.anchor_right = 0.5
 	elite_panel.offset_left = -174.0
-	elite_panel.offset_top = 156.0
+	elite_panel.offset_top = 86.0
 	elite_panel.offset_right = 174.0
-	elite_panel.offset_bottom = 200.0
+	elite_panel.offset_bottom = 130.0
 	SunlitCardStyle.apply_panel(elite_panel, UiFactory.HUD_SURFACE, UiFactory.DANGER, 8.0, false, true, "danger")
 	elite_panel.visible = false
 	add_child(elite_panel)

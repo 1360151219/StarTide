@@ -23,7 +23,7 @@ func configure(
 	category_id = category
 	entry_data = entry
 	is_discovered = discovered
-	custom_minimum_size = Vector2(238, 242)
+	custom_minimum_size = Vector2(162, 190)
 	set_meta("content_id", entry["id"])
 	set_meta("discovered", discovered)
 	focus_mode = Control.FOCUS_ALL
@@ -31,13 +31,12 @@ func configure(
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	tooltip_text = "查看%s记录" % (entry["name"] if discovered else "解锁线索")
 	var accent: Color = entry["accent"] if discovered else Color("82948b")
-	var structural_border := UiFactory.PRIMARY if discovered else Color(UiFactory.DISABLED, 0.58)
-	var background := UiFactory.SURFACE if discovered else Color(UiFactory.SURFACE_ALT, 0.78)
-	SunlitCardStyle.apply_panel(self, background, structural_border, 18.0, discovered)
+	_apply_tile_style(discovered, accent)
 	_add_icon(entry, discovered)
 	_add_name(entry, discovered)
 	_add_subtitle(subtitle_text, accent, discovered)
 	_add_hidden_description(description_text)
+	_add_identity_mark(accent, discovered)
 	if not discovered:
 		_add_lock_mark()
 
@@ -67,28 +66,21 @@ func _activate() -> void:
 
 
 func _add_icon(entry: Dictionary, discovered: bool) -> void:
-	var icon_plate := Panel.new()
-	icon_plate.position = Vector2(32, 14)
-	icon_plate.size = Vector2(174, 132)
-	var accent: Color = entry["accent"] if discovered else Color("71847d")
-	SunlitCardStyle.apply_panel(icon_plate, UiFactory.SURFACE_ALT, Color(accent, 0.74), 10.0, false, true, "enamel")
-	icon_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(icon_plate)
 	var icon := TextureRect.new()
-	icon.position = Vector2(10, 4)
-	icon.size = Vector2(154, 124)
+	icon.position = Vector2(20, 12)
+	icon.size = Vector2(124, 108)
 	icon.texture = entry["texture"]
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.modulate = Color.WHITE if discovered else Color(0.12, 0.2, 0.19, 0.42)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_plate.add_child(icon)
+	add_child(icon)
 
 
 func _add_name(entry: Dictionary, discovered: bool) -> void:
-	var name_label := _plain_label(entry["name"] if discovered else "尚未发现", 20, UiFactory.INK if discovered else UiFactory.MUTED_INK)
-	name_label.position = Vector2(14, 154)
-	name_label.size = Vector2(210, 30)
+	var name_label := _plain_label(entry["name"] if discovered else "？？？", 18, UiFactory.INK if discovered else UiFactory.MUTED_INK)
+	name_label.position = Vector2(10, 120)
+	name_label.size = Vector2(142, 28)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
 	add_child(name_label)
@@ -96,9 +88,9 @@ func _add_name(entry: Dictionary, discovered: bool) -> void:
 
 func _add_subtitle(text: String, accent: Color, discovered: bool) -> void:
 	var subtitle_color := accent.darkened(0.22) if discovered and accent.get_luminance() > 0.48 else accent
-	var subtitle := _plain_label(text, 13, subtitle_color if discovered else UiFactory.MUTED_INK)
-	subtitle.position = Vector2(14, 186)
-	subtitle.size = Vector2(210, 44)
+	var subtitle := _plain_label(text, 14, subtitle_color if discovered else UiFactory.MUTED_INK)
+	subtitle.position = Vector2(10, 150)
+	subtitle.size = Vector2(142, 34)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -107,16 +99,39 @@ func _add_subtitle(text: String, accent: Color, discovered: bool) -> void:
 
 
 func _add_hidden_description(text: String) -> void:
-	var description := _plain_label(text, 12, UiFactory.MUTED_INK)
+	var description := _plain_label(text, 14, UiFactory.MUTED_INK)
 	description.visible = false
 	add_child(description)
 
 
 func _add_lock_mark() -> void:
 	var lock_mark := SunlitLockBadge.new()
-	lock_mark.position = Vector2(172, 18)
-	lock_mark.size = Vector2(44, 44)
+	lock_mark.position = Vector2(116, 10)
+	lock_mark.size = Vector2(38, 38)
 	add_child(lock_mark)
+
+
+func _apply_tile_style(discovered: bool, accent: Color) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(UiFactory.SURFACE_ALT, 0.5 if discovered else 0.32)
+	var structural_border := UiFactory.PRIMARY if discovered else UiFactory.DISABLED
+	style.border_color = Color(structural_border, 0.46)
+	style.set_border_width_all(1)
+	style.corner_radius_top_left = 2
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 2
+	add_theme_stylebox_override("panel", style)
+	SunlitCardStyle.decorate(self, Color(structural_border, 0.2), 4.0, true, false, Color(accent, 0.24), "canvas")
+
+
+func _add_identity_mark(accent: Color, discovered: bool) -> void:
+	var mark := ColorRect.new()
+	mark.position = Vector2(4, 12)
+	mark.size = Vector2(4, 164)
+	mark.color = Color(accent if discovered else UiFactory.DISABLED, 0.7)
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(mark)
 
 
 func _plain_label(text: String, font_size: int, color: Color) -> Label:

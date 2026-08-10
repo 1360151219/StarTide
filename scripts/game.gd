@@ -86,6 +86,7 @@ func _connect_session() -> void:
 	session.stage_banner_requested.connect(hud.show_banner)
 	session.upgrade_requested.connect(_show_upgrade)
 	session.player_hit_feedback_requested.connect(feedback.trigger_player_hit)
+	session.pickup_collected.connect(_show_pickup_destination)
 	session.finished.connect(_show_result)
 
 
@@ -93,6 +94,12 @@ func refresh_presentation() -> void:
 	if not is_instance_valid(session):
 		return
 	hud.refresh(session.state, session.level, session.player, session.skills, session.pickups, session.passives, session.stage_director.current_stage(), session.elite_enemy)
+
+
+func _show_pickup_destination(pickup_id: String) -> void:
+	if not is_instance_valid(session) or not is_instance_valid(session.player):
+		return
+	hud.show_pickup_destination(pickup_id, session.player.get_global_transform_with_canvas().origin)
 
 
 func _show_upgrade(player_level: int, choices: Array, upgrade_system: RefCounted, build_state: RefCounted) -> void:

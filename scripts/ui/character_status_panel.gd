@@ -26,22 +26,9 @@ func _ready() -> void:
 	size = Vector2(504, 574)
 	CharacterStyle.apply_panel(self, false, 22.0)
 	_build_hero_summary()
-	CharacterStyle.add_label(self, "核心属性", 18, CharacterStyle.INK, Vector2(18, 194), Vector2(220, 30))
-	var metrics := [
-		["health", "最大生命", Vector2(16, 228)], ["speed", "移动速度", Vector2(258, 228)],
-		["damage", "技能伤害", Vector2(16, 310)], ["points", "可用技能点", Vector2(258, 310)],
-	]
-	for row in metrics:
-		metric_values[row[0]] = _metric_card(str(row[1]), row[2])
-	CharacterStyle.add_label(self, "战力构成", 18, CharacterStyle.INK, Vector2(18, 400), Vector2(220, 30))
-	var breakdowns := [
-		["base", "基础"], ["level", "等级"], ["training", "技能"], ["equipment", "装备"],
-	]
-	for index in range(breakdowns.size()):
-		breakdown_values[breakdowns[index][0]] = _breakdown_card(
-			str(breakdowns[index][1]), Vector2(16 + index * 118, 436)
-		)
-	record_label = CharacterStyle.add_label(self, "", 14, CharacterStyle.MUTED, Vector2(20, 520), Vector2(464, 44), HORIZONTAL_ALIGNMENT_CENTER)
+	_build_metrics()
+	_build_power_breakdown()
+	record_label = CharacterStyle.add_label(self, "", 14, CharacterStyle.MUTED, Vector2(20, 516), Vector2(464, 40), HORIZONTAL_ALIGNMENT_CENTER)
 	record_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 
@@ -58,7 +45,7 @@ func _build_hero_summary() -> void:
 	var plate := Panel.new()
 	plate.position = Vector2(12, 12)
 	plate.size = Vector2(480, 166)
-	CharacterStyle.apply_surface_panel(plate, UiFactory.SURFACE_ALT, 18.0, UiFactory.PRIMARY)
+	CharacterStyle.apply_continuous_panel(plate, UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.62), 8.0)
 	add_child(plate)
 	portrait = TextureRect.new()
 	portrait.position = Vector2(18, 8)
@@ -74,7 +61,59 @@ func _build_hero_summary() -> void:
 	progress_bar.size = Vector2(270, 10)
 	progress_bar.configure_colors(UiFactory.ACCENT, Color(UiFactory.PRIMARY, 0.2), 5.0)
 	plate.add_child(progress_bar)
-	progress_label = CharacterStyle.add_label(plate, "", 12, UiFactory.MUTED_INK, Vector2(166, 134), Vector2(270, 20), HORIZONTAL_ALIGNMENT_RIGHT)
+	progress_label = CharacterStyle.add_label(plate, "", 14, UiFactory.MUTED_INK, Vector2(166, 132), Vector2(270, 22), HORIZONTAL_ALIGNMENT_RIGHT)
+
+
+func _build_metrics() -> void:
+	var sheet := Panel.new()
+	sheet.position = Vector2(14, 194)
+	sheet.size = Vector2(476, 204)
+	CharacterStyle.apply_continuous_panel(sheet, Color(UiFactory.SURFACE_ALT, 0.76), Color(UiFactory.PRIMARY, 0.48), 6.0)
+	add_child(sheet)
+	CharacterStyle.add_label(sheet, "核心属性", 18, CharacterStyle.INK, Vector2(16, 10), Vector2(180, 28))
+	var metrics := [
+		["health", "最大生命"], ["damage", "技能伤害"],
+		["speed", "移动速度"], ["points", "可用技能点"],
+	]
+	for index in range(metrics.size()):
+		var y := 44.0 + float(index) * 38.0
+		if index > 0:
+			_add_divider(sheet, Vector2(16, y), Vector2(444, 1))
+		CharacterStyle.add_label(sheet, str(metrics[index][1]), 14, CharacterStyle.MUTED, Vector2(18, y + 2), Vector2(230, 34))
+		metric_values[metrics[index][0]] = CharacterStyle.add_label(
+			sheet, "0", 20, CharacterStyle.INK,
+			Vector2(254, y), Vector2(202, 36), HORIZONTAL_ALIGNMENT_RIGHT
+		)
+
+
+func _build_power_breakdown() -> void:
+	var sheet := Panel.new()
+	sheet.position = Vector2(14, 410)
+	sheet.size = Vector2(476, 94)
+	CharacterStyle.apply_continuous_panel(sheet, Color(UiFactory.SURFACE, 0.72), Color(UiFactory.PRIMARY, 0.48), 6.0)
+	add_child(sheet)
+	CharacterStyle.add_label(sheet, "战力构成", 16, CharacterStyle.INK, Vector2(16, 8), Vector2(180, 24))
+	var breakdowns := [
+		["base", "基础"], ["level", "等级"], ["training", "技能"], ["equipment", "装备"],
+	]
+	for index in range(breakdowns.size()):
+		var x := 8.0 + float(index) * 115.0
+		if index > 0:
+			_add_divider(sheet, Vector2(x, 38), Vector2(1, 44))
+		CharacterStyle.add_label(sheet, str(breakdowns[index][1]), 14, CharacterStyle.MUTED, Vector2(x + 4, 36), Vector2(106, 22), HORIZONTAL_ALIGNMENT_CENTER)
+		breakdown_values[breakdowns[index][0]] = CharacterStyle.add_label(
+			sheet, "0", 18, CharacterStyle.INK,
+			Vector2(x + 4, 58), Vector2(106, 26), HORIZONTAL_ALIGNMENT_CENTER
+		)
+
+
+func _add_divider(parent: Control, at: Vector2, divider_size: Vector2) -> void:
+	var divider := ColorRect.new()
+	divider.position = at
+	divider.size = divider_size
+	divider.color = Color(UiFactory.PRIMARY, 0.26)
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(divider)
 
 
 func _refresh(snapshot: Dictionary) -> void:
@@ -88,37 +127,17 @@ func _refresh(snapshot: Dictionary) -> void:
 	portrait.texture = HERO_TEXTURES.get(hero_id)
 	name_label.text = str(hero["name"])
 	power_label.text = "战力  %d" % int(power.get("total", snapshot.get("combat_power", 0)))
-	level_label.text = "英雄等级  Lv.%d" % level
+	level_label.text = "英雄等级  LV.%d" % level
 	progress_bar.max_value = maxf(1.0, maximum)
 	progress_bar.value = current
-	progress_label.text = "成长经验  %d/%d" % [current, maximum]
+	progress_label.text = "成长经验  %d / %d" % [current, maximum]
 	var health := float(resolved.get("max_health", hero["max_health"]))
 	var speed := float(resolved.get("speed", hero["speed"]))
 	var damage := maxf(0.0, float(resolved.get("damage_multiplier", progression.get("damage_multiplier", 1.0))) - 1.0)
 	metric_values["health"].text = "%.0f" % health
 	metric_values["speed"].text = "%.0f" % speed
-	metric_values["damage"].text = "+%.1f%%" % (damage * 100.0)
+	metric_values["damage"].text = "+%.0f%%" % (damage * 100.0)
 	metric_values["points"].text = "%d" % int(progression.get("available_skill_points", 0))
 	for key in breakdown_values:
 		breakdown_values[key].text = "%d" % int(power.get(key, 0))
 	record_label.text = records.summary(hero_id) if is_instance_valid(records) and records.has_method("summary") else "等待首次远征"
-
-
-func _metric_card(caption: String, at: Vector2) -> Label:
-	var card := Panel.new()
-	card.position = at
-	card.size = Vector2(230, 72)
-	CharacterStyle.apply_panel(card, true, 16.0, Color(UiFactory.PRIMARY, 0.78))
-	add_child(card)
-	CharacterStyle.add_label(card, caption, 13, CharacterStyle.MUTED, Vector2(14, 9), Vector2(202, 20))
-	return CharacterStyle.add_label(card, "0", 23, CharacterStyle.INK, Vector2(14, 30), Vector2(202, 34))
-
-
-func _breakdown_card(caption: String, at: Vector2) -> Label:
-	var card := Panel.new()
-	card.position = at
-	card.size = Vector2(110, 68)
-	CharacterStyle.apply_panel(card, false, 14.0, Color(UiFactory.PRIMARY, 0.82))
-	add_child(card)
-	CharacterStyle.add_label(card, caption, 12, CharacterStyle.MUTED, Vector2(8, 6), Vector2(94, 20), HORIZONTAL_ALIGNMENT_CENTER)
-	return CharacterStyle.add_label(card, "0", 19, CharacterStyle.INK, Vector2(8, 28), Vector2(94, 30), HORIZONTAL_ALIGNMENT_CENTER)

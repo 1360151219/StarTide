@@ -59,7 +59,7 @@ func present(
 ) -> void:
 	detail_icon.texture = entry["texture"]
 	detail_icon.modulate = Color.WHITE if discovered else Color(0.12, 0.2, 0.19, 0.45)
-	detail_title.text = entry["name"] if discovered else "尚未发现"
+	detail_title.text = entry["name"] if discovered else "？？？"
 	detail_title.add_theme_color_override("font_color", UiFactory.INK)
 	detail_subtitle.text = entry["subtitle"] if discovered else "这条记录还藏在远征途中"
 	detail_subtitle.add_theme_color_override("font_color", accent)
@@ -86,10 +86,10 @@ func _build_header(panel: Panel) -> void:
 	record_mark.size = Vector2(160, 24)
 	panel.add_child(record_mark)
 	var close_button := Button.new()
-	close_button.position = Vector2(412, 16)
-	close_button.size = Vector2(60, 48)
-	close_button.text = "×"
-	close_button.add_theme_font_size_override("font_size", 25)
+	close_button.position = Vector2(388, 16)
+	close_button.size = Vector2(84, 48)
+	close_button.text = "收起"
+	close_button.add_theme_font_size_override("font_size", 14)
 	SunlitCardStyle.apply_button(close_button, false, UiFactory.PRIMARY)
 	close_button.pressed.connect(close_requested.emit)
 	panel.add_child(close_button)
@@ -146,7 +146,7 @@ func _build_footer(panel: Panel) -> void:
 	back_button.size = Vector2(440, 52)
 	back_button.text = "返回收藏"
 	back_button.add_theme_font_size_override("font_size", 18)
-	SunlitCardStyle.apply_button(back_button, true, UiFactory.PRIMARY)
+	SunlitCardStyle.apply_button(back_button, false, UiFactory.PRIMARY)
 	back_button.pressed.connect(close_requested.emit)
 	panel.add_child(back_button)
 

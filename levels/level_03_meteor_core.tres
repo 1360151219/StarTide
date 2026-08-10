@@ -113,13 +113,13 @@ spawn_distance_min = 520.0
 spawn_distance_max = 620.0
 elite_spawn_distance_min = 470.0
 elite_spawn_distance_max = 520.0
-background_color = Color(0.61, 0.31, 0.34, 1)
-floor_tint = Color(0.84, 0.76, 0.78, 0.94)
+background_color = Color(0.38, 0.4, 0.46, 1)
+floor_tint = Color(0.98, 0.99, 1, 0.98)
 border_color = Color(0.3, 0.83, 0.79, 0.82)
 glow_color = Color(0.35, 0.93, 0.86, 0.065)
-scene_saturation = 0.66
-scene_exposure = 0.91
-decoration_count = 64
+scene_saturation = 0.7
+scene_exposure = 1.04
+decoration_count = 40
 environment_particle_color = Color(0.72, 1, 0.91, 0.6)
 
 [sub_resource type="Resource" id="FirstClearEquipmentEntry"]

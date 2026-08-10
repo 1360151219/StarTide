@@ -21,16 +21,21 @@ static func normalize(raw_choice, upgrade_system: RefCounted) -> Dictionary:
 
 
 static func view_model(choice: Dictionary) -> Dictionary:
+	var kind := str(choice.get("kind", ""))
 	var special := _special_text(choice)
+	var rarity_level := 3 if special == "终极进化" else (2 if kind in ["skill_branch", "relic_upgrade"] else 1)
 	return {
 		"icon": _icon(choice),
-		"type": _type_text(str(choice.get("kind", ""))),
+		"kind": kind,
+		"shape": _shape_id(kind),
+		"type": _type_text(kind),
 		"name": _name_text(choice),
 		"description": str(choice.get("description", "")),
 		"metrics": _metrics(choice),
 		"special": special,
-		"highlighted": not special.is_empty(),
-		"branch": str(choice.get("kind", "")) == "skill_branch",
+		"highlighted": rarity_level == 3,
+		"branch": kind == "skill_branch",
+		"rarity_level": rarity_level,
 	}
 
 
@@ -59,12 +64,20 @@ static func _type_text(kind: String) -> String:
 			return "星辉强化"
 
 
+static func _shape_id(kind: String) -> String:
+	if kind == "relic_upgrade":
+		return "relic"
+	if kind == "utility_recovery":
+		return "supply"
+	return "skill"
+
+
 static func _name_text(choice: Dictionary) -> String:
 	var title_text := str(choice.get("title", "未知强化"))
 	var kind := str(choice.get("kind", ""))
 	var target_level := int(choice.get("target_level", 0))
 	if kind == "skill_upgrade" and target_level > 0 and not title_text.begins_with("终极"):
-		return "%s  ·  Lv.%d" % [title_text, target_level]
+		return "%s  ·  %s" % [title_text, _level_mark(target_level)]
 	return title_text
 
 
@@ -97,7 +110,7 @@ static func _metrics(choice: Dictionary) -> Array[Dictionary]:
 static func _skill_metrics(skill_id: String, target_level: int) -> Array[Dictionary]:
 	var skill := SkillCatalog.skill(skill_id)
 	if skill.is_empty() or not skill.has("runtime"):
-		return [_metric("等级", "Lv.%s" % _level_mark(target_level), "level")]
+		return [_metric("等级", _level_mark(target_level), "level")]
 	var result: Array[Dictionary] = []
 	var definitions := [
 		["count", "数量", "level"], ["damage", "伤害", "enemy"], ["healing", "恢复", "heal"],
@@ -118,13 +131,13 @@ static func _skill_metrics(skill_id: String, target_level: int) -> Array[Diction
 		if result.size() >= 3:
 			break
 	if result.is_empty():
-		result.append(_metric("等级", "Lv.%s" % _level_mark(target_level), "level"))
+		result.append(_metric("等级", _level_mark(target_level), "level"))
 	return result
 
 
 static func _branch_metrics(skill_id: String, branch_id: String, target_level: int) -> Array[Dictionary]:
 	var branch := SkillCatalog.branch(skill_id, branch_id)
-	var result: Array[Dictionary] = [_metric("阶段", "Lv.%s" % _level_mark(target_level), "level")]
+	var result: Array[Dictionary] = [_metric("阶段", _level_mark(target_level), "level")]
 	for tag in branch.get("visual_tags", []):
 		result.append(_metric("特性" if result.size() == 1 else "定位", str(tag), "confirm" if result.size() == 1 else "expedition"))
 		if result.size() >= 3:
@@ -135,7 +148,7 @@ static func _branch_metrics(skill_id: String, branch_id: String, target_level: i
 static func _relic_metrics(relic_id: String, target_level: int) -> Array[Dictionary]:
 	var relic := RelicCatalog.relic(relic_id)
 	if relic.is_empty():
-		return [_metric("等级", "Lv.%s" % _level_mark(target_level), "level")]
+		return [_metric("等级", _level_mark(target_level), "level")]
 	var modifiers: Dictionary = relic.get("modifiers_per_level", {})
 	var result: Array[Dictionary] = []
 	var seen_labels := {}
@@ -153,7 +166,7 @@ static func _relic_metrics(relic_id: String, target_level: int) -> Array[Diction
 	if healing > 0.0 and result.size() < 3:
 		result.append(_metric("恢复", "+%.0f" % healing, "heal"))
 	if result.is_empty():
-		result.append(_metric("等级", "Lv.%s" % _level_mark(target_level), "level"))
+		result.append(_metric("等级", _level_mark(target_level), "level"))
 	return result
 
 
@@ -174,7 +187,7 @@ static func _transition(before_text: String, after_text: String, before: float) 
 
 
 static func _level_mark(level: int) -> String:
-	return ["0", "I", "II", "III"][clampi(level, 0, 3)]
+	return ["0", "I", "II", "MAX"][clampi(level, 0, 3)]
 
 
 static func _modifier_name(key: String) -> String:

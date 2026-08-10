@@ -16,8 +16,8 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(90, 88)
 	focus_mode = Control.FOCUS_ALL
 	icon_view = TextureRect.new()
-	icon_view.position = Vector2(19, 20)
-	icon_view.size = Vector2(52, 44)
+	icon_view.position = Vector2(21, 22)
+	icon_view.size = Vector2(48, 40)
 	icon_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_view.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -26,8 +26,8 @@ func _ready() -> void:
 	empty_mark.position = Vector2(19, 20)
 	empty_mark.size = Vector2(52, 44)
 	add_child(empty_mark)
-	slot_label = _label(Vector2(6, 3), Vector2(78, 18), 12)
-	item_label = _label(Vector2(5, 66), Vector2(80, 18), 11)
+	slot_label = _label(Vector2(6, 2), Vector2(78, 20), 14)
+	item_label = _label(Vector2(5, 64), Vector2(80, 22), 14)
 
 
 func present(target_slot_id: String, item: Dictionary) -> void:

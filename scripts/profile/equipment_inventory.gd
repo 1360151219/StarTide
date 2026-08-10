@@ -128,7 +128,7 @@ func upgrade(target_instance_id: String, material_instance_id: String) -> Dictio
 	target["level"] = int(target["level"]) + 1
 	items[target_instance_id] = target
 	items.erase(material_instance_id)
-	return _result(true, "装备升级至 Lv.%d" % target["level"], {"instance_id": target_instance_id, "consumed_instance_id": material_instance_id, "level": target["level"]})
+	return _result(true, "装备升级至 LV.%d" % target["level"], {"instance_id": target_instance_id, "consumed_instance_id": material_instance_id, "level": target["level"]})
 
 
 func set_locked(instance_id: String, locked: bool) -> Dictionary:

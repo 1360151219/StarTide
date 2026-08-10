@@ -3,7 +3,8 @@ extends Node2D
 signal state_changed
 signal stage_banner_requested(title: String, subtitle: String, duration: float)
 signal upgrade_requested(player_level: int, choices: Array, upgrade_system: RefCounted, build_state: RefCounted)
-signal player_hit_feedback_requested(damage: float)
+signal player_hit_feedback_requested(damage: float, source_direction: Vector2)
+signal pickup_collected(pickup_id: String)
 signal finished(presentation: Dictionary)
 
 const RunState = preload("res://scripts/run/run_state.gd")
@@ -76,6 +77,7 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	pickups.experience_collected.connect(add_experience)
 	pickups.heal_requested.connect(player.heal)
 	pickups.pickup_collected.connect(func(pickup_id: String) -> void: records.discover_content("pickups", pickup_id))
+	pickups.pickup_collected.connect(pickup_collected.emit)
 	records.discover_content("skills", str(build_state.skill_slots[0]))
 	enemies.spawn_initial()
 	var stage := stage_director.current_stage()

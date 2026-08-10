@@ -21,6 +21,7 @@ var orbit_phase := 0.0
 var pulse_timer := 1.0
 var pulse_visual_time := 0.0
 var pulse_center := Vector2.ZERO
+var pulse_direction := Vector2.RIGHT
 var timeline := CombatTimeline.new()
 
 
@@ -109,7 +110,7 @@ func _update_sun_orbit(delta: float) -> void:
 			if is_instance_valid(enemy) and enemy.position.distance_to(orb_position) <= enemy.radius + orb_radius:
 				hit_anything = true
 				effects.add_effect(enemy.position, 34.0, Color("ffbf45"), 0.24, "sun_hit")
-				enemies.damage_enemy(enemy, data["damage"][skill_level] * _multiplier("sun_orbit", "damage_multiplier"), Color("ffd765"))
+				enemies.damage_enemy(enemy, data["damage"][skill_level] * _multiplier("sun_orbit", "damage_multiplier"), Color("ffd765"), orb_position)
 	if hit_anything:
 		audio.play_sfx("skill_sun_orbit", -5.0, rng.randf_range(0.96, 1.04))
 
@@ -125,6 +126,7 @@ func _update_frost_tide(delta: float, elapsed: float) -> void:
 	pulse_timer = data["cooldown"][skill_level] * _multiplier("frost_tide", "cooldown_multiplier")
 	pulse_visual_time = FROST_TRAVEL_TIME
 	pulse_center = player.position
+	pulse_direction = player.facing.normalized() if player.facing.length_squared() > 0.0001 else Vector2.RIGHT
 	skill_released.emit("frost_tide")
 	audio.play_sfx("skill_frost_tide", 0.0, rng.randf_range(0.97, 1.03))
 	var radius: float = data["radius"][skill_level] * _multiplier("frost_tide", "range_multiplier") * _branch_multiplier("frost_tide", "radius_multiplier")
@@ -150,7 +152,7 @@ func _resolve_frost_hit(enemy: Node, center: Vector2, radius: float, damage: flo
 		return
 	enemy.apply_slow(slow_factor, slow_duration, impact_elapsed)
 	effects.add_effect(enemy.position, enemy.radius + 18.0, Color("9ff4ff"), 0.34, "frost_hit")
-	enemies.damage_enemy(enemy, damage, Color("9ff4ff"))
+	enemies.damage_enemy(enemy, damage, Color("9ff4ff"), center)
 	audio.play_sfx("frost_hit", -4.0, rng.randf_range(0.96, 1.05))
 
 

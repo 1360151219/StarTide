@@ -88,7 +88,9 @@ func _on_process_frame() -> void:
 	_require(str(records.equipment_loadout_snapshot("star_warden")["weapon"]) == str(rare["instance_id"]), "确认装备没有写入装配")
 	_require(
 		equipment.hero_stage.power_delta_label.visible
-		and equipment.hero_stage.power_delta_label.text.begins_with("▲")
+		and equipment.hero_stage.power_delta_label.text.begins_with("战力 +")
+		and equipment.hero_stage.power_delta_glyph.glyph_id == "up"
+		and equipment.hero_stage.power_delta_feedback.visible
 		and equipment.hero_stage.power_tween != null,
 		"战力提升后没有播放数值增长提示动画"
 	)
@@ -110,7 +112,15 @@ func _on_process_frame() -> void:
 			break
 	_require(locked_index >= 0, "未发现技能没有显示锁定图形")
 	if locked_index >= 0:
-		_require(not page.skill_panel.skill_names[locked_index].visible and not page.skill_panel.skill_buttons[locked_index].visible, "锁定技能仍重复展示名称与培养文案")
+		_require(
+			page.skill_panel.skill_locks[locked_index].size.x >= 60.0
+			and page.skill_panel.skill_locks[locked_index].position.x < page.skill_panel.skill_names[locked_index].position.x
+			and page.skill_panel.skill_names[locked_index].visible
+			and page.skill_panel.skill_names[locked_index].text == "未发现技艺"
+			and page.skill_panel.skill_effects[locked_index].text == "远征中获得后开放培养"
+			and not page.skill_panel.skill_buttons[locked_index].visible,
+			"锁定技能没有使用左侧锁徽章与连续说明行"
+		)
 	_require(page.skill_panel.status_label.text.contains("远征中发现"), "技能解锁说明没有收敛为单条全局提示")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(storage_path))
 	if not failed:

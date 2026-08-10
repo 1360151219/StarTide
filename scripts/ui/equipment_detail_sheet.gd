@@ -24,15 +24,15 @@ var material_instance_id := ""
 
 
 func _ready() -> void:
-	position = Vector2(10, 8)
-	size = Vector2(484, 282)
+	position = Vector2(4, 4)
+	size = Vector2(496, 284)
 	z_index = 20
-	CharacterStyle.apply_panel(self, false, 22.0)
+	CharacterStyle.apply_continuous_panel(self, UiFactory.SURFACE, Color(UiFactory.PRIMARY, 0.72), 8.0)
 	var close_button := Button.new()
-	close_button.position = Vector2(424, 10)
-	close_button.size = Vector2(48, 48)
-	close_button.text = "×"
-	close_button.add_theme_font_size_override("font_size", 24)
+	close_button.position = Vector2(410, 10)
+	close_button.size = Vector2(72, 48)
+	close_button.text = "收起"
+	close_button.add_theme_font_size_override("font_size", 14)
 	CharacterStyle.apply_segment(close_button, false)
 	close_button.pressed.connect(_close)
 	add_child(close_button)
@@ -48,7 +48,7 @@ func _ready() -> void:
 	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	stats_label = _label(Vector2(20, 148), Vector2(444, 46), 15, CharacterStyle.INK)
 	stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	compare_label = _label(Vector2(20, 184), Vector2(444, 28), 13, CharacterStyle.MUTED)
+	compare_label = _label(Vector2(20, 184), Vector2(456, 28), 14, CharacterStyle.MUTED)
 	compare_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lock_button = Button.new()
 	lock_button.position = Vector2(20, 216)
@@ -59,7 +59,7 @@ func _ready() -> void:
 	upgrade_button = Button.new()
 	upgrade_button.position = Vector2(132, 216)
 	upgrade_button.size = Vector2(166, 50)
-	upgrade_button.add_theme_font_size_override("font_size", 13)
+	upgrade_button.add_theme_font_size_override("font_size", 14)
 	upgrade_button.pressed.connect(_upgrade)
 	add_child(upgrade_button)
 	action_button = Button.new()
@@ -76,10 +76,11 @@ func show_item(target: Dictionary, owner_name: String, action_text: String, can_
 	material_instance_id = str(upgrade_material.get("instance_id", ""))
 	icon_view.texture = item.get("icon")
 	var rarity_id := str(item.get("rarity", "common"))
-	add_theme_stylebox_override("panel", CharacterStyle.quality_card(rarity_id, 22.0))
-	SunlitCardStyle.decorate(self, CharacterStyle.rarity_border(rarity_id), 22.0, false, true, UiFactory.ACCENT, "canvas", CharacterStyle.rarity_level(rarity_id))
+	add_theme_stylebox_override("panel", CharacterStyle.quality_card(rarity_id, 8.0))
+	SunlitCardStyle.decorate(self, CharacterStyle.rarity_border(rarity_id), 8.0, false, true, UiFactory.ACCENT, "canvas", CharacterStyle.rarity_level(rarity_id))
+	CharacterStyle.apply_quality_structure(self, rarity_id, 8.0)
 	name_label.text = str(item.get("name", "未知装备"))
-	meta_label.text = "%s · %s · Lv.%d/%d" % [
+	meta_label.text = "%s · %s · LV.%d / %d" % [
 		EquipmentCatalog.rarity_name(rarity_id), EquipmentCatalog.slot_name(str(item.get("slot", ""))),
 		int(item.get("level", 1)), int(item.get("max_level", 1)),
 	]
@@ -90,11 +91,11 @@ func show_item(target: Dictionary, owner_name: String, action_text: String, can_
 	lock_button.text = "解锁" if bool(item.get("locked", false)) else "锁定"
 	CharacterStyle.apply_segment(lock_button, false)
 	var at_max := int(item.get("level", 1)) >= int(item.get("max_level", 1))
-	upgrade_button.text = "已满级" if at_max else ("缺少同名装备" if material_instance_id.is_empty() else "升级 Lv.%d\n耗%s Lv.%d" % [
+	upgrade_button.text = "已满级" if at_max else ("缺少同名装备" if material_instance_id.is_empty() else "升级 LV.%d\n耗%s LV.%d" % [
 		int(item.get("level", 1)) + 1, EquipmentCatalog.rarity_name(str(upgrade_material.get("rarity", "common"))), int(upgrade_material.get("level", 1)),
 	])
 	upgrade_button.disabled = at_max or material_instance_id.is_empty()
-	upgrade_button.tooltip_text = "" if material_instance_id.is_empty() else "消耗%s %s Lv.%d" % [
+	upgrade_button.tooltip_text = "" if material_instance_id.is_empty() else "消耗%s %s LV.%d" % [
 		EquipmentCatalog.rarity_name(str(upgrade_material.get("rarity", "common"))),
 		upgrade_material.get("name", "同名装备"), int(upgrade_material.get("level", 1)),
 	]

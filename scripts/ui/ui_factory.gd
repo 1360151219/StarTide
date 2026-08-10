@@ -1,6 +1,7 @@
 extends RefCounted
 
-const HOME_SERIF := preload("res://assets/fonts/NotoSerifSC-UI.otf")
+const CEREMONIAL_SERIF := preload("res://assets/fonts/NotoSerifSC-UI.otf")
+const EXPEDITION_HEADING := preload("res://assets/fonts/SmileySans-Oblique.otf")
 
 const BACKGROUND := Color("ddefe7")
 const SURFACE := Color("fff6e2")
@@ -35,11 +36,15 @@ const RADIUS_M := 10.0
 const RADIUS_L := 14.0
 
 
-static func home_serif(weight := 400) -> FontVariation:
+static func ceremonial_font(weight := 400) -> FontVariation:
 	var font := FontVariation.new()
-	font.base_font = HOME_SERIF
+	font.base_font = CEREMONIAL_SERIF
 	font.variation_opentype = {"wght": weight}
 	return font
+
+
+static func expedition_heading_font() -> Font:
+	return EXPEDITION_HEADING
 
 
 static func label(text: String, font_size: int, color: Color, outlined := true) -> Label:
@@ -58,19 +63,20 @@ static func surface_label(text: String, font_size: int, color := INK) -> Label:
 	return label(text, font_size, color, false)
 
 
-static func apply_inner_page_title(node: Label, font_size := 34) -> void:
-	node.add_theme_font_override("font", home_serif(800))
+static func apply_key_heading(node: Label, font_size := 22, color := INK) -> void:
+	node.add_theme_font_override("font", expedition_heading_font())
 	node.add_theme_font_size_override("font_size", font_size)
-	node.add_theme_color_override("font_color", INK)
+	node.add_theme_color_override("font_color", color)
 	node.add_theme_constant_override("outline_size", 0)
 	node.add_theme_constant_override("shadow_outline_size", 0)
 
 
+static func apply_inner_page_title(node: Label, font_size := 34) -> void:
+	apply_key_heading(node, font_size, INK)
+
+
 static func apply_level_title(node: Label, font_size := 25) -> void:
-	node.add_theme_font_override("font", home_serif(500))
-	node.add_theme_font_size_override("font_size", font_size)
-	node.add_theme_color_override("font_color", INK)
-	node.add_theme_constant_override("outline_size", 0)
+	apply_key_heading(node, font_size, INK)
 
 
 static func panel_style(background: Color, radius: float, border := Color.TRANSPARENT) -> StyleBoxFlat:

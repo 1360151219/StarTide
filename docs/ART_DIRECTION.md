@@ -1,6 +1,6 @@
 # 《星潮守望者》方案 D 美术方向：日光远征动画
 
-> 状态：正式制作基准 v1.0  
+> 状态：正式制作基准 v1.1
 > 适用范围：战斗、局外界面、角色、怪物、装备、技能、特效、音频与宣传静帧  
 > 上游依据：[视觉审计](./VISUAL_AUDIT.md) · [视觉方向](./VISUAL_DIRECTIONS.md)  
 > 审阅参考：[战斗](./references/battle-reference.png) · [三选一](./references/reward-reference.png) · [远征地图](./references/map-reference.png)
@@ -92,15 +92,19 @@
 
 | Role | 字体 | 540×960 基准字号 | 规则 |
 |---|---|---:|---|
-| Display | `assets/fonts/NotoSerifSC-UI.otf`，700～900 | 32～44 px | 游戏名、胜利、章节；只用于短句 |
-| UI Heading | `assets/fonts/NotoSansSC-Regular.otf`，600～700 | 20～28 px | 页面、面板和选择标题 |
-| Body | `assets/fonts/NotoSansSC-Regular.otf`，400～500 | 16～18 px | 正文与说明；最小功能字号 14 px |
-| Numeric | Noto Sans SC，700，等宽数字 | 18～30 px | 生命、时间、击败、伤害和等级 |
-| Card Cost | Noto Sans SC，800 | 20～24 px | 仅为真实费用机制预留；当前禁止虚构费用 |
+| Ceremonial Display | `assets/fonts/NotoSerifSC-UI.otf` | 32～44 px | 胜利、章节和仪式性短标题；不进入常规属性区 |
+| Expedition Heading | `assets/fonts/SmileySans-Oblique.otf` | 22～36 px | 页面、关卡名、主操作；单行且不超过 8 个汉字 |
+| Key Label | `assets/fonts/SmileySans-Oblique.otf` | 18～24 px | 短属性标题与强化标题；不承载段落或长说明 |
+| Body | `assets/fonts/NotoSansSC-Regular.otf` | 16～18 px | 正文、按钮说明与字段名；最小功能字号 14 px |
+| Numeric | Noto Sans SC，固定宽容器 | 18～30 px | 生命、时间、战力、击败、伤害和等级 |
+| Card Cost | Noto Sans SC | 20～24 px | 仅为真实费用机制预留；当前禁止虚构费用 |
 
 - 数字格式固定为 `LV.8`、`06:42`、`73 / 100`、`+18%`。
+- Smiley Sans 使用发行包原始字形，不模拟额外粗体；18 px 以下回退 Noto Sans SC。
+- 关键属性采用“字段名左对齐、数字固定列右对齐”，不得依靠空格拼接列。
+- 文字距面板结构线至少 12 px；小图标与文字间距 8 px；文字不得与扣件、绳结或压线相交。
 - 文字落在场景上时使用实色底签或局部压暗，不依赖多层描边。
-- 24 px 以下禁用纹理填充、镂空或装饰性字体。
+- Noto Serif SC 在 24 px 以下禁用；Smiley Sans 在 18 px 以下禁用；所有小字号禁用纹理填充和镂空。
 - 不把文案、数字、等级和品质烘焙进生成图片。
 
 # Character and Monster Preservation

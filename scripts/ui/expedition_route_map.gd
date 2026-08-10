@@ -3,13 +3,12 @@ extends Control
 signal level_selected(level_id: String)
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
-const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
 const RoutePin = preload("res://scripts/ui/expedition_route_pin.gd")
 const ExpeditionBrief = preload("res://scripts/ui/expedition_brief.gd")
 const SwipeGesture = preload("res://scripts/ui/swipe_gesture.gd")
 const HeroRigScene = preload("res://scenes/presentation/hero_rig_2d.tscn")
 const MAP_TEXTURE := preload("res://assets/art/sunlit/backgrounds/expedition_route_map.png")
+const COMPASS_BANNER := preload("res://assets/art/ui/home/home_compass_banner.png")
 const PIN_CENTERS := [Vector2(270, 614), Vector2(428, 414), Vector2(298, 176)]
 const HERO_POSITIONS := [Vector2(155, 628), Vector2(338, 494), Vector2(225, 318)]
 const PIN_COLORS := [UiFactory.ACCENT, UiFactory.PRIMARY, UiFactory.DANGER]
@@ -21,10 +20,10 @@ var current_index := 0
 var route_pins: Array[Button] = []
 var scene_texture: TextureRect
 var map_frame: Control
+var compass_banner: TextureRect
 var preview_hero: HeroRig2D
 var title_label: Label
 var detail_label: Label
-var page_label: Label
 var expedition_brief: Control
 var animation_player: AnimationPlayer
 var requested_active := true
@@ -76,7 +75,6 @@ func move_by(direction: int) -> void:
 
 func show_level(level: LevelConfig, unlocked: bool) -> void:
 	title_label.text = level.display_name
-	page_label.text = "%d / %d" % [current_index + 1, levels.size()]
 	var active_snapshot: Dictionary = records.get_permanent_snapshot(records.get_active_hero_id())
 	var power := int(active_snapshot.get("power", {}).get("total", 0))
 	expedition_brief.configure(level, power, unlocked, records.has_cleared_level(level.level_id))
@@ -129,48 +127,34 @@ func _build_background() -> void:
 	scene_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	scene_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	scene_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scene_texture.visible = false
 	add_child(scene_texture)
 	map_frame = Control.new()
 	map_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(map_frame)
 
-
 func _build_compass() -> void:
-	var plate := Panel.new()
-	plate.position = Vector2(16, 18)
-	plate.size = Vector2(72, 72)
-	SunlitCardStyle.apply_panel(plate, UiFactory.HUD_SURFACE, UiFactory.ACCENT, 36.0, true, true, "enamel", 2)
-	add_child(plate)
-	var glyph := SunlitGlyph.new()
-	glyph.glyph_id = "expedition"
-	glyph.set_selected(true)
-	glyph.position = Vector2(18, 18)
-	glyph.size = Vector2(36, 36)
-	plate.add_child(glyph)
+	compass_banner = TextureRect.new()
+	compass_banner.name = "CompassBanner"
+	compass_banner.position = Vector2(8, 0)
+	compass_banner.size = Vector2(104, 144)
+	compass_banner.texture = COMPASS_BANNER
+	compass_banner.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	compass_banner.stretch_mode = TextureRect.STRETCH_SCALE
+	compass_banner.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	compass_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	compass_banner.z_index = 9
+	add_child(compass_banner)
 
 
 func _build_information() -> void:
-	var title_plate := Panel.new()
-	title_plate.position = Vector2(32, 674)
-	title_plate.size = Vector2(282, 48)
-	SunlitCardStyle.apply_panel(title_plate, Color(UiFactory.SURFACE, 0.98), UiFactory.ACCENT, 8.0, true, true, "map_tag")
-	add_child(title_plate)
-	title_label = UiFactory.surface_label("风铃草原", 22, UiFactory.INK)
-	title_label.position = Vector2(18, 7)
-	title_label.size = Vector2(190, 34)
-	title_plate.add_child(title_label)
-	page_label = UiFactory.surface_label("1 / 3", 14, UiFactory.PRIMARY_DARK)
-	page_label.position = Vector2(210, 9)
-	page_label.size = Vector2(54, 30)
-	page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	title_plate.add_child(page_label)
 	expedition_brief = ExpeditionBrief.new()
 	expedition_brief._ensure_built()
-	expedition_brief.position = Vector2(18, 720)
-	expedition_brief.scale = Vector2.ONE * 0.84
+	expedition_brief.position = Vector2(4, 700)
 	expedition_brief.z_index = 8
 	add_child(expedition_brief)
+	title_label = expedition_brief.title_label
 	detail_label = expedition_brief.current_power_label
 
 

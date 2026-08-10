@@ -157,14 +157,14 @@ func damage_area(center: Vector2, radius: float, damage: float, excluded: Node =
 		if not is_combat_active():
 			return
 		if is_instance_valid(enemy) and enemy != excluded and enemy.position.distance_to(center) <= radius + enemy.radius:
-			damage_enemy(enemy, damage, Color("ffb45c"))
+			damage_enemy(enemy, damage, Color("ffb45c"), center)
 
 
-func damage_enemy(enemy: Node, damage: float, number_color := Color("e6fbff")) -> void:
+func damage_enemy(enemy: Node, damage: float, number_color := Color("e6fbff"), source_position := Vector2.INF) -> void:
 	if not is_combat_active() or not is_active(enemy):
 		return
 	effects.add_damage_number(enemy.position - Vector2(18, enemy.radius + 4.0), damage, number_color, false, enemy.get_instance_id())
-	if enemy.take_damage(damage):
+	if enemy.take_damage(damage, source_position):
 		audio.play_sfx("enemy_defeat", -2.0, rng.randf_range(0.9, 1.1))
 		var defeat_kind := "grub_defeat" if enemy.kind == "green_grub" else "defeat"
 		effects.add_effect(enemy.position, enemy.radius + 24.0, enemy.color, 0.42, defeat_kind)

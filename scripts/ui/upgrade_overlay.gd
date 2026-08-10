@@ -23,6 +23,7 @@ var screen_overlay: ColorRect
 var design_frame: Control
 var reroll_button: Button
 var title_panel: Panel
+var level_plate: Panel
 var reveal_tween: Tween
 var selection_tween: Tween
 var selection_locked := false
@@ -47,7 +48,7 @@ func show_choices(player_level: int, choices: Array, upgrade_system: RefCounted,
 		selection_tween.kill()
 	selection_locked = false
 	pending_choice_id = ""
-	title.text = "Lv.%d" % player_level
+	title.text = "LV.%d" % player_level
 	for index in range(3):
 		var card = choice_cards[index]
 		card.disabled = false
@@ -74,7 +75,7 @@ func show_choices(player_level: int, choices: Array, upgrade_system: RefCounted,
 
 func _build_background() -> void:
 	screen_overlay = ColorRect.new()
-	screen_overlay.color = Color(0.006, 0.07, 0.09, 0.72)
+	screen_overlay.color = Color(0.006, 0.07, 0.09, 0.54)
 	screen_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(screen_overlay)
 	ScreenLayout.fill(screen_overlay)
@@ -82,31 +83,33 @@ func _build_background() -> void:
 
 func _build_heading() -> void:
 	title_panel = Panel.new()
-	title_panel.position = Vector2(52, 64)
-	title_panel.size = Vector2(436, 98)
+	title_panel.position = Vector2(52, 66)
+	title_panel.size = Vector2(436, 92)
 	title_panel.pivot_offset = title_panel.size * 0.5
-	SunlitCardStyle.apply_panel(title_panel, Color(UiFactory.SURFACE, 0.97), Color("9b7544"), 20.0, true, false, "map_tag")
+	SunlitCardStyle.apply_panel(title_panel, Color(UiFactory.SURFACE, 0.96), Color("9b7544"), 10.0, true, false, "map_tag")
 	design_frame.add_child(title_panel)
 	var ornament := UpgradeHeaderOrnament.new()
 	ornament.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title_panel.add_child(ornament)
-	var level_plate := Panel.new()
-	level_plate.position = Vector2(151, 15)
+	level_plate = Panel.new()
+	level_plate.position = Vector2(151, 11)
 	level_plate.size = Vector2(134, 70)
+	level_plate.pivot_offset = level_plate.size * 0.5
 	SunlitCardStyle.apply_panel(level_plate, UiFactory.HUD_SURFACE_ALT, UiFactory.ACCENT, 8.0, true, true, "enamel", 2)
 	title_panel.add_child(level_plate)
-	title = _surface_label("Lv.1", 28, UiFactory.HUD_TEXT)
+	title = _surface_label("LV.1", 28, UiFactory.HUD_TEXT)
 	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	level_plate.add_child(title)
 	var heading := _surface_label("远征强化", 18, INK)
-	heading.position = Vector2(20, 32)
+	UiFactory.apply_key_heading(heading, 18, INK)
+	heading.position = Vector2(20, 29)
 	heading.size = Vector2(120, 32)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_panel.add_child(heading)
 	var hint := _surface_label("选择 1 项", 16, MUTED_INK)
-	hint.position = Vector2(296, 34)
+	hint.position = Vector2(296, 31)
 	hint.size = Vector2(120, 28)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_panel.add_child(hint)
@@ -189,17 +192,23 @@ func restore_selection() -> void:
 func _play_reveal() -> void:
 	if reveal_tween != null and reveal_tween.is_valid():
 		reveal_tween.kill()
-	title_panel.scale = Vector2(0.96, 0.96)
+	title_panel.scale = Vector2.ONE
 	title_panel.modulate.a = 1.0
+	level_plate.scale = Vector2(0.84, 0.84)
 	for button in buttons:
-		button.modulate.a = 1.0
+		var rest_position: Vector2 = button.get_meta("rest_position", button.position)
+		button.position = rest_position + Vector2(0, 16)
+		button.modulate.a = 0.0
 		button.scale = Vector2.ONE
-		button.position.x = 38.0
 	reveal_tween = create_tween().set_parallel(true)
 	reveal_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	reveal_tween.tween_property(title_panel, "scale", Vector2.ONE, 0.24)
+	reveal_tween.tween_property(level_plate, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK)
 	for index in range(buttons.size()):
-		reveal_tween.tween_property(buttons[index], "position:x", 30.0, 0.22).set_delay(0.05 + index * 0.05)
+		var card := buttons[index]
+		var target: Vector2 = card.get_meta("rest_position", card.position - Vector2(0, 16))
+		var delay := 0.05 + index * 0.045
+		reveal_tween.tween_property(card, "position", target, 0.18).set_delay(delay)
+		reveal_tween.tween_property(card, "modulate:a", 1.0, 0.14).set_delay(delay)
 
 
 func _surface_label(text: String, font_size: int, color: Color) -> Label:

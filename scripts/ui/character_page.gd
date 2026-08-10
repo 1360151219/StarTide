@@ -103,7 +103,7 @@ func _build_hero_switcher() -> void:
 	plate.name = "HeroSwitcher"
 	plate.position = Vector2(18, HERO_SWITCHER_Y)
 	plate.size = Vector2(504, 46)
-	CharacterStyle.apply_surface_panel(plate, UiFactory.SURFACE_ALT, 18.0, UiFactory.PRIMARY)
+	CharacterStyle.apply_continuous_panel(plate, Color(UiFactory.SURFACE_ALT, 0.72), Color(UiFactory.PRIMARY, 0.5), 6.0)
 	add_child(plate)
 	var row := HBoxContainer.new()
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -128,7 +128,7 @@ func _build_sections() -> void:
 	var row := HBoxContainer.new()
 	row.position = Vector2(18, SECTION_TABS_Y)
 	row.size = Vector2(504, 48)
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 4)
 	add_child(row)
 	for section_id in SECTION_IDS:
 		var button := Button.new()
@@ -157,7 +157,7 @@ func _build_panels() -> void:
 
 func _refresh_hero_buttons() -> void:
 	for hero_id in hero_buttons:
-		CharacterStyle.apply_segment(hero_buttons[hero_id], hero_id == selected_hero_id)
+		CharacterStyle.apply_ribbon_tab(hero_buttons[hero_id], hero_id == selected_hero_id)
 
 
 func _update_section() -> void:
@@ -166,7 +166,7 @@ func _update_section() -> void:
 	for section_id in section_panels:
 		var selected: bool = section_id == current_section
 		section_panels[section_id].visible = selected
-		CharacterStyle.apply_segment(section_buttons[section_id], selected)
+		CharacterStyle.apply_ribbon_tab(section_buttons[section_id], selected)
 	var panel: Control = section_panels[current_section]
 	panel.position.y = PANEL_Y + 6.0
 	panel.modulate.a = 0.0

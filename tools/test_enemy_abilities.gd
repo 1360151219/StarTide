@@ -7,10 +7,10 @@ const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const RunRecords = preload("res://scripts/run_records.gd")
 const RunSession = preload("res://scripts/run/run_session.gd")
 const PlayerHitData = preload("res://scripts/combat/player_hit.gd")
+const FeedbackDirectionContract = preload("res://tools/support/combat_feedback_direction_contract.gd")
 const AbilityRules = preload("res://scripts/systems/enemy_ability_rules.gd")
 
 var failed := false
-
 
 func _initialize() -> void:
 	_test_catalog_and_level_budgets()
@@ -23,7 +23,7 @@ func _initialize() -> void:
 	_test_death_and_projectile_lifetime()
 	_test_shared_invulnerability_and_shield()
 	if not failed:
-		print("ENEMY_ABILITIES_OK abilities=%d variants=data_driven deterministic=true budgets=true swept=true shield=true cleanup=true" % EnemyAbilityCatalog.ids().size())
+		print("ENEMY_ABILITIES_OK abilities=%d variants=data_driven deterministic=true budgets=true swept=true feedback_direction=true shield=true cleanup=true" % EnemyAbilityCatalog.ids().size())
 	quit(1 if failed else 0)
 
 
@@ -107,10 +107,10 @@ func _test_bat_lock_and_projectile() -> void:
 	_require(session.enemy_projectiles.projectiles.size() == 1, "暮翼光弹没有生成敌方弹体")
 	var projectile: Node = session.enemy_projectiles.projectiles[0]
 	_require(projectile.velocity.normalized().dot(locked_direction) > 0.999, "暮翼光弹最后 0.3 秒没有锁定方向")
-	var before: float = session.player.health
+	var feedback := FeedbackDirectionContract.watch(session, projectile)
 	session.player.position = projectile.position + projectile.velocity.normalized() * 100.0
 	session.enemy_projectiles.advance(0.5)
-	_require(session.player.health < before and session.enemy_projectiles.projectiles.is_empty(), "高速敌弹连续碰撞或命中清理错误")
+	_require(session.player.health < float(feedback["health"]) and session.enemy_projectiles.projectiles.is_empty() and FeedbackDirectionContract.swept_hit_stays_on_incoming_side(session.player.position, feedback) and FeedbackDirectionContract.enemy_uses_local_source_position(enemy), "高速敌弹命中、来袭侧反馈或敌人局部坐标方向错误")
 	EnemyAbilityCatalog.ABILITIES.erase("test_bolt_variant")
 	session.free()
 

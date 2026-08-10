@@ -168,8 +168,8 @@ func _draw_volcano_decor(at: Vector2, kind: int, variant: int) -> void:
 			for offset in [Vector2(-9, 4), Vector2(0, -10), Vector2(10, 3)]:
 				draw_colored_polygon(PackedVector2Array([at + offset + Vector2(-5, 7), at + offset + Vector2(0, -8), at + offset + Vector2(6, 7)]), Color("62ded6"))
 		1:
-			draw_line(at + Vector2(-19, -8), at + Vector2(18, 9), Color("ffc65a", 0.9), 7.0)
-			draw_line(at + Vector2(-18, -8), at + Vector2(17, 8), Color("fff08a", 0.8), 2.0)
+			draw_line(at + Vector2(-19, -8), at + Vector2(18, 9), Color("8f5f68", 0.36), 3.0)
+			draw_line(at + Vector2(-18, -8), at + Vector2(17, 8), Color("c6887d", 0.3), 1.0)
 		2:
 			for radius in [4.0, 7.0, 10.0]:
 				draw_arc(at + Vector2(radius * 0.7, -radius), radius, 0.0, TAU, 16, Color("d9fff0", 0.58), 2.0)
@@ -179,7 +179,8 @@ func _draw_volcano_decor(at: Vector2, kind: int, variant: int) -> void:
 		4:
 			draw_colored_polygon(PackedVector2Array([at + Vector2(-8, 8), at + Vector2(-2, -13), at + Vector2(8, -4), at + Vector2(5, 9)]), Color("65d9d0"))
 		5:
-			_draw_star(at, 11.0, Color("ffe174", 0.82))
+			for offset in [-7.0, 0.0, 7.0]:
+				draw_line(at + Vector2(offset, 8), at + Vector2(offset * 0.45, -8), Color("738d86", 0.56), 2.2)
 		6:
 			draw_arc(at, 15.0, 0.0, 1.8, 12, Color("f7ad78"), 2.4)
 			draw_line(at, at + Vector2(-12, -6), Color("f7ad78"), 2.4)

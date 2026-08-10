@@ -69,8 +69,9 @@
 
 ### 7. 字体方向
 
-- 展示标题：`NotoSerifSC-UI.otf`，用于胜利、章节和短标题。
-- 正文、按钮和数字：`NotoSansSC-Regular.otf`。
+- 仪式性展示标题：`NotoSerifSC-UI.otf`，仅用于胜利、章节和短标题。
+- 远征页面、关卡名、主操作和短属性标题：`SmileySans-Oblique.otf`，18 px 以下不得使用。
+- 正文、说明、字段名和数字：`NotoSansSC-Regular.otf`；关键数字仍使用固定宽容器，不随展示字体倾斜。
 - 战斗数字使用粗字重、固定宽容器与等宽数字特性。
 - 最小功能字号 14 px；文字、数字和品质不烘焙进图片。
 

@@ -39,6 +39,8 @@ func _draw() -> void:
 		"haste": _draw_haste(color)
 		"magnet": _draw_magnet(color)
 		"bomb": _draw_bomb(color)
+		"up": _draw_vertical_arrow(UiFactory.HEALING, true)
+		"down": _draw_vertical_arrow(UiFactory.DANGER, false)
 		_: _draw_expedition(color)
 
 
@@ -177,6 +179,20 @@ func _draw_bomb(color: Color) -> void:
 	draw_arc(Vector2(13, 16), 7.0, 0.0, TAU, 24, color, 2.0, true)
 	draw_line(Vector2(17, 10), Vector2(21, 6), color, 2.0, true)
 	draw_circle(Vector2(22, 5), 2.0, UiFactory.ACCENT)
+
+
+func _draw_vertical_arrow(color: Color, points_up: bool) -> void:
+	var points := PackedVector2Array([
+		Vector2(14, 3), Vector2(23, 12), Vector2(18, 12),
+		Vector2(18, 24), Vector2(10, 24), Vector2(10, 12), Vector2(5, 12),
+	])
+	if not points_up:
+		for index in range(points.size()):
+			points[index].y = 28.0 - points[index].y
+	draw_colored_polygon(points, Color(color, 0.24))
+	var outline := points.duplicate()
+	outline.append(points[0])
+	draw_polyline(outline, color, 2.0, true)
 
 
 func _star_points(center: Vector2, outer_radius: float, inner_radius: float, arms: int) -> PackedVector2Array:

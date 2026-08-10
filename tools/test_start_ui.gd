@@ -11,7 +11,6 @@ var frame_count := 0
 var start_payload: Array[String] = []
 var screen: CanvasLayer
 
-
 func _initialize() -> void:
 	var host := Node.new()
 	root.add_child(host)
@@ -36,11 +35,11 @@ func _on_process_frame() -> void:
 	)
 	_require(
 		screen.bottom_bar.modulate.a == 1.0
-		and screen.bottom_bar.base_texture_path().is_empty()
-		and screen.bottom_bar.selection_texture_path().is_empty()
-		and screen.bottom_bar.active_content_texture_path().is_empty()
+		and screen.bottom_bar.base_texture_path() == "res://assets/art/ui/home/nav_flag_normal.png"
+		and screen.bottom_bar.selection_texture_path() == "res://assets/art/ui/home/nav_flag_selected.png"
+		and screen.bottom_bar.active_content_texture_path() == "res://assets/art/ui/home/nav_icon_expedition.png"
 		and screen.bottom_bar.tab_plates.size() == 3,
-		"开始页没有使用方案 D 的程序化远征底栏"
+		"开始页没有使用方案 D 的独立织带旗组件"
 	)
 	var tab_plate_instances := {}
 	for page_id in screen.bottom_bar.tab_plates:
@@ -48,9 +47,11 @@ func _on_process_frame() -> void:
 	var home_shell_instances := HomeShellContract.snapshot(screen)
 	_require(
 		screen.bottom_bar.tab_plates["start"].size == Vector2(102, 104)
-		and screen.bottom_bar.tab_plates["start"].get_node_or_null("SunlitFrame") != null
+		and screen.bottom_bar.tab_plates["start"].texture.resource_path == screen.bottom_bar.selection_texture_path()
+		and screen.bottom_bar.glyphs["start"].texture.resource_path == screen.bottom_bar.active_content_texture_path()
+		and screen.bottom_bar.tab_plates["character"].position.x < screen.bottom_bar.tab_plates["start"].position.x
 		and bool(screen.bottom_bar.buttons["start"].get_meta("selected", false)),
-		"远征选中态没有使用统一帆布组件"
+		"远征选中态没有使用居中的象牙织带旗"
 	)
 	_require(screen.bottom_bar.current_page == "start" and screen.bottom_bar.buttons.size() == 3, "底部导航没有默认选中远征页")
 	_require(
@@ -59,26 +60,27 @@ func _on_process_frame() -> void:
 		and screen.bottom_bar.buttons["compendium"].text == "图鉴",
 		"远征底栏的三个主入口不完整"
 	)
-	_require(screen.route_map.animation_player.is_playing(), "远征路线动画没有播放")
+	_require(screen.route_map.animation_player.is_playing() and screen.route_map.compass_banner.texture.resource_path == "res://assets/art/ui/home/home_compass_banner.png", "远征路线动画或左上罗盘挂旗缺失")
 	_require(screen.route_map.preview_hero.has_method("play_state"), "远征路线没有接入动态英雄")
 	_require(screen.route_map.phase > 0.0, "远征路线画面没有随时间更新")
 	_require(screen.route_map.route_pins.size() == 3, "远征路线没有固定三个生态节点")
 	_require(screen.route_map.page_label.text == "1 / 3", "远征路线页码错误")
-	_require(screen.route_map.detail_label.text.contains("当前战力 1000"), "大厅没有展示当前战力")
-	_require(screen.route_map.expedition_brief.recommended_label.text == "推荐战力 1000", "远征简报没有展示推荐战力")
-	_require(screen.route_map.expedition_brief.reward_title_label.text == "首通奖励", "远征简报没有展示首通奖励")
-	_require(
-		screen.route_map.expedition_brief.reward_icon.visible
-		and screen.route_map.expedition_brief.reward_label.text.ends_with("×1"),
-		"首通奖励缺少图标或数量"
-	)
+	_require(screen.route_map.expedition_brief.current_power_caption_label.text == "当前战力" and screen.route_map.detail_label.text == "1000", "大厅没有对齐展示当前战力")
+	_require(screen.route_map.expedition_brief.recommended_caption_label.text == "推荐战力" and screen.route_map.expedition_brief.recommended_label.text == "1000" and screen.route_map.expedition_brief.frame_texture_path() == "res://assets/art/ui/home/expedition_brief_frame.png", "远征简报没有对齐展示推荐战力")
+	_require(screen.route_map.expedition_brief.reward_title_label.text == "首通奖励" and screen.route_map.expedition_brief.title_label.position.x == 36.0 and screen.route_map.expedition_brief.page_label.position.x + screen.route_map.expedition_brief.page_label.size.x == 293.0 and screen.route_map.expedition_brief.current_power_label.position.x + screen.route_map.expedition_brief.current_power_label.size.x == 153.0 and screen.route_map.expedition_brief.reward_count_label.position.x + screen.route_map.expedition_brief.reward_count_label.size.x == 293.0, "远征简报文字没有落入结构安全区")
+	_require(screen.route_map.expedition_brief.reward_icon.visible
+		and screen.route_map.expedition_brief.reward_label.text == "萤翼航标" and screen.route_map.expedition_brief.reward_count_label.text == "×1" and screen.route_map.expedition_brief.recommended_icon.size == Vector2(24, 24) and screen.route_map.expedition_brief.recommended_icon.texture.resource_path == "res://assets/art/ui/home/brief_icon_recommended.png" and screen.route_map.expedition_brief.power_icon.texture.resource_path == "res://assets/art/ui/home/brief_icon_power.png" and screen.route_map.expedition_brief.first_clear_icon.texture.resource_path == "res://assets/art/ui/home/brief_icon_first_clear.png" and screen.route_map.expedition_brief.reward_icon.texture.resource_path == "res://assets/art/ui/home/brief_icon_reward.png", "首通奖励缺少图标或数量")
+	screen.records.level_record("level_01")["wins"] = 1; screen.refresh_progress()
+	_require(screen.route_map.expedition_brief.reward_title_label.text == "通关掉落" and screen.route_map.expedition_brief.reward_label.text == "随机装备" and screen.route_map.expedition_brief.reward_count_label.text == "×1–4" and screen.route_map.expedition_brief.reward_label.position.x + screen.route_map.expedition_brief.reward_label.size.x + 4.0 == screen.route_map.expedition_brief.reward_count_label.position.x, "通关掉落文案没有分列或间距错误")
+	screen.records.level_record("level_01")["wins"] = 0; screen.refresh_progress()
 	_require(
 		bool(screen.route_map.route_pins[0].get("selected"))
 		and not bool(screen.route_map.route_pins[0].get("locked"))
-		and bool(screen.route_map.route_pins[1].get("locked")),
+		and bool(screen.route_map.route_pins[1].get("locked")) and screen.route_map.route_pins[0].frame_texture_path() == "res://assets/art/ui/home/route_pin_selected.png" and screen.route_map.route_pins[0].icon_texture_path() == "res://assets/art/ui/home/route_icon_meadow.png" and screen.route_map.route_pins[1].icon_texture_path() == "res://assets/art/ui/home/route_icon_locked.png",
 		"远征路线的选中态或锁定态错误"
 	)
-	_require(screen.start_button.size == Vector2(154, 154) and screen.start_button.caption.text == "出发", "出发按钮没有采用圆形罗盘构图")
+	_require(screen.start_button.position == Vector2(340, 744) and screen.start_button.size == Vector2(192, 192) and screen.start_button.caption.text == "出发" and screen.start_button.frame_texture_path() == "res://assets/art/ui/home/start_button_frame.png" and screen.start_button.sail_texture_path() == "res://assets/art/ui/home/start_button_sail.png", "出发按钮没有使用右下放大的独立罗盘与帆船组件")
+	_require(screen.audio_settings.launcher_glyph.texture.resource_path == "res://assets/art/ui/home/settings_medallion.png", "全局声音入口没有使用设置圆章")
 	screen.audio_settings.launcher_button.pressed.emit()
 	_require(screen.audio_settings.settings_card.visible, "全局声音入口无法打开声音设置")
 	screen.audio_settings.close_popup()
@@ -95,8 +97,8 @@ func _on_process_frame() -> void:
 	)
 	_require(
 		screen.bottom_bar.tab_plates["compendium"].get_instance_id() == tab_plate_instances["compendium"]
-		and screen.bottom_bar.tab_plates["compendium"].get_node_or_null("SunlitFrame") != null,
-		"图鉴页没有复用同一个帆布选中态组件"
+		and screen.bottom_bar.tab_plates["compendium"].texture.resource_path == screen.bottom_bar.selection_texture_path(),
+		"图鉴页没有复用同一个织带旗选中态组件"
 	)
 	_require(
 		screen.bottom_bar.get_parent() == screen.global_chrome
@@ -182,8 +184,8 @@ func _on_process_frame() -> void:
 	)
 	_require(
 		screen.bottom_bar.tab_plates["character"].get_instance_id() == tab_plate_instances["character"]
-		and screen.bottom_bar.tab_plates["character"].get_node_or_null("SunlitFrame") != null,
-		"角色页没有复用同一个帆布选中态组件"
+		and screen.bottom_bar.tab_plates["character"].texture.resource_path == screen.bottom_bar.selection_texture_path(),
+		"角色页没有复用同一个织带旗选中态组件"
 	)
 	_require(screen.character_page.hero_rig.current_state == "menu_react", "首次进入角色页没有播放可感知的互动动作")
 	_require(not screen.route_map.animation_player.is_playing(), "离开大厅后路线动画仍在运行")
@@ -211,7 +213,7 @@ func _on_process_frame() -> void:
 		"返回开始页后没有恢复同一个远征页面"
 	)
 	var equipped_power := int(screen.records.get_permanent_snapshot("ember_ranger")["power"]["total"])
-	_require(screen.route_map.detail_label.text.contains("当前战力 %d" % equipped_power), "装备后的战力没有同步回大厅")
+	_require(screen.route_map.detail_label.text == str(equipped_power), "装备后的战力没有同步回大厅")
 	screen.start_button.pressed.emit()
 	_require(screen.expedition_confirm.visible and start_payload.is_empty(), "开始远征没有先打开出征确认")
 	_require(screen.expedition_confirm.hero_label.text == "烬羽" and screen.expedition_confirm.level_label.text.contains("风铃草原"), "出征确认没有展示当前英雄或关卡")

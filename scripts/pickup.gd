@@ -6,6 +6,11 @@ var kind := "xp"
 var value := 5
 var age := 0.0
 var radius := 8.0
+var pull_origin := Vector2.ZERO
+var pull_elapsed := 0.0
+var pull_duration := 0.2
+var pull_arc_side := 1.0
+var is_pulling := false
 
 
 func _process(delta: float) -> void:

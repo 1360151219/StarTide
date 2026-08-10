@@ -148,8 +148,8 @@ func summary(hero_id: String) -> String:
 	var record := hero_record(hero_id)
 	var progress := progression_snapshot(hero_id)
 	if record["runs"] <= 0:
-		return "Lv.%d · 尚未出征 · 技能点 %d" % [progress["level"], progress["available_skill_points"]]
-	return "Lv.%d · 通关 %d · 精英 %d · 最高击败 %d" % [progress["level"], record["wins"], record["elite_kills"], record["best_kills"]]
+		return "LV.%d · 尚未出征 · 技能点 %d" % [progress["level"], progress["available_skill_points"]]
+	return "LV.%d · 通关 %d · 精英 %d · 最高击败 %d" % [progress["level"], record["wins"], record["elite_kills"], record["best_kills"]]
 func _award_progression(hero_id: String, won: bool, survival_seconds: float) -> Dictionary:
 	if not hero_progressions.has(hero_id):
 		return {}

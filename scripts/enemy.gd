@@ -2,6 +2,11 @@ extends Node2D
 
 const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
 const EnemyVisualDetails = preload("res://scripts/presentation/enemy_visual_details.gd")
+const EnemyHitVisuals = preload("res://scripts/presentation/enemy_hit_visuals.gd")
+const HIT_FLASH_DURATION := 0.065
+const HIT_OFFSET_DURATION := 0.1
+const HIT_FRAGMENT_DURATION := 0.16
+const HIT_OFFSET_DISTANCE := 4.0
 
 var kind := "slime"
 var max_health := 35.0
@@ -15,6 +20,9 @@ var next_contact_time := 0.0
 var slow_factor := 1.0
 var slow_effects: Array[Dictionary] = []
 var hit_flash := 0.0
+var hit_fragment_time := 0.0
+var hit_offset := Vector2.ZERO
+var hit_impulse_direction := Vector2.ZERO
 var animation_time := 0.0
 var slowed := false
 var side_blend := 0.0
@@ -78,13 +86,21 @@ func advance_motion(direction: Vector2, move_speed: float, delta: float, now: fl
 	var movement := direction.normalized() * move_speed * (slow_factor if slowed else 1.0) * delta
 	position += movement
 	hit_flash = maxf(0.0, hit_flash - delta)
+	hit_fragment_time = maxf(0.0, hit_fragment_time - delta)
+	hit_offset = hit_offset.move_toward(Vector2.ZERO, delta * HIT_OFFSET_DISTANCE / HIT_OFFSET_DURATION)
 	queue_redraw()
 	return movement
 
 
-func take_damage(amount: float) -> bool:
+func take_damage(amount: float, source_position := Vector2.INF) -> bool:
 	health -= amount
-	hit_flash = 0.1
+	hit_flash = HIT_FLASH_DURATION
+	hit_fragment_time = HIT_FRAGMENT_DURATION
+	hit_impulse_direction = Vector2.ZERO
+	hit_offset = Vector2.ZERO
+	if source_position.is_finite() and source_position.distance_squared_to(position) > 0.0001:
+		hit_impulse_direction = source_position.direction_to(position)
+		hit_offset = hit_impulse_direction * HIT_OFFSET_DISTANCE
 	return health <= 0.0
 
 
@@ -139,6 +155,8 @@ func _draw() -> void:
 	if is_elite:
 		_draw_elite_aura()
 	_draw_body(metrics, shown_color)
+	if hit_fragment_time > 0.0:
+		EnemyHitVisuals.draw_fragments(self, metrics, 1.0 - hit_fragment_time / HIT_FRAGMENT_DURATION, hit_impulse_direction, hit_offset)
 	EnemyVisualDetails.draw_ability_overlay(self, metrics)
 	if health < max_health:
 		_draw_health_bar(metrics)
@@ -190,7 +208,9 @@ func _draw_body(metrics: Dictionary, shown_color: Color) -> void:
 		var front_color := shown_color
 		front_color.a *= 1.0 - side_blend
 		draw_set_transform(Vector2.ZERO, 0.0, hit_scale)
-		var front_rect := Rect2(-size.x * 0.5, metrics["y"] + bob, size.x, size.y)
+		var front_rect := Rect2(-size.x * 0.5 + hit_offset.x, metrics["y"] + bob + hit_offset.y, size.x, size.y)
+		if hit_flash > 0.0:
+			EnemyVisualDetails.draw_texture_outline(self, data["front"], front_rect.grow(1.4), front_color.a)
 		EnemyVisualDetails.draw_texture_outline(self, data["front"], front_rect, front_color.a)
 		draw_texture_rect(data["front"], front_rect, false, front_color)
 		draw_set_transform(Vector2.ZERO)
@@ -205,7 +225,9 @@ func _draw_side(texture: Texture2D, metrics: Dictionary, shown_color: Color, bob
 	side_color.a *= side_blend
 	var turn_width := lerpf(0.2, 1.0, sin(turn_progress * PI * 0.5))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2((1.0 if horizontal_facing < 0 else -1.0) * turn_width * hit_scale.x, hit_scale.y))
-	var side_rect := Rect2(-side_size.x * 0.5, metrics["y"] + bob, side_size.x, side_size.y)
+	var side_rect := Rect2(-side_size.x * 0.5 + hit_offset.x, metrics["y"] + bob + hit_offset.y, side_size.x, side_size.y)
+	if hit_flash > 0.0:
+		EnemyVisualDetails.draw_texture_outline(self, texture, side_rect.grow(1.4), side_color.a)
 	EnemyVisualDetails.draw_texture_outline(self, texture, side_rect, side_color.a)
 	draw_texture_rect(texture, side_rect, false, side_color)
 	draw_set_transform(Vector2.ZERO)

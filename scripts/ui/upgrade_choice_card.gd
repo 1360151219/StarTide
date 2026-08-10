@@ -1,19 +1,18 @@
 extends Button
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
+const UpgradeChoiceCardStyle = preload("res://scripts/ui/upgrade_choice_card_style.gd")
 
-const CARD_SURFACE := Color(1.0, 0.98, 0.9, 0.98)
-const CARD_MINT := UiFactory.SURFACE_ALT
-const CARD_GOLD := Color(1.0, 0.94, 0.72, 0.99)
 const INK := UiFactory.INK
 const MUTED_INK := UiFactory.MUTED_INK
 const TEAL := UiFactory.PRIMARY_DARK
-const AMBER := UiFactory.ACCENT_DARK
 
 var views: Dictionary = {}
 var visible_metric_count := 0
+var shape_id := "skill"
+var rarity_level := 1
+var quality_seams: Array[Panel] = []
 
 
 func _ready() -> void:
@@ -22,12 +21,14 @@ func _ready() -> void:
 	alignment = HORIZONTAL_ALIGNMENT_LEFT
 	focus_mode = Control.FOCUS_ALL
 	add_theme_constant_override("outline_size", 0)
+	_build_quality_seams()
 	_build_content()
-	_apply_style(false, false)
+	UpgradeChoiceCardStyle.apply_button(self, shape_id, rarity_level, false)
 
 
 func configure(index: int) -> void:
 	position = Vector2(30, 174 + index * 192)
+	set_meta("rest_position", position)
 
 
 func present(choice: Dictionary, view_model: Dictionary) -> void:
@@ -35,6 +36,8 @@ func present(choice: Dictionary, view_model: Dictionary) -> void:
 	accessibility_name = str(choice.get("title", "未知强化"))
 	accessibility_description = str(choice.get("description", ""))
 	tooltip_text = str(choice.get("description", ""))
+	shape_id = str(view_model.get("shape", "skill"))
+	rarity_level = clampi(int(view_model.get("rarity_level", 1)), 1, 3)
 	views["icon"].texture = view_model["icon"]
 	views["type"].text = str(view_model["type"])
 	views["name"].text = str(view_model["name"])
@@ -55,61 +58,86 @@ func present(choice: Dictionary, view_model: Dictionary) -> void:
 	views["special_panel"].visible = not special.is_empty()
 	views["special"].text = special
 	var highlighted := bool(view_model["highlighted"])
-	_style_metric_panels(highlighted)
-	_apply_style(highlighted, bool(view_model["branch"]))
+	UpgradeChoiceCardStyle.apply_content(views, quality_seams, shape_id, rarity_level, highlighted)
+	UpgradeChoiceCardStyle.apply_button(self, shape_id, rarity_level, highlighted)
 
 
 func metric_count() -> int:
 	return visible_metric_count
 
 
+func _build_quality_seams() -> void:
+	for index in range(2):
+		var seam := Panel.new()
+		var inset := 8.0 + index * 4.0
+		seam.position = Vector2(inset, inset)
+		seam.size = size - Vector2(inset * 2.0, inset * 2.0)
+		seam.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color.TRANSPARENT
+		style.border_color = Color(UiFactory.RARE, 0.42 - index * 0.08)
+		style.set_border_width_all(1)
+		style.corner_radius_top_left = 3
+		style.corner_radius_top_right = 8
+		style.corner_radius_bottom_left = 8
+		style.corner_radius_bottom_right = 3
+		seam.add_theme_stylebox_override("panel", style)
+		seam.visible = false
+		add_child(seam)
+		quality_seams.append(seam)
+
+
 func _build_content() -> void:
 	var icon_back := Panel.new()
-	icon_back.position = Vector2(16, 26)
-	icon_back.size = Vector2(116, 116)
+	icon_back.position = Vector2(18, 34)
+	icon_back.size = Vector2(108, 108)
 	icon_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var medallion_style := SunlitCardStyle.panel_style(CARD_MINT, Color(UiFactory.PRIMARY, 0.78), 58.0, false)
-	medallion_style.set_corner_radius_all(58)
-	medallion_style.set_border_width_all(3)
-	icon_back.add_theme_stylebox_override("panel", medallion_style)
 	add_child(icon_back)
 	var icon := TextureRect.new()
 	icon.position = Vector2(12, 10)
-	icon.size = Vector2(92, 92)
+	icon.size = Vector2(84, 84)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon_back.add_child(icon)
-	var type_label := _surface_label("", 12, TEAL)
-	type_label.position = Vector2(24, 140)
-	type_label.size = Vector2(100, 24)
+	var type_panel := Panel.new()
+	type_panel.position = Vector2(144, 16)
+	type_panel.size = Vector2(126, 28)
+	type_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(type_panel)
+	var type_label := _surface_label("", 14, TEAL)
+	type_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	type_label.offset_left = 12.0
+	type_label.offset_right = -12.0
 	type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	type_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	type_label.add_theme_stylebox_override("normal", UiFactory.flat_bar_style(Color(UiFactory.SURFACE, 0.96), 5.0))
-	add_child(type_label)
-	var name_plate := Panel.new()
-	name_plate.position = Vector2(144, 18)
-	name_plate.size = Vector2(270, 50)
-	name_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	SunlitCardStyle.apply_panel(name_plate, Color(UiFactory.SURFACE, 0.78), Color(UiFactory.ACCENT_DARK, 0.5), 6.0, false, true, "map_tag")
-	add_child(name_plate)
+	type_label.clip_text = true
+	type_panel.add_child(type_label)
 	var name_label := _surface_label("", 23, INK)
-	name_label.position = Vector2(12, 5)
-	name_label.size = Vector2(246, 40)
+	name_label.position = Vector2(144, 48)
+	name_label.size = Vector2(310, 38)
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
-	name_plate.add_child(name_label)
+	add_child(name_label)
+	var title_rule := ColorRect.new()
+	title_rule.position = Vector2(144, 87)
+	title_rule.size = Vector2(300, 2)
+	title_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(title_rule)
 	var metric_band := Panel.new()
-	metric_band.position = Vector2(144, 76)
-	metric_band.size = Vector2(292, 80)
+	metric_band.position = Vector2(144, 96)
+	metric_band.size = Vector2(300, 60)
 	metric_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(metric_band)
 	var metric_views := _build_metric_panels(metric_band)
 	var special_panel := _build_special_panel()
 	views = {
 		"icon": icon,
+		"icon_back": icon_back,
 		"type": type_label,
+		"type_panel": type_panel,
 		"name": name_label,
+		"title_rule": title_rule,
 		"metric_panels": metric_views["panels"],
 		"metric_symbols": metric_views["symbols"],
 		"metric_labels": metric_views["labels"],
@@ -127,34 +155,34 @@ func _build_metric_panels(parent: Control) -> Dictionary:
 	var values: Array[Label] = []
 	for index in range(3):
 		var panel := Panel.new()
-		panel.position = Vector2(6 + index * 108, 4)
-		panel.size = Vector2(102, 70)
+		panel.position = Vector2(4 + index * 98, 3)
+		panel.size = Vector2(94, 54)
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 		parent.add_child(panel)
 		panels.append(panel)
 		var symbol := SunlitGlyph.new()
 		symbol.glyph_id = "confirm"
-		symbol.position = Vector2(7, 4)
-		symbol.size = Vector2(26, 26)
+		symbol.position = Vector2(5, 16)
+		symbol.size = Vector2(24, 24)
 		panel.add_child(symbol)
 		symbols.append(symbol)
-		var caption := _surface_label("", 11, MUTED_INK)
+		var caption := _surface_label("", 14, MUTED_INK)
 		caption.anchor_right = 1.0
-		caption.offset_left = 34.0
-		caption.offset_top = 5.0
-		caption.offset_right = -6.0
-		caption.offset_bottom = 27.0
+		caption.offset_left = 32.0
+		caption.offset_top = 3.0
+		caption.offset_right = -4.0
+		caption.offset_bottom = 25.0
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		caption.clip_text = true
 		panel.add_child(caption)
 		labels.append(caption)
 		var value := _surface_label("", 17, INK)
 		value.anchor_right = 1.0
-		value.offset_left = 6.0
-		value.offset_top = 29.0
-		value.offset_right = -6.0
-		value.offset_bottom = 63.0
+		value.offset_left = 32.0
+		value.offset_top = 24.0
+		value.offset_right = -4.0
+		value.offset_bottom = 52.0
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		value.clip_text = true
@@ -166,10 +194,10 @@ func _build_metric_panels(parent: Control) -> Dictionary:
 func _layout_metric_panels(count: int) -> void:
 	if count <= 0:
 		return
-	var gap := 6.0
-	var available_width := 280.0
-	var panel_width := 156.0 if count == 1 else (available_width - gap * (count - 1)) / count
-	var start_x := 6.0 + (available_width - panel_width) * 0.5 if count == 1 else 6.0
+	var gap := 4.0
+	var available_width := 292.0
+	var panel_width := 164.0 if count == 1 else (available_width - gap * (count - 1)) / count
+	var start_x := 4.0 + (available_width - panel_width) * 0.5 if count == 1 else 4.0
 	for index in range(count):
 		views["metric_panels"][index].position.x = start_x + index * (panel_width + gap)
 		views["metric_panels"][index].size.x = panel_width
@@ -177,48 +205,16 @@ func _layout_metric_panels(count: int) -> void:
 
 func _build_special_panel() -> Panel:
 	var panel := Panel.new()
-	panel.position = Vector2(362, 7)
-	panel.size = Vector2(96, 24)
+	panel.position = Vector2(344, 13)
+	panel.size = Vector2(112, 30)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	SunlitCardStyle.apply_panel(panel, CARD_GOLD, UiFactory.ACCENT_DARK, 6.0, false, true, "enamel", 3)
 	add_child(panel)
-	var label := _surface_label("", 11, Color(0.54, 0.28, 0.05, 1.0))
+	var label := _surface_label("", 14, Color(0.54, 0.28, 0.05, 1.0))
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	panel.add_child(label)
 	return panel
-
-
-func _style_metric_panels(highlighted: bool) -> void:
-	SunlitCardStyle.apply_panel(
-		views["metric_band"],
-		Color(UiFactory.ACCENT_LIGHT, 0.78) if highlighted else Color(UiFactory.SURFACE_ALT, 0.9),
-		Color(UiFactory.ACCENT_DARK, 0.6) if highlighted else Color(UiFactory.PRIMARY, 0.48),
-		6.0,
-		false,
-		true,
-		"ribbon"
-	)
-	for symbol in views["metric_symbols"]:
-		symbol.set_selected(highlighted)
-
-
-func _apply_style(highlighted: bool, branch: bool) -> void:
-	var background := CARD_GOLD if highlighted else CARD_SURFACE
-	var border := UiFactory.ACCENT_DARK if highlighted else (UiFactory.RARE if branch else UiFactory.PRIMARY)
-	var normal := SunlitCardStyle.panel_style(background, border, 18.0, highlighted)
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = background.lightened(0.025)
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = background.darkened(0.04)
-	var disabled_style := SunlitCardStyle.panel_style(Color(UiFactory.SURFACE_ALT, 0.88), Color(UiFactory.DISABLED, 0.62), 18.0, false, false)
-	add_theme_stylebox_override("normal", normal)
-	add_theme_stylebox_override("hover", hover)
-	add_theme_stylebox_override("pressed", pressed)
-	add_theme_stylebox_override("disabled", disabled_style)
-	add_theme_stylebox_override("focus", SunlitCardStyle.panel_style(Color.TRANSPARENT, UiFactory.ACCENT, 18.0, true, false))
-	SunlitCardStyle.decorate(self, border, 18.0, false, highlighted, UiFactory.ACCENT, "reward_card", 3 if highlighted else 2 if branch else 1)
 
 
 func _surface_label(text: String, font_size: int, color: Color) -> Label:

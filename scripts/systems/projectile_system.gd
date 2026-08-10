@@ -57,7 +57,7 @@ func _resolve_collisions(projectile: Node) -> void:
 			continue
 		audio.play_sfx("impact", -3.0, rng.randf_range(0.92, 1.08))
 		var color := Color("ffbd62") if projectile.visual_kind == "ember_arrow" else Color("a9f6ff")
-		enemy_system.damage_enemy(enemy, projectile.damage, color)
+		enemy_system.damage_enemy(enemy, projectile.damage, color, projectile.previous_position)
 		_add_impact_effect(projectile, enemy)
 		if projectile.register_hit(enemy):
 			_remove(projectile)

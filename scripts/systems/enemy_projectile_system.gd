@@ -44,7 +44,7 @@ func advance(delta: float) -> void:
 			continue
 		var expired: bool = projectile.advance(delta)
 		if projectile.intersects_circle(player.position, projectile.radius + 21.0):
-			var hit := PlayerHitData.create(projectile.damage, projectile.source, projectile.hit_type, projectile.position)
+			var hit := PlayerHitData.create(projectile.damage, projectile.source, projectile.hit_type, projectile.previous_position)
 			player_hit_requested.emit(hit)
 			effects.add_effect(projectile.position, projectile.radius + 22.0, Color("9b67df"), 0.3, "bat_impact")
 			audio.play_sfx("bat_bolt_impact", -2.0, 0.98)

@@ -31,7 +31,7 @@ assets/
 │   ├── sunlit/backgrounds/# 当前远征地图环境底板
 │   └── ui/home/           # 当前独立 UI 位图
 ├── audio/                 # 4 条音乐与 39 个 Cue
-├── fonts/                 # 两套运行时字体及许可
+├── fonts/                 # 三套运行时字体及许可
 └── generated/
     ├── equipment/         # 六件装备图标
     ├── hero_chibi/        # 两名英雄各六张完整动作帧
@@ -45,8 +45,12 @@ assets/
 | `assets/art/app_icon.png` | 项目与 Android 启动图标 |
 | `assets/fonts/NotoSansSC-Regular.otf` | 正文、按钮、数字、战斗文字 |
 | `assets/fonts/NotoSerifSC-UI.otf` | 展示标题与章节标题 |
+| `assets/fonts/SmileySans-Oblique.otf` | 远征页面标题、关卡名、主操作与短属性标题 |
 | `assets/fonts/NotoSansSC-OFL.txt` | Noto Sans SC 许可 |
 | `assets/fonts/NotoSerifSC-OFL.txt` | Noto Serif SC 许可 |
+| `assets/fonts/SmileySans-OFL.txt` | Smiley Sans v2.0.1 的 SIL Open Font License 1.1 |
+
+Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/smiley-sans/releases/tag/v2.0.1)中的未修改 OTF；文件 SHA-256 为 `139b5dcbe70d6d52de85a62d148784c6af4bd161e38fdb62ba0c1e7e5065fca6`，并随包保留 OFL 许可与 Reserved Font Name 要求。
 
 字体角色只由 [ART_DIRECTION.md](./ART_DIRECTION.md) 定义；不得再引入未使用的可变字体副本。
 
@@ -118,7 +122,7 @@ assets/
 | `assets/art/pickups/magnet_charm.png` | 磁吸拾取 |
 | `assets/art/items/item_atlas.png` | 遗物与没有独立主体图的物品区域 |
 
-加速、爆破、锁定、空槽、声音、暂停、导航和装备部位由正式程序图标绘制；不得用 Emoji 代替。
+加速、爆破、锁定、空槽、声音、暂停和装备部位由正式程序图标绘制；首页导航与设置入口使用下节登记的正式 UI 位图，不得用 Emoji 代替。
 
 ## 6. 场景与 UI 位图
 
@@ -126,9 +130,28 @@ assets/
 |---|---|---|
 | `assets/art/environment/windbell_meadow_floor.png` | 风铃草原战斗地面 | 中心降噪由运行时完成 |
 | `assets/art/environment/golden_oasis_floor.png` | 黄金绿洲战斗地面 | 暖色不得吞没火焰和危险 |
-| `assets/art/environment/crystal_volcano_floor.png` | 水晶火山战斗地面 | 裂隙常态亮度低于危险预警 |
+| `assets/art/environment/crystal_volcano_floor.png` | 水晶火山冷灰岩板战斗地面 | 中心低频；晶簇稀疏；裂隙常态亮度低于危险预警 |
 | `assets/art/sunlit/backgrounds/expedition_route_map.png` | 远征大厅三生态环境底板 | 无角色、关卡钉、文字和导航 |
-| `assets/art/ui/home/expedition_brief_frame.png` | 远征简报独立框体 | 只承载材质，不烘焙数据 |
+| `assets/art/ui/home/expedition_brief_frame.png` | 首页关卡信息牌 | 统一承载名称、页码、战力与奖励分区，不烘焙数据 |
+| `assets/art/ui/home/home_compass_banner.png` | 首页左上远征罗盘挂旗 | 替代程序圆角方形入口；不承载文字或点击状态 |
+| `assets/art/ui/home/brief_icon_recommended.png` | 关卡信息牌推荐战力图标 | 闭合盾形，20 px 灰度下与当前战力区分 |
+| `assets/art/ui/home/brief_icon_power.png` | 关卡信息牌当前战力图标 | 交叉双刃轮廓，不烘焙数值 |
+| `assets/art/ui/home/brief_icon_first_clear.png` | 关卡信息牌首通状态图标 | 路标旗与罗盘负形，不烘焙状态文字 |
+| `assets/art/ui/home/brief_icon_reward.png` | 关卡信息牌奖励物图标 | 帆布包裹轮廓，不绑定具体奖励 ID |
+| `assets/art/ui/home/start_button_frame.png` | 首页“出发”罗盘主按钮底框 | 唯一日照金主操作；运行时叠加文案与状态 |
+| `assets/art/ui/home/start_button_sail.png` | 首页“出发”帆船徽记 | 与主按钮底框分层，禁用态由运行时控制 |
+| `assets/art/ui/home/route_pin_available.png` | 首页路线标志普通/未解锁底框 | 中央叠加生态或锁定图标；锁定态运行时降饱和 |
+| `assets/art/ui/home/route_pin_selected.png` | 首页路线标志进行中底框 | 日照金选中态，与普通态共享尺寸和轮廓 |
+| `assets/art/ui/home/route_icon_meadow.png` | 风铃草原路线图标 | 仅表达生态，不承载关卡状态 |
+| `assets/art/ui/home/route_icon_oasis.png` | 金砂绿洲路线图标 | 仅表达生态，不承载关卡状态 |
+| `assets/art/ui/home/route_icon_volcano.png` | 彩晶火山路线图标 | 仅表达生态，不承载关卡状态 |
+| `assets/art/ui/home/route_icon_locked.png` | 未解锁路线状态图标 | 正式挂锁语义，不使用 Emoji 或文字烘焙 |
+| `assets/art/ui/home/nav_flag_normal.png` | 首页底部导航普通织带旗 | 空白中央由运行时叠加图标，不烘焙页面状态 |
+| `assets/art/ui/home/nav_flag_selected.png` | 首页底部导航选中织带旗 | 与普通态共享轮廓，使用象牙帆布和双层压线表达选中 |
+| `assets/art/ui/home/nav_icon_character.png` | 首页角色入口图标 | 无文字、徽章或按钮底框 |
+| `assets/art/ui/home/nav_icon_expedition.png` | 首页远征入口图标 | 无文字、徽章或按钮底框 |
+| `assets/art/ui/home/nav_icon_compendium.png` | 首页图鉴入口图标 | 无文字、徽章或按钮底框 |
+| `assets/art/ui/home/settings_medallion.png` | 首页及共享紧凑设置入口 | 60×60 运行时显示；点击状态由 Godot 控制 |
 | `assets/generated/ui/victory_crest.png` | 胜利与高价值奖励徽章 | 不作为普通装饰重复使用 |
 
 程序组件 `SunlitFrame`、`SunlitCardStyle`、`SunlitGlyph` 和 `SunlitLockBadge` 负责边框、状态、触控与响应式，不生成整页 UI 位图。
@@ -155,6 +178,7 @@ assets/
 - 六项技能施放，以及冰霜、陨星和凤凰的独立命中。
 
 音频路径和 Cue ID 是稳定接口。`tools/generate_audio.py` 是当前波形再生成工具；替换内容不得改变事件时机、总线、优先级和并发契约。
+当前正式音频使用帆布摩擦、轻木敲击、搪瓷清音、阻尼短弦和自然风声五类基础音色；四条 BGM 共享短动机，但按大厅、草原、绿洲和火山分别使用独立调式、节奏密度与环境层。
 
 ## 8. 正式审阅图
 

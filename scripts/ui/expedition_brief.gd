@@ -1,14 +1,38 @@
 extends Control
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const HomeInfoGlyph = preload("res://scripts/ui/home_info_glyph.gd")
 const FRAME := preload("res://assets/art/ui/home/expedition_brief_frame.png")
+const RECOMMENDED_ICON := preload("res://assets/art/ui/home/brief_icon_recommended.png")
+const POWER_ICON := preload("res://assets/art/ui/home/brief_icon_power.png")
+const FIRST_CLEAR_ICON := preload("res://assets/art/ui/home/brief_icon_first_clear.png")
+const REWARD_ICON := preload("res://assets/art/ui/home/brief_icon_reward.png")
+const PANEL_SIZE := Vector2(350, 160)
+const ICON_SIZE := Vector2(24, 24)
+const ICON_X := 34.0
+const CAPTION_X := 62.0
+const CAPTION_WIDTH := 58.0
+const POWER_VAL_X := 116.0
+const POWER_VAL_RIGHT := 157.0
+const RIGHT_ICON_X := 182.0
+const REWARD_TEXT_X := 214.0
+const REWARD_TEXT_RIGHT := 303.0
+const REWARD_TEXT_GAP := 4.0
+const FIRST_ROW_Y := 78.0
+const SECOND_ROW_Y := 108.0
+const ROW_HEIGHT := 24.0
 
+var title_label: Label
+var recommended_caption_label: Label
 var recommended_label: Label
+var current_power_caption_label: Label
 var current_power_label: Label
 var reward_title_label: Label
 var reward_label: Label
-var reward_icon: Control
+var reward_count_label: Label
+var recommended_icon: TextureRect
+var power_icon: TextureRect
+var first_clear_icon: TextureRect
+var reward_icon: TextureRect
 var _paper: TextureRect
 var _built := false
 
@@ -21,32 +45,37 @@ func configure(level: LevelConfig, current_power: int, unlocked: bool, cleared: 
 	_ensure_built()
 	var recommended_power := level.recommended_power
 	var reward_name := level.reward.display_name if level.reward != null else "待揭晓"
-	recommended_label.text = "推荐战力 %d" % recommended_power
-	current_power_label.text = "当前战力 %d" % current_power
+	recommended_label.text = str(recommended_power)
+	current_power_label.text = str(current_power)
 	reward_title_label.text = "通关掉落" if cleared else "首通奖励"
-	reward_label.text = "随机装备 ×1–4" if cleared else "%s ×1" % reward_name
-	reward_label.add_theme_font_size_override("font_size", 15)
+	reward_label.text = "随机装备" if cleared else reward_name
+	reward_count_label.text = "×1–4" if cleared else "×1"
+	_layout_reward_text(40.0 if cleared else 24.0)
 	var reached := current_power >= recommended_power
 	current_power_label.add_theme_color_override(
 		"font_color",
 		UiFactory.PRIMARY_DARK if reached else UiFactory.DANGER_DARK
 	)
-	reward_label.add_theme_color_override(
-		"font_color",
-		UiFactory.PRIMARY_DARK if cleared else UiFactory.ACCENT_DARK
-	)
+	var reward_color := UiFactory.PRIMARY_DARK if cleared else UiFactory.ACCENT_DARK
+	reward_label.add_theme_color_override("font_color", reward_color)
+	reward_count_label.add_theme_color_override("font_color", reward_color)
 	modulate = Color(1, 1, 1, 1.0 if unlocked else 0.78)
 	tooltip_text = "推荐战力%d，当前战力%d，%s" % [recommended_power, current_power, "胜利掉落一到四件随机装备" if cleared else "首通奖励%s一份，另掉落一到四件随机装备" % reward_name]
 	accessibility_name = tooltip_text
+
+
+func frame_texture_path() -> String:
+	return _paper.texture.resource_path
 
 
 func _ensure_built() -> void:
 	if _built:
 		return
 	_built = true
-	size = Vector2(381, 116)
+	size = PANEL_SIZE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_paper = TextureRect.new()
+	_paper.name = "Plaque"
 	_paper.size = size
 	_paper.texture = FRAME
 	_paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -54,27 +83,47 @@ func _ensure_built() -> void:
 	_paper.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_paper)
-	_build_rows()
+	_build_content()
 
 
-func _build_rows() -> void:
-	_add_glyph("shield", Vector2(30.5, 9))
-	_add_glyph("swords", Vector2(215.5, 9))
-	_add_glyph("compass", Vector2(30.5, 57))
-	reward_icon = _add_glyph("reward", Vector2(215.5, 57))
-	recommended_label = _add_label(Vector2(65.5, 10), Vector2(126, 34), 16, UiFactory.INK)
-	current_power_label = _add_label(Vector2(250.5, 10), Vector2(126, 34), 16, UiFactory.PRIMARY_DARK)
-	reward_title_label = _add_label(Vector2(65.5, 60), Vector2(126, 34), 16, UiFactory.INK)
-	reward_label = _add_label(Vector2(250.5, 60), Vector2(126, 34), 15, UiFactory.ACCENT_DARK)
+func _build_content() -> void:
+	title_label = _add_label(Vector2(36, 26), Vector2(280, 38), 24, UiFactory.INK)
+	UiFactory.apply_level_title(title_label, 24)
+	recommended_icon = _add_icon(RECOMMENDED_ICON, Vector2(ICON_X, FIRST_ROW_Y))
+	power_icon = _add_icon(POWER_ICON, Vector2(ICON_X, SECOND_ROW_Y))
+	first_clear_icon = _add_icon(FIRST_CLEAR_ICON, Vector2(RIGHT_ICON_X, FIRST_ROW_Y))
+	reward_icon = _add_icon(REWARD_ICON, Vector2(RIGHT_ICON_X, SECOND_ROW_Y))
+	recommended_caption_label = _add_label(Vector2(CAPTION_X, FIRST_ROW_Y), Vector2(CAPTION_WIDTH, ROW_HEIGHT), 14, UiFactory.INK)
+	recommended_caption_label.text = "推荐战力"
+	recommended_label = _add_label(Vector2(POWER_VAL_X, FIRST_ROW_Y), Vector2(POWER_VAL_RIGHT - POWER_VAL_X, ROW_HEIGHT), 14, UiFactory.INK)
+	recommended_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	current_power_caption_label = _add_label(Vector2(CAPTION_X, SECOND_ROW_Y), Vector2(CAPTION_WIDTH, ROW_HEIGHT), 14, UiFactory.INK)
+	current_power_caption_label.text = "当前战力"
+	current_power_label = _add_label(Vector2(POWER_VAL_X, SECOND_ROW_Y), Vector2(POWER_VAL_RIGHT - POWER_VAL_X, ROW_HEIGHT), 14, UiFactory.PRIMARY_DARK)
+	current_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	reward_title_label = _add_label(Vector2(REWARD_TEXT_X, FIRST_ROW_Y), Vector2(REWARD_TEXT_RIGHT - REWARD_TEXT_X, ROW_HEIGHT), 14, UiFactory.INK)
+	reward_label = _add_label(Vector2(REWARD_TEXT_X, SECOND_ROW_Y), Vector2(75, ROW_HEIGHT), 14, UiFactory.ACCENT_DARK)
+	reward_count_label = _add_label(Vector2(279, SECOND_ROW_Y), Vector2(24, ROW_HEIGHT), 14, UiFactory.ACCENT_DARK)
+	reward_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 
-func _add_glyph(glyph_id: String, at: Vector2) -> Control:
-	var glyph := HomeInfoGlyph.new()
-	glyph.position = at
-	glyph.size = Vector2(32, 32)
-	glyph.glyph_id = glyph_id
-	_paper.add_child(glyph)
-	return glyph
+func _layout_reward_text(count_width: float) -> void:
+	reward_count_label.position.x = REWARD_TEXT_RIGHT - count_width
+	reward_count_label.size.x = count_width
+	reward_label.size.x = reward_count_label.position.x - REWARD_TEXT_GAP - REWARD_TEXT_X
+
+
+func _add_icon(texture: Texture2D, at: Vector2) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.position = at
+	icon.size = ICON_SIZE
+	icon.texture = texture
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_paper.add_child(icon)
+	return icon
 
 
 func _add_label(at: Vector2, label_size: Vector2, font_size: int, color: Color) -> Label:
@@ -83,6 +132,7 @@ func _add_label(at: Vector2, label_size: Vector2, font_size: int, color: Color) 
 	label.size = label_size
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_paper.add_child(label)
 	return label
