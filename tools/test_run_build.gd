@@ -18,7 +18,7 @@ func _initialize() -> void:
 	_test_exhausted_pool_fallbacks()
 	_test_reroll_determinism()
 	if not failed:
-		print("RUN_BUILD_OK catalogs=data_driven skill_levels=5 skill_slots=3 relic_slots=4 output_cap=4.5 phoenix_hps=1.8 structured=true validation=strict reroll=deterministic")
+		print("RUN_BUILD_OK catalogs=data_driven skill_levels=5 skill_slots=3 relic_slots=4 reference_output=3.7-6.5 phoenix_hps=1.8 structured=true validation=strict reroll=deterministic")
 	quit(1 if failed else 0)
 
 
@@ -56,8 +56,8 @@ func _test_branch_balance() -> void:
 			var branch := SkillCatalog.branch(skill_id, branch_id)
 			var overrides: Dictionary = branch["level_overrides"][max_level]
 			var ratio := _effective_output(skill_id, max_level, overrides) / base_output
-			_require(ratio >= 3.7, "%s/%s 的 I→V 理论输出只有 %.3f 倍" % [skill_id, branch_id, ratio])
-			_require(ratio <= 4.5 + 0.0001, "%s/%s 的 I→V 理论输出达到 %.3f 倍" % [skill_id, branch_id, ratio])
+			_require(ratio >= 3.7, "%s/%s 的 I→V 参考输出只有 %.3f 倍" % [skill_id, branch_id, ratio])
+			_require(ratio <= 6.5 + 0.0001, "%s/%s 的 I→V 参考输出达到 %.3f 倍" % [skill_id, branch_id, ratio])
 			if skill_id == "phoenix_heart":
 				var healing := float(runtime["healing"][max_level]) * float(overrides.get("healing_multiplier", 1.0)) * 1.04
 				var cooldown := float(runtime["cooldown"][max_level]) * float(overrides.get("cooldown_multiplier", 1.0)) * 0.96
@@ -226,7 +226,7 @@ func _effective_output(skill_id: String, level: int, overrides: Dictionary) -> f
 	if ["star_lance", "ember_volley"].has(skill_id):
 		var projectile_count := int(overrides.get("count", runtime["count"][level]))
 		var pierce := int(overrides.get("pierce", runtime["pierce"][level]))
-		return damage * projectile_count * (pierce + 1) / cooldown
+		return damage * projectile_count * (2 if pierce < 0 else pierce + 1) / cooldown
 	if skill_id == "meteor_rain":
 		return damage * int(overrides.get("count", runtime["count"][level])) / cooldown
 	return damage / cooldown

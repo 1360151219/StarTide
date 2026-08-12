@@ -25,7 +25,7 @@ func _test_runtime_pools_and_discovery() -> void:
 	_require(session.relic_pool_ids.size() == 2, "第一关遗物引入池数量错误")
 	_require(records.is_content_discovered("skills", "star_lance"), "签名技能没有在出征时发现")
 	_require(not records.is_content_discovered("enemies", "bat") and not records.is_content_discovered("enemies", "brute"), "第一关提前发现后续怪物")
-	session.add_experience(36)
+	session.add_experience(session.state.experience_needed)
 	var first_offer := str(session.build_state.last_offer_key)
 	_require(session.reroll_upgrade(), "会话层免费重抽失败")
 	_require(session.build_state.rerolls_remaining == 0 and str(session.build_state.last_offer_key) != first_offer, "重抽次数或候选去重错误")
@@ -107,9 +107,9 @@ func _test_branch_and_relic_runtime() -> void:
 	enemy.position = session.player.position + Vector2(120, 0)
 	session.skills.runtime.bolt_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
-	_require(session.projectiles.projectiles.size() == 4, "星雨齐射终极分支没有生成 4 枚星枪")
+	_require(session.projectiles.projectiles.size() == 5, "星雨齐射终极分支没有生成 5 枚星枪")
 	var projectile: Node = session.projectiles.projectiles[0]
-	_require(is_equal_approx(projectile.damage, 34.0 * 0.69 * 1.07), "技能分支与聚能棱晶伤害没有组合生效")
+	_require(is_equal_approx(projectile.damage, 36.0 * 0.74 * 1.07), "技能分支与聚能棱晶伤害没有组合生效")
 	_require(is_equal_approx(session.skills.runtime.bolt_timer, 0.88 * 0.95), "时砂齿轮没有作用于技能冷却")
 	_require(is_equal_approx(session.player.speed, session.player.base_speed * 1.08), "流光羽没有作用于角色移速")
 	session.free()
@@ -125,7 +125,7 @@ func _choice_of_kind(session: Node, kind: String) -> Dictionary:
 func _session_with_choice(level_id: String, records: RefCounted, kind: String, first_seed: int) -> Node:
 	for seed_value in range(first_seed, first_seed + 128):
 		var session := _create_session(level_id, records, seed_value)
-		session.add_experience(36)
+		session.add_experience(session.state.experience_needed)
 		if not _choice_of_kind(session, kind).is_empty():
 			return session
 		session.free()

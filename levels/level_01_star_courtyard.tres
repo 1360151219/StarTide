@@ -238,6 +238,8 @@ transition_rest_duration = 2.5
 
 [sub_resource type="Resource" id="Victory"]
 script = ExtResource("7_victory")
+mode = "survive_and_defeat_elite"
+perfect_requires_elite = false
 
 [resource]
 script = ExtResource("1_level")
@@ -245,8 +247,8 @@ level_id = "level_01"
 chapter_id = "chapter_01"
 difficulty_profile_id = "chapter_01_curve"
 display_name = "风铃草原"
-subtitle = "新手远征 · 坚持 90 秒"
-description = "在花簇与蒲公英之间学习走位，躲开第一轮星蚀侵袭。"
+subtitle = "精英试炼 · 通关计时 90 秒"
+description = "完成 90 秒通关计时并击败星蚀团子王；精英存活期间通关计时暂停。"
 map = SubResource("Map")
 initial_enemy_count = 3
 max_enemies = 60

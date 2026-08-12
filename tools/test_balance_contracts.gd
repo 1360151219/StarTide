@@ -16,21 +16,27 @@ func _initialize() -> void:
 	_test_healing_budget()
 	_test_biomes()
 	if not failed:
-		print("BALANCE_OK experience=36+28 ultimate_budget=5 skill_levels=5 growth_cap=4.5 phoenix_hps=1.8 levels=%d data_driven=true" % LevelCatalog.all().size())
+		print("BALANCE_OK experience=frontloaded_1332 ultimate_budget=6.5 skill_levels=5 reference_growth_cap=6.5 phoenix_hps=1.8 levels=%d data_driven=true" % LevelCatalog.all().size())
 	quit(1 if failed else 0)
 
 
 func _test_experience_curve() -> void:
+	var expected := [24, 48, 76, 108, 144, 184, 220, 248, 280]
 	var state := RunState.new()
-	_require(state.experience_needed == 36, "一级经验需求不是 36")
-	state.add_experience(36)
-	_require(state.player_level == 2 and state.experience_needed == 64, "经验需求没有按 36 + 28 × 等级差增长")
+	_require(RunState.EXPERIENCE_REQUIREMENTS == expected and state.experience_needed == 24, "前置经验梯度配置错误")
+	var cumulative := 0
+	for current_level in range(1, 10):
+		_require(RunState.experience_required_for_level(current_level) == expected[current_level - 1], "%d 级经验需求错误" % current_level)
+		cumulative += expected[current_level - 1]
+	_require(cumulative == 1332, "到达 10 级的累计经验预算发生变化")
+	state.add_experience(cumulative)
+	_require(state.player_level == 10 and state.experience == 0 and state.experience_needed == 308, "经验无法正确跨级或延伸高等级梯度")
 
 
 func _test_ultimate_upgrade_budget() -> void:
 	var required_experience := 0
-	for upgrade_index in range(5):
-		required_experience += RunState.EXPERIENCE_BASE + upgrade_index * RunState.EXPERIENCE_STEP
+	for current_level in range(1, 6):
+		required_experience += RunState.experience_required_for_level(current_level)
 	_require(LevelBalance.expected_experience_budget(LevelCatalog.first()) >= required_experience, "第一关经验预算不足以覆盖 V 级技能的五次候选窗口")
 
 
@@ -42,7 +48,7 @@ func _test_skill_growth_caps() -> void:
 		for branch_id in skill["branches"]:
 			var overrides: Dictionary = skill["branches"][branch_id]["level_overrides"][max_level]
 			var ultimate_output := _effective_skill_output(skill_id, max_level, overrides)
-			_require(ultimate_output / base_output <= 4.5001, "%s/%s 终极输出超过一级的 4.5 倍" % [skill_id, branch_id])
+			_require(ultimate_output / base_output <= 6.5001, "%s/%s 终极输出超过一级的 6.5 倍" % [skill_id, branch_id])
 			if skill_id == "phoenix_heart":
 				var runtime: Dictionary = skill["runtime"]
 				var trained_healing_rate := float(runtime["healing"][max_level]) * float(overrides.get("healing_multiplier", 1.0)) * 1.04 / (float(runtime["cooldown"][max_level]) * float(overrides.get("cooldown_multiplier", 1.0)) * 0.96)
@@ -54,7 +60,9 @@ func _effective_skill_output(skill_id: String, skill_level: int, overrides := {}
 	var damage := float(data["damage"][skill_level]) * float(overrides.get("damage_multiplier", 1.0))
 	match skill_id:
 		"star_lance", "ember_volley":
-			return damage * int(overrides.get("count", data["count"][skill_level])) * (int(overrides.get("pierce", data["pierce"][skill_level])) + 1) / (float(data["cooldown"][skill_level]) * float(overrides.get("cooldown_multiplier", 1.0)))
+			var pierce := int(overrides.get("pierce", data["pierce"][skill_level]))
+			var reference_targets := 2 if pierce < 0 else pierce + 1
+			return damage * int(overrides.get("count", data["count"][skill_level])) * reference_targets / (float(data["cooldown"][skill_level]) * float(overrides.get("cooldown_multiplier", 1.0)))
 		"sun_orbit":
 			return damage * int(overrides.get("count", data["count"][skill_level])) / (float(data["hit_interval"][skill_level]) * float(overrides.get("hit_interval_multiplier", 1.0)))
 		"meteor_rain":

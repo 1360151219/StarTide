@@ -7,7 +7,6 @@ const CombatTimeline = preload("res://scripts/combat/combat_timeline.gd")
 const TelegraphRenderer = preload("res://scripts/presentation/enemy_telegraph_renderer.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
-const HudPickupFeedback = preload("res://scripts/ui/hud_pickup_feedback.gd")
 
 var failed := false
 var timeline_events: Array[String] = []
@@ -18,7 +17,6 @@ func _initialize() -> void:
 	_test_effect_budgets()
 	_test_combat_timeline()
 	_test_warning_progress()
-	_test_pickup_feedback()
 	_test_environment_normalization()
 	_test_color_roles()
 	_test_visual_language_contract()
@@ -106,32 +104,6 @@ func _test_warning_progress() -> void:
 	renderer.free()
 
 
-func _test_pickup_feedback() -> void:
-	var feedback := HudPickupFeedback.new()
-	feedback.size = Vector2(540, 960)
-	root.add_child(feedback)
-	var xp_bar := Control.new()
-	xp_bar.position = Vector2(102, 62)
-	xp_bar.size = Vector2(322, 6)
-	feedback.add_child(xp_bar)
-	var health_bar := Control.new()
-	health_bar.position = Vector2(102, 10)
-	health_bar.size = Vector2(322, 19)
-	feedback.add_child(health_bar)
-	var status_panel := Control.new()
-	status_panel.position = Vector2(18, 86)
-	status_panel.size = Vector2(504, 48)
-	feedback.add_child(status_panel)
-	feedback.show_destination("xp", Vector2(270, 480), xp_bar, health_bar, status_panel)
-	var trail_count := 0
-	var glyph_count := 0
-	for child in feedback.get_children():
-		trail_count += int(child is Line2D and child.width >= 4.0)
-		glyph_count += int(child is Panel and child.size == Vector2(34, 34))
-	_require(trail_count == 1 and glyph_count == 1, "拾取反馈没有使用 34px 隔离徽章与 4px 可追踪尾迹")
-	feedback.free()
-
-
 func _test_environment_normalization() -> void:
 	var world_file := FileAccess.open("res://scripts/presentation/world_renderer.gd", FileAccess.READ)
 	_require(world_file != null, "无法读取战斗地表渲染器")
@@ -180,6 +152,7 @@ func _test_visual_language_contract() -> void:
 	var start_file := FileAccess.open("res://scripts/ui/start_screen.gd", FileAccess.READ)
 	_require(start_file != null and start_file.get_as_text().contains("ExpeditionRouteMap"), "远征首页没有接入五生态路线地图")
 	_require(not FileAccess.file_exists("res://scripts/ui/level_preview.gd") and not FileAccess.file_exists("res://scripts/ui/level_selector.gd"), "旧门户轮播实现仍与远征地图并存")
+	_require(not FileAccess.file_exists("res://scripts/ui/hud_pickup_feedback.gd"), "拾取物飞向 HUD 的干扰动画仍然存在")
 
 
 func _record_timeline(event_id: String) -> void:

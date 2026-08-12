@@ -42,7 +42,7 @@ func _initialize() -> void:
 			session.select_upgrade(choices[0]["choice_key"])
 			upgrade_steps += 1
 		if not session.state.finished:
-			session.advance(level.duration - session.state.elapsed, Vector2.ZERO)
+			session.advance(level.duration - session.state.objective_elapsed() + 0.01, Vector2.ZERO)
 		_require(session.state.finished and session.state.victory, "%s 未能按独立胜利条件通关" % level.display_name)
 		session.queue_free()
 	if not failed:

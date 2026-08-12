@@ -57,6 +57,7 @@ max_telegraphs = 1
 max_projectiles = 2
 min_start_interval = 0.55
 max_player_danger_areas = 1
+disabled_ability_ids = PackedStringArray("cloud_hart_sector", "bellfeather_circle")
 
 [sub_resource type="Resource" id="DropHeart"]
 script = ExtResource("10_drop")
@@ -239,7 +240,7 @@ ability_variant_id = "bat_bolt"
 script = ExtResource("5_stage")
 stage_id = "thousand_mile_pressure"
 display_name = "千里风压"
-subtitle = "提高经验产出，并组合四类已知预警"
+subtitle = "提高经验产出，并组合多类敌人的移动压力"
 start_time = 28.0
 spawn_interval_start = 0.68
 spawn_interval_end = 0.56
@@ -366,8 +367,8 @@ difficulty_step = 0
 difficulty_rating = 5
 recommended_power = 1650
 display_name = "千里云庭"
-subtitle = "Boss 试炼 · 75 秒降临"
-description = "在前半程完成构筑，75 秒迎战千里巡守·驺吾；击败后立即通过试炼。"
+subtitle = "Boss 试炼 · 击败即通关"
+description = "在前半程完成构筑，75 秒迎战千里巡守·驺吾；试炼无时间限制，击败后立即通关。"
 map = SubResource("Map")
 duration = 150.0
 initial_enemy_count = 4

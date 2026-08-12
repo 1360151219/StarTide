@@ -142,7 +142,15 @@ func _verify_upgrade_completed(game: Node) -> void:
 func _test_victory(game: Node) -> void:
 	game.session.player.max_health = 99999.0
 	game.session.player.health = 99999.0
-	game.session.advance(game.session.level.duration, Vector2.ZERO)
+	game.session.state.elapsed = game.session.level.elite.spawn_time
+	game.session._update_stage_events()
+	_require(is_instance_valid(game.session.elite_enemy), "第一关精英没有生成")
+	game.session.state.elite_defeated = true
+	game.session.state.elite_defeated_at = game.session.state.elapsed
+	game.session.enemies.remove_enemy(game.session.elite_enemy)
+	game.session.elite_enemy = null
+	game.session.state.elapsed = game.session.level.duration
+	game.session._resolve_time_boundary()
 	_require(game.session.state.finished and game.session.state.victory, "第一关 90 秒胜利未生效")
 	_require(game.result_overlay.visible, "胜利结算没有出现")
 	game.result_overlay.finish_reveal()

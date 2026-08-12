@@ -20,23 +20,24 @@ data = {
 "level_overrides": {
 2: {"count": 2, "damage_multiplier": 0.9, "spread": 0.16},
 4: {"count": 3, "damage_multiplier": 0.8, "spread": 0.19},
-5: {"count": 4, "damage_multiplier": 0.69, "spread": 0.22}
+5: {"count": 5, "damage_multiplier": 0.74, "spread": 0.26}
 },
 "name": "星雨齐射",
 "visual_tags": ["多弹", "广域"]
 },
 "star_lance_pierce": {
-"description": "减少散射，换取更高伤害与贯穿能力。",
+"description": "II级连续命中2个目标，III级3个，IV级起无限贯穿。",
 "level_overrides": {
 2: {"count": 1, "damage_multiplier": 1.1, "pierce": 1},
-4: {"count": 1, "damage_multiplier": 1.25, "pierce": 1},
-5: {"count": 1, "damage_multiplier": 1.38, "pierce": 1}
+3: {"count": 1, "damage_multiplier": 1.1, "pierce": 2},
+4: {"count": 1, "damage_multiplier": 1.25, "pierce": -1},
+5: {"count": 1, "damage_multiplier": 1.38, "pierce": -1}
 },
 "name": "贯星长枪",
 "visual_tags": ["高伤", "贯穿"]
 }
 },
-"descriptions": ["", "自动锁定最近的敌人发射星枪", "选择群体覆盖或贯穿高伤分支", "分支威力加深，伤害提高 20%", "强化已选分支的弹体结构", "星枪完成终极进化，形成密集星芒攻势"],
+"descriptions": ["", "自动锁定最近的敌人发射星枪", "选择群体覆盖或贯穿高伤分支", "伤害提高 20%，贯星长枪可连续命中3个目标", "强化已选分支，贯星长枪获得无限贯穿", "星枪完成终极进化，形成密集星芒攻势"],
 "icon": ExtResource("3_star_lance"),
 "is_signature": true,
 "max_level": 5,
@@ -45,7 +46,7 @@ data = {
 "runtime": {
 "cooldown": [0.0, 0.92, 0.9, 0.9, 0.89, 0.88],
 "count": [0, 1, 2, 2, 3, 3],
-"damage": [0.0, 22.0, 25.0, 30.0, 32.0, 34.0],
+"damage": [0.0, 22.0, 25.0, 30.0, 32.0, 36.0],
 "pierce": [0, 0, 0, 0, 0, 0],
 "radius": [0.0, 7.0, 7.0, 7.0, 8.0, 9.0],
 "speed": [0.0, 520.0, 550.0, 550.0, 580.0, 610.0],

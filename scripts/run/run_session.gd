@@ -4,7 +4,6 @@ signal state_changed
 signal stage_banner_requested(title: String, subtitle: String, duration: float)
 signal upgrade_requested(player_level: int, choices: Array, upgrade_system: RefCounted, build_state: RefCounted)
 signal player_hit_feedback_requested(damage: float, source_direction: Vector2)
-signal pickup_collected(pickup_id: String)
 signal finished(presentation: Dictionary)
 
 const RunState = preload("res://scripts/run/run_state.gd")
@@ -85,7 +84,6 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	pickups.experience_collected.connect(add_experience)
 	pickups.heal_requested.connect(func(amount: float) -> void: player.heal(amount, "pickup:heart"))
 	pickups.pickup_collected.connect(func(pickup_id: String) -> void: records.discover_content("pickups", pickup_id))
-	pickups.pickup_collected.connect(pickup_collected.emit)
 	records.discover_content("skills", str(build_state.skill_slots[0]))
 	enemies.spawn_initial()
 	var stage := stage_director.current_stage()
@@ -95,7 +93,7 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 func advance(delta: float, direction: Vector2) -> void:
 	if state.finished or state.paused:
 		return
-	state.elapsed = minf(level.duration, state.elapsed + delta)
+	state.elapsed += delta
 	if _resolve_time_boundary():
 		return
 	_update_stage_events()
@@ -200,6 +198,7 @@ func _on_enemy_defeated(enemy: Node) -> void:
 	effects.add_effect(enemy.position, enemy.radius + 62.0, Color("f6c968"), 0.76, "elite_defeat")
 	audio.play_sfx("elite_defeat", 0.0)
 	state.elite_defeated = true
+	state.elite_defeated_at = state.elapsed
 	elite_enemy = null
 	build_state.rerolls_remaining += 1
 	pickups.activate_magnet(state.elapsed, level.elite.magnet_duration)
@@ -225,11 +224,8 @@ func _request_upgrade() -> void:
 
 
 func _resolve_time_boundary() -> bool:
-	if level.victory.is_victory(state.elapsed, level.duration, state.elite_defeated, state.boss_defeated):
+	if level.victory.is_victory(state.objective_elapsed(), level.duration, state.elite_defeated, state.boss_defeated):
 		_finish(true, RunState.END_COMPLETED)
-		return true
-	if level.victory.is_timeout_failure(state.elapsed, level.duration, state.elite_defeated, state.boss_defeated):
-		_finish(false, RunState.END_OBJECTIVE_TIMEOUT)
 		return true
 	return false
 

@@ -90,7 +90,7 @@ func _state_for(enemy: Node) -> Dictionary:
 func _can_begin(state: Dictionary, enemy: Node, elapsed: float, warning_count: int) -> bool:
 	var budget: EnemyAbilityBudgetConfig = level.enemy_ability_budget
 	var ability_id: String = enemy.ability_id
-	if budget == null or ability_id.is_empty() or elapsed < budget.opening_protection_time:
+	if budget == null or ability_id.is_empty() or not budget.allows_ability(ability_id) or elapsed < budget.opening_protection_time:
 		return false
 	if float(state["visible_since"]) < 0.0 or elapsed - float(state["visible_since"]) < VISIBLE_CAST_DELAY:
 		return false

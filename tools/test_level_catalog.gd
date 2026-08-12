@@ -113,6 +113,8 @@ func _test_ability_pressure() -> void:
 	var base := LevelBalance.stage_pressure(level, 0)
 	stage.entry_for("green_grub").ability_variant_id = "green_grub_roll"
 	_require(is_equal_approx(LevelBalance.stage_pressure(level, 0), base * 1.10), "怪物技能变体威胁没有计入压力")
+	level.enemy_ability_budget.disabled_ability_ids = PackedStringArray(["green_grub_roll"])
+	_require(is_equal_approx(LevelBalance.stage_pressure(level, 0), base), "关卡禁用的怪物技能仍然计入压力")
 	_require(is_equal_approx(EnemyAbilityCatalog.threat_multiplier(""), 1.0), "无技能怪物仍有技能威胁倍率")
 
 
@@ -144,7 +146,7 @@ func _test_campaign_extension(levels: Array[LevelConfig]) -> void:
 			starts.append(stage.start_time)
 		_require(starts == CAMPAIGN_EXTENSION_STARTS[level.level_id], "%s 波次节点错误" % level.level_id)
 	var pressure_ratio := LevelBalance.level_pressure(fourth) / LevelBalance.level_pressure(LevelCatalog.by_id("level_03"))
-	_require(pressure_ratio >= 1.15 and pressure_ratio <= 1.25, "第四关总压力未保持在第三关的 1.15～1.25 倍：%.3f" % pressure_ratio)
+	_require(pressure_ratio >= 0.95 and pressure_ratio <= 1.05, "禁用新怪技能后，第四关普通波压力没有贴近第三关：%.3f" % pressure_ratio)
 	var fourth_respite_ratio := LevelBalance.stage_pressure(fourth, 3) / LevelBalance.stage_pressure(fourth, 2)
 	_require(fourth_respite_ratio >= 0.5 and fourth_respite_ratio <= 0.65, "第四关喘息压力没有接近前一波 60%%：%.3f" % fourth_respite_ratio)
 	_require(fourth.elite.spawn_time == 100.0 and fourth.elite.bonus_upgrade_count == 2 and fourth.elite.magnet_duration == 8.0, "第四关精英节点或奖励错误")

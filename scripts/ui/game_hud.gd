@@ -10,7 +10,6 @@ const StageHud = preload("res://scripts/ui/stage_hud.gd")
 const BattleTopBar = preload("res://scripts/ui/battle_top_bar.gd")
 const VirtualJoystickScript = preload("res://scripts/virtual_joystick.gd")
 const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
-const HudPickupFeedback = preload("res://scripts/ui/hud_pickup_feedback.gd")
 
 var health_bar: Control
 var xp_bar: Control
@@ -27,7 +26,6 @@ var health_notch: ColorRect
 var safe_area: Control
 var pause_button: Button
 var top_panel: Control
-var pickup_effect_layer: Control
 var tutorial_time := 0.0
 var tutorial_step := 0
 var health_notch_time := 0.0
@@ -57,8 +55,6 @@ func _ready() -> void:
 	skill_dock.move_to_front()
 	tutorial_panel.move_to_front()
 	_build_damage_flash()
-	pickup_effect_layer = HudPickupFeedback.new()
-	add_child(pickup_effect_layer)
 	visible = false
 
 
@@ -79,10 +75,10 @@ func refresh(state: RefCounted, level: LevelConfig, player: Node2D, skills: Node
 	if last_health_value >= 0.0 and player.health < last_health_value:
 		_show_health_notch(health_ratio)
 	last_health_value = player.health
-	top_panel.refresh(state.player_level, player.health, player.max_health, state.experience, state.experience_needed, _format_time(maxf(0.0, level.duration - state.elapsed)), state.kills, health_ratio <= 0.3)
+	top_panel.refresh(state.player_level, player.health, player.max_health, state.experience, state.experience_needed, "生存 %s" % _format_time(state.elapsed), state.kills, health_ratio <= 0.3)
 	skill_dock.refresh(skills, state.elapsed)
 	var passive_color := Color("70e8ff") if state.hero_id == "star_warden" else Color("ff9a62")
-	stage_hud.refresh(stage, passives.status_text(state.elapsed), passive_color, pickups.remaining_magnet_seconds(state.elapsed), elite, state.elapsed, level.duration)
+	stage_hud.refresh(stage, passives.status_text(state.elapsed), passive_color, pickups.remaining_magnet_seconds(state.elapsed), elite, state.objective_elapsed(), level.duration)
 
 
 func advance(delta: float) -> void:
@@ -96,10 +92,6 @@ func advance(delta: float) -> void:
 	health_notch.visible = health_notch_time > 0.0
 	health_notch.modulate.a = clampf(health_notch_time / 0.22, 0.0, 1.0)
 	stage_hud.advance(delta)
-
-
-func show_pickup_destination(pickup_id: String, from_screen: Vector2) -> void:
-	pickup_effect_layer.show_destination(pickup_id, from_screen, xp_bar, health_bar, stage_hud.status_panel)
 
 
 func observe_movement(direction: Vector2) -> void:

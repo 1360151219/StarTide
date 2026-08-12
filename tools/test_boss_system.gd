@@ -5,7 +5,6 @@ const CombatEffects = preload("res://scripts/combat_effects.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const RunRecords = preload("res://scripts/run_records.gd")
 const RunSession = preload("res://scripts/run/run_session.gd")
-const RunState = preload("res://scripts/run/run_state.gd")
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const StageDirector = preload("res://scripts/run/stage_director.gd")
 
@@ -17,9 +16,9 @@ func _initialize() -> void:
 	_test_spawn_stats_and_minion_caps()
 	_test_phase_sequences()
 	_test_fixed_seed_ttk()
-	_test_immediate_victory_and_timeout()
+	_test_immediate_victory_and_no_time_limit()
 	if not failed:
-		print("BOSS_OK spawn=75_once phases=3 deterministic=true no_repeat=true triple_dash=true warnings=1 minions=8 immediate_victory=true timeout=150 cleanup=true fixed_scaling=true")
+		print("BOSS_OK spawn=75_once phases=3 deterministic=true no_repeat=true triple_dash=true warnings=1 minions=8 immediate_victory=true no_time_limit=true cleanup=true fixed_scaling=true")
 	quit(1 if failed else 0)
 
 
@@ -90,7 +89,7 @@ func _test_phase_sequences() -> void:
 	session.free()
 
 
-func _test_immediate_victory_and_timeout() -> void:
+func _test_immediate_victory_and_no_time_limit() -> void:
 	var victory_session := _create_session(1203)
 	for enemy in victory_session.enemies.snapshot():
 		victory_session.enemies.remove_enemy(enemy)
@@ -101,12 +100,14 @@ func _test_immediate_victory_and_timeout() -> void:
 	_require(victory_session.state.finished and victory_session.state.victory and victory_session.state.boss_defeated, "Boss 生命归零后没有立即胜利")
 	_require(boss.recognizing and not boss.contact_enabled and victory_session.boss_abilities.active_warning_count() == 0, "Boss 认可表现或结束清理错误")
 	victory_session.free()
-	var timeout_session := _create_session(1204)
-	timeout_session.state.elapsed = 149.9
-	timeout_session.advance(0.2, Vector2.ZERO)
-	_require(timeout_session.state.finished and not timeout_session.state.victory and timeout_session.state.end_reason == RunState.END_OBJECTIVE_TIMEOUT, "150 秒未击败 Boss 没有失败")
-	_require(timeout_session.boss_abilities.active_warning_count() == 0, "超时结束后 Boss 预警未清理")
-	timeout_session.free()
+	var unlimited_session := _create_session(1204)
+	unlimited_session.player.max_health = 99999.0
+	unlimited_session.player.health = 99999.0
+	unlimited_session.damage_resolver.invulnerable_until = INF
+	unlimited_session.state.elapsed = 149.9
+	unlimited_session.advance(0.2, Vector2.ZERO)
+	_require(unlimited_session.state.elapsed > 150.0 and not unlimited_session.state.finished and unlimited_session.state.boss_spawned, "Boss 战在 150 秒被截断")
+	unlimited_session.free()
 
 
 func _test_fixed_seed_ttk() -> void:

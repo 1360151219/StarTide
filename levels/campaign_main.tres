@@ -17,7 +17,7 @@
 script = ExtResource("3_profile")
 profile_id = "chapter_01_curve"
 display_name = "星门初航"
-pressure_curve = PackedFloat32Array(1, 1.495, 3.251, 3.9)
+pressure_curve = PackedFloat32Array(1, 1.495, 3.251, 3.273)
 recommended_power_curve = PackedInt32Array(1000, 1100, 1250, 1450)
 pressure_tolerance = 0.04
 

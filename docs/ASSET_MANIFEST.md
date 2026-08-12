@@ -78,7 +78,7 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 
 | 怪物 | 正面 | 侧面 |
 |---|---|---|
-| 青叶团团 | `assets/art/enemies/green_grub.png` | `assets/art/enemies/green_grub_side.png` |
+| 张姐蛆 | `assets/art/enemies/green_grub.png` | `assets/art/enemies/green_grub_side.png` |
 | 星蚀史莱姆 | `assets/art/enemies/starblight_slime.png` | `assets/art/enemies/starblight_slime_side.png` |
 | 暮翼蝠 | `assets/art/enemies/duskwing_bat.png` | `assets/art/enemies/duskwing_bat_side.png` |
 | 陨岩巨怪 | `assets/art/enemies/meteor_brute.png` | `assets/art/enemies/meteor_brute_side.png` |

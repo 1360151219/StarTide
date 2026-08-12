@@ -86,7 +86,7 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 	if enemy_ability_budget == null:
 		errors.append("怪物技能预算不能为空")
 	else:
-		_append_prefixed(errors, "怪物技能预算", enemy_ability_budget.validation_errors())
+		_append_prefixed(errors, "怪物技能预算", enemy_ability_budget.validation_errors(valid_ability_ids))
 	_validate_stages(errors, valid_enemy_ids, valid_ability_ids)
 	if elite != null:
 		_append_prefixed(errors, "精英", elite.validation_errors(duration, valid_enemy_ids))

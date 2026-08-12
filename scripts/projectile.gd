@@ -1,5 +1,7 @@
 extends Node2D
 
+const UNLIMITED_PIERCE := -1
+
 var velocity := Vector2.ZERO
 var damage := 20.0
 var radius := 7.0
@@ -42,6 +44,8 @@ func can_hit(enemy: Node) -> bool:
 
 func register_hit(enemy: Node) -> bool:
 	hit_ids[enemy.get_instance_id()] = true
+	if pierce == UNLIMITED_PIERCE:
+		return false
 	if pierce > 0:
 		pierce -= 1
 		return false

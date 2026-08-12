@@ -66,6 +66,8 @@ static func _ability_active_ratio(level: LevelConfig, stage_index: int, entry: E
 		return 0.0
 	if level.enemy_ability_budget == null:
 		return 1.0
+	if not level.enemy_ability_budget.allows_ability(entry.ability_variant_id):
+		return 0.0
 	var stage_end := level.stage_end_time(stage_index)
 	var duration := maxf(stage_end - stage.start_time, 0.001)
 	var active_start := maxf(stage.start_time, level.enemy_ability_budget.opening_protection_time)

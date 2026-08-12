@@ -23,10 +23,6 @@ func is_victory(elapsed: float, duration: float, elite_defeated: bool, boss_defe
 	return elapsed >= duration
 
 
-func is_timeout_failure(elapsed: float, duration: float, elite_defeated: bool, boss_defeated := false) -> bool:
-	return elapsed >= duration and not is_victory(elapsed, duration, elite_defeated, boss_defeated)
-
-
 func is_perfect(elite_defeated: bool) -> bool:
 	return perfect_requires_elite and elite_defeated
 

@@ -47,7 +47,11 @@ func _on_process_frame() -> void:
 		_capture("elite_encounter.png")
 	elif frame_count == 28:
 		game.session.resume()
-		game.session.state.elapsed = game.session.level.duration - 0.01
+		game.session.state.elite_defeated = true
+		game.session.state.elite_defeated_at = game.session.state.elapsed
+		game.session.enemies.remove_enemy(game.session.elite_enemy)
+		game.session.elite_enemy = null
+		game.session.state.elapsed += game.session.level.duration - game.session.state.objective_elapsed() - 0.01
 		game.session.advance(0.02, Vector2.ZERO)
 	elif frame_count == 34:
 		_capture("victory.png")

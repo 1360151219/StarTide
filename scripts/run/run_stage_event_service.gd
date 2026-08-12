@@ -17,6 +17,7 @@ static func _spawn_elite(session: Node) -> void:
 	session.state.elite_spawned = true
 	session.elite_enemy = session.enemies.spawn_elite(session.level.elite, session.state.elapsed)
 	if is_instance_valid(session.elite_enemy):
+		session.state.elite_spawned_at = session.state.elapsed
 		session.effects.add_effect(session.elite_enemy.position, session.elite_enemy.radius + 52.0, Color("f6c968"), 0.72, "elite_appear")
 	session.audio.play_sfx("elite_appear", 0.0)
 	var stage: StageConfig = session.stage_director.current_stage()

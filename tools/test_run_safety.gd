@@ -40,7 +40,7 @@ func _test_opening_gate(session: Node) -> void:
 func _test_upgrade_resume(session: Node) -> void:
 	var enemy = session.enemies.enemies[0]
 	enemy.position = session.player.position
-	session.add_experience(36)
+	session.add_experience(session.state.experience_needed)
 	_require(session.state.paused and not session.build_state.pending_choices.is_empty(), "升级恢复保护测试没有进入选择状态")
 	var choice_key := str(session.build_state.pending_choices.keys()[0])
 	_require(session.select_upgrade(choice_key), "升级恢复保护测试无法应用候选")

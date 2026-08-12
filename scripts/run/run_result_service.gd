@@ -1,6 +1,5 @@
 extends RefCounted
 
-const RunState = preload("res://scripts/run/run_state.gd")
 const RunBalanceSample = preload("res://scripts/run/run_balance_sample.gd")
 
 var _balance_sample: RefCounted
@@ -90,9 +89,9 @@ func _outcome_hint(state: RefCounted, level: LevelConfig) -> String:
 		if state.boss_defeated:
 			return "%s · Boss 已认可" % level.display_name
 		return "%s · %s" % [level.display_name, "精英已击破" if state.elite_defeated else "星门已守住"]
-	if state.end_reason == RunState.END_OBJECTIVE_TIMEOUT:
-		return "时间结束 · 目标尚未完成"
-	var remaining := maxf(0.0, level.duration - state.elapsed)
+	if level.victory.mode == VictoryConfig.DEFEAT_BOSS:
+		return "%s · Boss 尚未击败" % level.display_name
+	var remaining := maxf(0.0, level.duration - state.objective_elapsed())
 	return "%s · 还差 %s" % [victory_hint(level), _format_time(remaining)]
 
 
@@ -109,7 +108,7 @@ func victory_hint(level: LevelConfig) -> String:
 		return "坚持 %d 秒" % level.duration
 	if level.victory.mode == VictoryConfig.DEFEAT_ELITE:
 		return "击败%s" % level.elite.display_name
-	return "击败%s并坚持 %d 秒" % [level.elite.display_name, level.duration]
+	return "通关计时 %d 秒 · 击败%s" % [level.duration, level.elite.display_name]
 
 
 func _format_time(seconds: float) -> String:

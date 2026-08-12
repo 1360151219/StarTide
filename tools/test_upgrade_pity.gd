@@ -4,6 +4,7 @@ const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const RelicCatalog = preload("res://scripts/relic_catalog.gd")
 const RunBuildState = preload("res://scripts/run/run_build_state.gd")
 const UpgradeSystem = preload("res://scripts/systems/upgrade_system.gd")
+const Projectile = preload("res://scripts/projectile.gd")
 
 var failed := false
 
@@ -11,8 +12,9 @@ var failed := false
 func _initialize() -> void:
 	_test_two_offer_limit()
 	_test_exhausted_pool_fallback()
+	_test_star_lance_pierce_growth()
 	if not failed:
-		print("UPGRADE_PITY_OK level=4 offer_limit=2 reroll=pinned exhausted_pool=safe")
+		print("UPGRADE_PITY_OK level=4 offer_limit=2 reroll=pinned exhausted_pool=safe pierce=2_3_unlimited")
 	quit(1 if failed else 0)
 
 
@@ -55,6 +57,24 @@ func _test_exhausted_pool_fallback() -> void:
 	var upgrades := UpgradeSystem.new(_rng(512))
 	var choices := upgrades.build_structured_choices(build, ["star_lance"], [], 1.0)
 	_require(not choices.is_empty() and _has_skill_target(choices, "star_lance", 5), "其他候选耗尽时 V 级保底被吞掉")
+
+
+func _test_star_lance_pierce_growth() -> void:
+	var build := RunBuildState.new("star_warden")
+	_require(build.select_branch("star_lance", "star_lance_pierce"), "贯星长枪分支无法选择")
+	_require(int(build.branch_overrides("star_lance")["pierce"]) == 1, "贯星长枪 II 级没有连续命中 2 个目标")
+	_require(build.upgrade_skill("star_lance") and int(build.branch_overrides("star_lance")["pierce"]) == 2, "贯星长枪 III 级没有连续命中 3 个目标")
+	_require(build.upgrade_skill("star_lance") and int(build.branch_overrides("star_lance")["pierce"]) == Projectile.UNLIMITED_PIERCE, "贯星长枪 IV 级没有获得无限贯穿")
+	var projectile := Projectile.new()
+	root.add_child(projectile)
+	projectile.pierce = Projectile.UNLIMITED_PIERCE
+	for _index in range(4):
+		var enemy := Node.new()
+		root.add_child(enemy)
+		_require(not projectile.register_hit(enemy) and projectile.pierce == Projectile.UNLIMITED_PIERCE, "无限贯穿投射物命中后被消耗")
+		enemy.free()
+	_require(build.upgrade_skill("star_lance") and int(build.branch_overrides("star_lance")["pierce"]) == Projectile.UNLIMITED_PIERCE, "贯星长枪 V 级丢失无限贯穿")
+	projectile.free()
 
 
 func _has_skill_target(choices: Array, skill_id: String, target_level: int) -> bool:
