@@ -89,11 +89,13 @@ func _on_process_frame() -> void:
 	)
 	_require(
 		equipment.size == Vector2(504, 682)
-		and equipment.inventory_sheet.size == Vector2(504, 252)
-		and equipment.count_label.position.y + equipment.count_label.size.y <= 198.0
+		and equipment.inventory_sheet.position == Vector2(-12, 418)
+		and equipment.inventory_sheet.size == Vector2(524, 302)
+		and equipment.count_label.position == Vector2(414, 36)
+		and equipment.count_label.size == Vector2(86, 24)
 		and equipment.status_label.position.x + equipment.status_label.size.x <= 426.0
 		and equipment.detail_sheet.size == Vector2(496, 244),
-		"装备托盘没有扩展到导航上方，或底部文案仍越过内容安全区"
+		"装备托盘布局异常，或背包数量没有固定在筛选行安全区"
 	)
 	var rare: Dictionary = records.grant_equipment("windstring_bow")
 	records.grant_equipment("crystal_vest")
@@ -136,7 +138,7 @@ func _on_process_frame() -> void:
 	_require(str(records.equipment_loadout_snapshot("star_warden")["weapon"]) == str(rare["instance_id"]), "确认装备没有写入装配")
 	_require(
 		equipment.hero_stage.power_delta_label.visible
-		and equipment.hero_stage.power_delta_label.text.begins_with("战力 +")
+		and equipment.hero_stage.power_delta_label.text.begins_with("评分 +")
 		and equipment.hero_stage.power_delta_glyph.glyph_id == "up"
 		and equipment.hero_stage.power_delta_feedback.visible
 		and equipment.hero_stage.power_tween != null,
@@ -155,7 +157,25 @@ func _on_process_frame() -> void:
 	occupied_card.pressed.emit()
 	_require(equipment.detail_sheet.action_button.disabled, "其他英雄使用中的装备仍可直接穿戴")
 	page.show_section("status")
-	_require(page.status_panel.metric_values.size() == 4 and page.status_panel.size.y == 506.0, "状态页没有保留核心属性并移除重复战力拆分")
+	_require(
+		page.status_panel.metric_values.size() == 4
+		and page.status_panel.metric_values.has("attack")
+		and page.status_panel.metric_values.has("health")
+		and page.status_panel.metric_values.has("speed")
+		and page.status_panel.metric_values.has("frequency")
+		and page.status_panel.size.y == 506.0,
+		"状态页没有保留四项可结算核心属性"
+	)
+	_require(
+		page.status_panel.metric_values["attack"].text.is_valid_float()
+		and not page.status_panel.metric_values["attack"].text.contains("%")
+		and page.status_panel.metric_values["health"].text.is_valid_float()
+		and page.status_panel.metric_values["speed"].text.is_valid_float()
+		and page.status_panel.metric_values["frequency"].text.ends_with("×")
+		and page.status_panel.level_label.text.contains("技能点"),
+		"状态页仍以百分比代替攻击力，或遗漏实际生命、移速与施法频率"
+	)
+	_require(page.status_panel.metric_values["attack"].tooltip_text.contains("通用伤害指数") and page.status_panel.metric_values["attack"].tooltip_text.contains("局内等级"), "攻击力没有说明永久指数语义及局内倍率边界")
 	_require(page.status_panel.name_label.get_theme_font("font").resource_path == "res://assets/fonts/SmileySans-Oblique.otf", "角色页重要标题没有使用 Smiley Sans")
 	page.show_section("skills")
 	_require(page.skill_panel.skill_cards.size() == 3 and page.skill_panel.skill_buttons.size() == 3, "技能培养卡不完整")
@@ -181,7 +201,7 @@ func _on_process_frame() -> void:
 	_require(screen.screen_background.texture.resource_path == "res://assets/art/sunlit/backgrounds/expedition_route_map.png", "离开角色页后没有恢复首页地图")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(storage_path))
 	if not failed:
-		print("CHARACTER_UI_OK title_asset=true power_plate=true hero_stage=250 slots=6 inventory_grid=5 tray_height=252 quality_assets=3 ownership_avatar=true")
+		print("CHARACTER_UI_OK title_asset=true power_plate=true hero_stage=250 slots=6 inventory_grid=5 tray_height=302 quality_assets=3 ownership_avatar=true")
 	quit(1 if failed else 0)
 
 

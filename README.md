@@ -6,11 +6,11 @@
 
 - 两名英雄：星潮守望者、烬羽游侠。
 - 六项英雄技能、分支强化、固有被动与三槽自动释放。
-- 三个连续解锁关卡：风铃草原、黄金绿洲、水晶火山。
-- 四类怪物、两类敌方主动技能、阶段与精英战。
-- 五类拾取、遗物、六件装备与永久成长。
+- 五个连续解锁关卡：风铃草原、黄金绿洲、水晶火山、五色云林、千里云庭。
+- 七类怪物、七套数据驱动敌方技能、阶段、精英与三阶段驺吾 Boss 战。
+- 五类拾取、遗物、七件装备与永久成长。
 - 远征地图、角色与装备、图鉴、音频设置、三选一、暂停和结算流程。
-- 大厅与三个生态的独立音乐，以及 39 个分级音效 Cue。
+- 大厅、五个生态与驺吾试炼的独立音乐，以及 56 个分级音效 Cue。
 
 ## 运行
 
@@ -41,7 +41,7 @@ main.tscn
 ```text
 content/*.tres                      # 英雄、敌人、技能、遗物、拾取、装备
 levels/campaign_main.tres           # 关卡顺序与通关链
-levels/level_*.tres                 # 地图、阶段、掉落、精英与胜利条件
+levels/level_*.tres                 # 地图、阶段、掉落、精英/Boss 与胜利条件
 scripts/*_catalog.gd                # 稳定 ID 到数据资源的只读入口
 ```
 
@@ -79,7 +79,7 @@ preview/responsive/     四档响应式截图基线
 
 当前测试覆盖：
 
-- 关卡目录、内容池、阶段、生成、敌方技能与胜利条件。
+- 关卡目录、内容池、阶段、生成、敌方技能、Boss 状态机与胜利条件。
 - 存档迁移、成长、战力、装备、技能、单局安全和内容发现。
 - 远征页、角色页、图鉴、表现系统、音频与主流程冒烟。
 - 540×960、540×1170、540×1200、720×960 四档响应式布局。
@@ -105,7 +105,7 @@ preview/responsive/     四档响应式截图基线
 
 角色完整帧预览器位于 `scenes/tools/hero_rig_tuner.tscn`，在 Godot 中打开后按 F6。
 
-其余保留的手动 QA 入口：`capture_biomes.gd` 检查三生态，`capture_stage_previews.gd` 检查阶段与精英，`capture_star_effects.gd` 检查星潮技能，`capture_hero_rig_tuner.gd` 检查角色帧预览器，`report_balance.gd` 输出关卡压力。
+其余保留的手动 QA 入口：`capture_biomes.gd` 检查五生态，`capture_stage_previews.gd` 检查阶段与强敌，`capture_star_effects.gd` 检查星潮技能，`capture_hero_rig_tuner.gd` 检查角色帧预览器，`report_balance.gd` 输出关卡压力。
 
 ## 导出
 

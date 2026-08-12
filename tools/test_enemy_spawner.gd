@@ -35,6 +35,9 @@ func _initialize() -> void:
 
 
 func _test_stage_weights(level: LevelConfig, index: int, spawner: RefCounted) -> void:
+	if not level.stages[index].spawning_enabled:
+		_require(spawner.roll_enemy_id().is_empty(), "%s 停刷阶段仍会产生怪物" % level.stages[index].display_name)
+		return
 	var counts := {}
 	for enemy_id in EnemyCatalog.ids():
 		counts[enemy_id] = 0
@@ -152,7 +155,7 @@ func _test_first_level_opening_budget() -> void:
 	var level := LevelCatalog.first()
 	var stage := level.stages[0]
 	_require(level.initial_enemy_count == 3, "第一关新手阶段初始怪物数回退")
-	_require(is_equal_approx(stage.spawn_interval_start, 1.3) and is_equal_approx(stage.spawn_interval_end, 0.95), "第一关新手阶段刷新曲线回退")
+	_require(is_equal_approx(stage.spawn_interval_start, 1.3) and is_equal_approx(stage.spawn_interval_end, 1.05), "第一关新手阶段刷新曲线回退")
 	var director := StageDirector.new()
 	director.configure(level)
 	var spawner := _spawner(level, director, 119)

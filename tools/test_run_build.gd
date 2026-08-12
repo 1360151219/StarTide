@@ -18,7 +18,7 @@ func _initialize() -> void:
 	_test_exhausted_pool_fallbacks()
 	_test_reroll_determinism()
 	if not failed:
-		print("RUN_BUILD_OK catalogs=data_driven skill_slots=3 relic_slots=4 output_cap=4.5 phoenix_hps=1.8 structured=true validation=strict reroll=deterministic")
+		print("RUN_BUILD_OK catalogs=data_driven skill_levels=5 skill_slots=3 relic_slots=4 output_cap=4.5 phoenix_hps=1.8 structured=true validation=strict reroll=deterministic")
 	quit(1 if failed else 0)
 
 
@@ -26,6 +26,7 @@ func _test_catalogs() -> void:
 	_require(not SkillCatalog.ids().is_empty() and SkillCatalog.validation_errors().is_empty(), "技能目录配置无效")
 	for skill_id in SkillCatalog.ids():
 		var skill := SkillCatalog.skill(skill_id)
+		_require(int(skill["max_level"]) == 5, "%s 局内等级上限不是 V" % skill_id)
 		_require(skill["branches"].size() == 2, "%s 未配置双分支" % skill_id)
 		_require(skill["icon"] != null, "%s 缺少图标" % skill_id)
 		_require(HeroCatalog.ids().has(str(skill["owner_hero_id"])), "%s 引用了未知英雄" % skill_id)
@@ -42,19 +43,26 @@ func _test_catalogs() -> void:
 
 func _test_branch_balance() -> void:
 	for skill_id in SkillCatalog.ids():
+		var skill := SkillCatalog.skill(skill_id)
+		var runtime: Dictionary = skill["runtime"]
+		var max_level := int(skill["max_level"])
 		var base_output := _effective_output(skill_id, 1, {})
 		_require(base_output > 0.0, "%s 的 I 级理论输出无效" % skill_id)
+		_require(_close(float(runtime["damage"][3]), float(runtime["damage"][2]) * 1.2), "%s 的 III 级不是严格增加 20%% 伤害" % skill_id)
+		for field in runtime:
+			if str(field) != "damage":
+				_require(runtime[field][3] == runtime[field][2], "%s 的 III 级额外改变了 %s" % [skill_id, field])
 		for branch_id in SkillCatalog.branch_ids(skill_id):
 			var branch := SkillCatalog.branch(skill_id, branch_id)
-			var overrides: Dictionary = branch["level_overrides"][3]
-			var ratio := _effective_output(skill_id, 3, overrides) / base_output
-			_require(ratio <= 4.5 + 0.0001, "%s/%s 的 I→III 理论输出达到 %.3f 倍" % [skill_id, branch_id, ratio])
+			var overrides: Dictionary = branch["level_overrides"][max_level]
+			var ratio := _effective_output(skill_id, max_level, overrides) / base_output
+			_require(ratio >= 3.7, "%s/%s 的 I→V 理论输出只有 %.3f 倍" % [skill_id, branch_id, ratio])
+			_require(ratio <= 4.5 + 0.0001, "%s/%s 的 I→V 理论输出达到 %.3f 倍" % [skill_id, branch_id, ratio])
 			if skill_id == "phoenix_heart":
-				var runtime: Dictionary = SkillCatalog.skill(skill_id)["runtime"]
-				var healing := float(runtime["healing"][3]) * float(overrides.get("healing_multiplier", 1.0)) * 1.04
-				var cooldown := float(runtime["cooldown"][3]) * float(overrides.get("cooldown_multiplier", 1.0)) * 0.96
+				var healing := float(runtime["healing"][max_level]) * float(overrides.get("healing_multiplier", 1.0)) * 1.04
+				var cooldown := float(runtime["cooldown"][max_level]) * float(overrides.get("cooldown_multiplier", 1.0)) * 0.96
 				var healing_per_second := healing / cooldown
-				_require(healing_per_second <= 1.8 + 0.0001, "%s 训练 III 后治疗达到 %.3f HP/s" % [branch_id, healing_per_second])
+				_require(healing_per_second <= 1.8 + 0.0001, "%s 训练 V 后治疗达到 %.3f HP/s" % [branch_id, healing_per_second])
 
 
 func _test_build_state() -> void:
@@ -75,6 +83,11 @@ func _test_build_state() -> void:
 	var summary := BuildSummary.text(build)
 	_require(summary.contains("星芒枪 I") and summary.contains("聚能棱晶 II"), "暂停与结算构筑摘要缺少技能或遗物等级")
 	_require(summary.contains("重抽 1"), "构筑摘要没有展示剩余重抽次数")
+	build.skill_levels["star_lance"] = 3
+	_require(build.add_or_upgrade_relic("energy_prism"), "遗物无法升到满级")
+	var differentiated_summary := BuildSummary.text(build)
+	_require(differentiated_summary.contains("星芒枪 III"), "技能 III 被错误显示为满级")
+	_require(differentiated_summary.contains("聚能棱晶 MAX"), "遗物满级没有显示为 MAX")
 
 
 func _test_structured_choices() -> void:
@@ -105,7 +118,7 @@ func _test_structured_choices() -> void:
 	var next_choices: Array = upgrades.build_structured_choices(build, skill_pool, relic_pool, 1.0)
 	_require(_has_skill_growth(next_choices) and _count_kind(next_choices, UpgradeSystem.RELIC_UPGRADE) >= 1, "常规候选没有同时包含技能成长与遗物")
 	build.clear_offer()
-	build.skill_levels["star_lance"] = 3
+	build.skill_levels["star_lance"] = 5
 	var legal: Array = upgrades.legal_structured_candidates(build, skill_pool, relic_pool, 1.0)
 	_require(not _has_content(legal, "star_lance"), "满级技能仍进入候选")
 	var locked: Array = upgrades.legal_structured_candidates(RunBuildState.new("star_warden"), ["star_lance"], relic_pool, 1.0)

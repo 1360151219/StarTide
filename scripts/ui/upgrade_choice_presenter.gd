@@ -2,6 +2,7 @@ extends RefCounted
 
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const RelicCatalog = preload("res://scripts/relic_catalog.gd")
+const ChoiceFactory = preload("res://scripts/systems/upgrade_choice_factory.gd")
 const HEART_ICON := preload("res://assets/art/pickups/healing_heart.png")
 
 
@@ -77,7 +78,7 @@ static func _name_text(choice: Dictionary) -> String:
 	var kind := str(choice.get("kind", ""))
 	var target_level := int(choice.get("target_level", 0))
 	if kind == "skill_upgrade" and target_level > 0 and not title_text.begins_with("终极"):
-		return "%s  ·  %s" % [title_text, _level_mark(target_level)]
+		return "%s  ·  %s" % [title_text, ChoiceFactory.roman(target_level)]
 	return title_text
 
 
@@ -110,7 +111,7 @@ static func _metrics(choice: Dictionary) -> Array[Dictionary]:
 static func _skill_metrics(skill_id: String, target_level: int) -> Array[Dictionary]:
 	var skill := SkillCatalog.skill(skill_id)
 	if skill.is_empty() or not skill.has("runtime"):
-		return [_metric("等级", _level_mark(target_level), "level")]
+		return [_metric("等级", ChoiceFactory.roman(target_level), "level")]
 	var result: Array[Dictionary] = []
 	var definitions := [
 		["count", "数量", "level"], ["damage", "伤害", "enemy"], ["healing", "恢复", "heal"],
@@ -131,13 +132,13 @@ static func _skill_metrics(skill_id: String, target_level: int) -> Array[Diction
 		if result.size() >= 3:
 			break
 	if result.is_empty():
-		result.append(_metric("等级", _level_mark(target_level), "level"))
+		result.append(_metric("等级", ChoiceFactory.roman(target_level), "level"))
 	return result
 
 
 static func _branch_metrics(skill_id: String, branch_id: String, target_level: int) -> Array[Dictionary]:
 	var branch := SkillCatalog.branch(skill_id, branch_id)
-	var result: Array[Dictionary] = [_metric("阶段", _level_mark(target_level), "level")]
+	var result: Array[Dictionary] = [_metric("阶段", ChoiceFactory.roman(target_level), "level")]
 	for tag in branch.get("visual_tags", []):
 		result.append(_metric("特性" if result.size() == 1 else "定位", str(tag), "confirm" if result.size() == 1 else "expedition"))
 		if result.size() >= 3:
@@ -148,7 +149,7 @@ static func _branch_metrics(skill_id: String, branch_id: String, target_level: i
 static func _relic_metrics(relic_id: String, target_level: int) -> Array[Dictionary]:
 	var relic := RelicCatalog.relic(relic_id)
 	if relic.is_empty():
-		return [_metric("等级", _level_mark(target_level), "level")]
+		return [_metric("等级", ChoiceFactory.roman(target_level), "level")]
 	var modifiers: Dictionary = relic.get("modifiers_per_level", {})
 	var result: Array[Dictionary] = []
 	var seen_labels := {}
@@ -166,7 +167,7 @@ static func _relic_metrics(relic_id: String, target_level: int) -> Array[Diction
 	if healing > 0.0 and result.size() < 3:
 		result.append(_metric("恢复", "+%.0f" % healing, "heal"))
 	if result.is_empty():
-		result.append(_metric("等级", _level_mark(target_level), "level"))
+		result.append(_metric("等级", ChoiceFactory.level_mark(target_level, int(relic["max_level"]), true), "level"))
 	return result
 
 
@@ -184,10 +185,6 @@ static func _skill_value(key: String, before: float, after: float) -> String:
 
 static func _transition(before_text: String, after_text: String, before: float) -> String:
 	return after_text if is_zero_approx(before) else "%s→%s" % [before_text, after_text]
-
-
-static func _level_mark(level: int) -> String:
-	return ["0", "I", "II", "MAX"][clampi(level, 0, 3)]
 
 
 static func _modifier_name(key: String) -> String:

@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/levels/equipment_drop_table_config.gd" id="15_drop_table"]
 [ext_resource type="Script" path="res://scripts/levels/equipment_grant_entry_config.gd" id="16_grant"]
 [ext_resource type="Script" path="res://scripts/levels/equipment_reward_config.gd" id="17_equipment_reward"]
+[ext_resource type="Texture2D" path="res://assets/art/ui/home/route_icon_volcano.png" id="18_route_icon"]
 
 [sub_resource type="Resource" id="SkillFrostTide"]
 script = ExtResource("13_weighted")
@@ -108,6 +109,9 @@ map_id = "meteor_core"
 display_name = "彩晶火山"
 biome_id = "crystal_volcano"
 floor_texture = ExtResource("9_floor")
+route_icon = ExtResource("18_route_icon")
+route_pin_center = Vector2(340, 382)
+route_hero_position = Vector2(250, 420)
 world_bounds = Rect2(-1100, -1100, 2200, 2200)
 spawn_distance_min = 520.0
 spawn_distance_max = 620.0
@@ -136,8 +140,9 @@ entries = Array[ExtResource("16_grant")]([SubResource("FirstClearEquipmentEntry"
 [sub_resource type="Resource" id="Reward"]
 script = ExtResource("8_reward")
 reward_id = "campaign_complete"
-display_name = "星门守望者"
-description = "完成当前三关远征，获得星门守望者认证"
+display_name = "云林航标"
+description = "开放五色云林远征路线"
+unlock_level_id = "level_04"
 first_clear_equipment_reward = SubResource("FirstClearEquipment")
 
 [sub_resource type="Resource" id="DropApprenticeStarwand"]
@@ -184,20 +189,20 @@ max_level = 3
 [sub_resource type="Resource" id="Stage1Bat"]
 script = ExtResource("14_enemy")
 enemy_id = "bat"
-weight = 0.38
+weight = 0.35
 max_active = 7
 ability_variant_id = "bat_bolt"
 
 [sub_resource type="Resource" id="Stage1Brute"]
 script = ExtResource("14_enemy")
 enemy_id = "brute"
-weight = 0.12
+weight = 0.1
 max_active = 10
 
 [sub_resource type="Resource" id="Stage1Grub"]
 script = ExtResource("14_enemy")
 enemy_id = "green_grub"
-weight = 0.15
+weight = 0.2
 max_active = 18
 ability_variant_id = "green_grub_roll"
 
@@ -212,29 +217,29 @@ script = ExtResource("5_stage")
 stage_id = "stone_knock"
 display_name = "岩潮叩门"
 subtitle = "岩壳魔物踏入星核圣所"
-spawn_interval_start = 0.78
-spawn_interval_end = 0.66
-extra_spawn_chance = 0.06
+spawn_interval_start = 0.82
+spawn_interval_end = 0.7
+extra_spawn_chance = 0.04
 enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage1Bat"), SubResource("Stage1Brute"), SubResource("Stage1Grub"), SubResource("Stage1Slime")])
 transition_rest_duration = 0.0
 
 [sub_resource type="Resource" id="Stage2Bat"]
 script = ExtResource("14_enemy")
 enemy_id = "bat"
-weight = 0.37
+weight = 0.3
 max_active = 8
 ability_variant_id = "bat_bolt"
 
 [sub_resource type="Resource" id="Stage2Brute"]
 script = ExtResource("14_enemy")
 enemy_id = "brute"
-weight = 0.3
+weight = 0.35
 max_active = 18
 
 [sub_resource type="Resource" id="Stage2Grub"]
 script = ExtResource("14_enemy")
 enemy_id = "green_grub"
-weight = 0.08
+weight = 0.1
 max_active = 12
 ability_variant_id = "green_grub_roll"
 
@@ -249,87 +254,163 @@ script = ExtResource("5_stage")
 stage_id = "heavy_encirclement"
 display_name = "重岩合围"
 subtitle = "陨岩巨怪开始压缩活动空间"
-start_time = 30.0
-spawn_interval_start = 0.64
-spawn_interval_end = 0.52
-extra_spawn_chance = 0.18
+start_time = 24.0
+spawn_interval_start = 0.65
+spawn_interval_end = 0.53
+extra_spawn_chance = 0.16
 enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage2Bat"), SubResource("Stage2Brute"), SubResource("Stage2Grub"), SubResource("Stage2Slime")])
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Stage3Bat"]
 script = ExtResource("14_enemy")
 enemy_id = "bat"
-weight = 0.32
-max_active = 8
+weight = 0.25
+max_active = 6
 ability_variant_id = "bat_bolt"
 
 [sub_resource type="Resource" id="Stage3Brute"]
 script = ExtResource("14_enemy")
 enemy_id = "brute"
-weight = 0.45
-max_active = 26
+weight = 0.1
+max_active = 12
 
 [sub_resource type="Resource" id="Stage3Grub"]
 script = ExtResource("14_enemy")
 enemy_id = "green_grub"
-weight = 0.05
-max_active = 10
+weight = 0.4
+max_active = 24
 ability_variant_id = "green_grub_roll"
 
 [sub_resource type="Resource" id="Stage3Slime"]
 script = ExtResource("14_enemy")
 enemy_id = "slime"
-weight = 0.18
-max_active = 18
+weight = 0.25
+max_active = 22
 
 [sub_resource type="Resource" id="Stage3"]
 script = ExtResource("5_stage")
-stage_id = "core_overload"
-display_name = "星核过载"
-subtitle = "重型敌潮随星核温度持续增强"
-start_time = 60.0
-spawn_interval_start = 0.5
-spawn_interval_end = 0.4
-extra_spawn_chance = 0.28
+stage_id = "crystal_respite"
+display_name = "晶风间歇"
+subtitle = "岩潮回落，收拢散落的星辉"
+start_time = 50.0
+spawn_interval_start = 1.0
+spawn_interval_end = 0.88
+extra_spawn_chance = 0.02
 enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage3Bat"), SubResource("Stage3Brute"), SubResource("Stage3Grub"), SubResource("Stage3Slime")])
-transition_rest_duration = 2.0
+transition_rest_duration = 2.5
 
 [sub_resource type="Resource" id="Stage4Bat"]
 script = ExtResource("14_enemy")
 enemy_id = "bat"
-weight = 0.25
+weight = 0.3
 max_active = 8
 ability_variant_id = "bat_bolt"
 
 [sub_resource type="Resource" id="Stage4Brute"]
 script = ExtResource("14_enemy")
 enemy_id = "brute"
-weight = 0.6
-max_active = 36
+weight = 0.45
+max_active = 26
 
 [sub_resource type="Resource" id="Stage4Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.05
+max_active = 10
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="Stage4Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.2
+max_active = 18
+
+[sub_resource type="Resource" id="Stage4"]
+script = ExtResource("5_stage")
+stage_id = "core_overload"
+display_name = "星核过载"
+subtitle = "重型敌潮随星核温度持续增强"
+start_time = 65.0
+spawn_interval_start = 0.5
+spawn_interval_end = 0.4
+extra_spawn_chance = 0.28
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage4Bat"), SubResource("Stage4Brute"), SubResource("Stage4Grub"), SubResource("Stage4Slime")])
+transition_rest_duration = 2.0
+
+[sub_resource type="Resource" id="Stage5Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.25
+max_active = 8
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage5Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.55
+max_active = 32
+
+[sub_resource type="Resource" id="Stage5Grub"]
 script = ExtResource("14_enemy")
 enemy_id = "green_grub"
 weight = 0.03
 max_active = 8
 ability_variant_id = "green_grub_roll"
 
-[sub_resource type="Resource" id="Stage4Slime"]
+[sub_resource type="Resource" id="Stage5Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.17
+max_active = 16
+
+[sub_resource type="Resource" id="Stage5"]
+script = ExtResource("5_stage")
+stage_id = "tyrant_descent"
+display_name = "暴君降临"
+subtitle = "集中火力击破星核暴君"
+start_time = 90.0
+spawn_interval_start = 0.42
+spawn_interval_end = 0.34
+extra_spawn_chance = 0.35
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage5Bat"), SubResource("Stage5Brute"), SubResource("Stage5Grub"), SubResource("Stage5Slime")])
+transition_rest_duration = 2.0
+
+[sub_resource type="Resource" id="Stage6Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.2
+max_active = 8
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage6Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.65
+max_active = 40
+
+[sub_resource type="Resource" id="Stage6Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.03
+max_active = 8
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="Stage6Slime"]
 script = ExtResource("14_enemy")
 enemy_id = "slime"
 weight = 0.12
 max_active = 14
 
-[sub_resource type="Resource" id="Stage4"]
+[sub_resource type="Resource" id="Stage6"]
 script = ExtResource("5_stage")
 stage_id = "final_judgement"
 display_name = "终焉审判"
-subtitle = "击破星核暴君，守住最后三十秒"
-start_time = 90.0
-spawn_interval_start = 0.44
-spawn_interval_end = 0.35
-extra_spawn_chance = 0.35
-enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage4Bat"), SubResource("Stage4Brute"), SubResource("Stage4Grub"), SubResource("Stage4Slime")])
+subtitle = "守住星核平息前的最后十五秒"
+start_time = 105.0
+spawn_interval_start = 0.32
+spawn_interval_end = 0.26
+extra_spawn_chance = 0.45
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage6Bat"), SubResource("Stage6Brute"), SubResource("Stage6Grub"), SubResource("Stage6Slime")])
 transition_rest_duration = 2.0
 
 [sub_resource type="Resource" id="Victory"]
@@ -362,7 +443,7 @@ loot = SubResource("Loot")
 content_pool = SubResource("ContentPool")
 equipment_drop_table = SubResource("EquipmentDrops")
 enemy_ability_budget = SubResource("AbilityBudget")
-stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3"), SubResource("Stage4")])
+stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3"), SubResource("Stage4"), SubResource("Stage5"), SubResource("Stage6")])
 elite = SubResource("Elite")
 victory = SubResource("Victory")
 reward = SubResource("Reward")

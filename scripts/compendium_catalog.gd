@@ -76,7 +76,7 @@ static func _skill_entries() -> Array:
 			"id": skill_id,
 			"name": skill["name"],
 			"subtitle": "%s专属 · 终极：%s" % [HeroCatalog.hero(hero_id)["name"], skill["ultimate_name"]],
-			"description": "I · %s\n终极 · %s" % [skill["descriptions"][1], skill["descriptions"][3]],
+			"description": "I · %s\n终极 · %s" % [skill["descriptions"][1], skill["descriptions"][int(skill["max_level"])]],
 			"branches": branch_entries,
 			"texture": skill["icon"],
 			"accent": Color("70e8ff") if hero_id == "star_warden" else Color("ff9a62"),

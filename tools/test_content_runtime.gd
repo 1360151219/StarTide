@@ -94,7 +94,8 @@ func _test_pickup_effects() -> void:
 func _test_branch_and_relic_runtime() -> void:
 	var session := _create_session("level_03", RunRecords.new(""), 830)
 	_require(session.build_state.select_branch("star_lance", "star_lance_fan"), "测试分支无法选择")
-	_require(session.build_state.upgrade_skill("star_lance"), "测试分支无法升级到终极")
+	for target_level in range(3, 6):
+		_require(session.build_state.upgrade_skill("star_lance"), "测试分支无法升级到 %d 级" % target_level)
 	for relic_id in ["energy_prism", "time_gear", "flow_feather"]:
 		_require(session.build_state.add_or_upgrade_relic(relic_id), "测试遗物无法加入构筑：" + relic_id)
 	session.player.apply_build_modifiers(session.build_state)
@@ -108,7 +109,7 @@ func _test_branch_and_relic_runtime() -> void:
 	session.skills.advance(0.0, 0.0, 1.0)
 	_require(session.projectiles.projectiles.size() == 4, "星雨齐射终极分支没有生成 4 枚星枪")
 	var projectile: Node = session.projectiles.projectiles[0]
-	_require(is_equal_approx(projectile.damage, 31.0 * 0.74 * 1.07), "技能分支与聚能棱晶伤害没有组合生效")
+	_require(is_equal_approx(projectile.damage, 34.0 * 0.69 * 1.07), "技能分支与聚能棱晶伤害没有组合生效")
 	_require(is_equal_approx(session.skills.runtime.bolt_timer, 0.88 * 0.95), "时砂齿轮没有作用于技能冷却")
 	_require(is_equal_approx(session.player.speed, session.player.base_speed * 1.08), "流光羽没有作用于角色移速")
 	session.free()

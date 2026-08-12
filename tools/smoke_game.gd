@@ -37,12 +37,12 @@ func _on_process_frame() -> void:
 		_test_victory(game)
 	if frame_count == 44:
 		if not failed:
-			print("SMOKE_OK levels=%d menu=route_map destinations=3 session=modular pause=stable upgrade=true victory=true unlock=true audio=%d volume_sync=true" % [LevelCatalog.all().size(), CueCatalog.ids().size()])
+			print("SMOKE_OK levels=%d menu=route_map destinations=5 session=modular pause=stable upgrade=true victory=true unlock=true audio=%d volume_sync=true" % [LevelCatalog.all().size(), CueCatalog.ids().size()])
 		quit(1 if failed else 0)
 
 
 func _test_start_screen(game: Node) -> void:
-	_require(CueCatalog.ids().size() == 39, "声音 Cue 没有完整初始化")
+	_require(CueCatalog.ids().size() == 56, "声音 Cue 没有完整初始化")
 	var original_music: float = game.audio_manager.music_volume
 	var original_sfx: float = game.audio_manager.sfx_volume
 	game.audio_manager.set_music_volume(0.37, false)
@@ -58,7 +58,7 @@ func _test_start_screen(game: Node) -> void:
 	_require(not game.start_screen.audio_settings.settings_card.visible, "开始页声音设置无法关闭")
 	game.audio_manager.set_music_volume(original_music, false)
 	game.audio_manager.set_sfx_volume(original_sfx, false)
-	_require(game.start_screen.route_map.route_pins.size() == 3, "远征地图没有固定三个生态节点")
+	_require(game.start_screen.route_map.route_pins.size() == 5, "远征地图没有配置五个生态节点")
 	_require(bool(game.start_screen.route_map.route_pins[0].get("selected")), "第一关路线节点没有选中")
 	_require(bool(game.start_screen.route_map.route_pins[1].get("locked")), "后续关卡没有保持锁定预览")
 	_require(game.start_screen.route_map.animation_player.is_playing(), "远征路线动画没有播放")
@@ -78,19 +78,21 @@ func _test_start_screen(game: Node) -> void:
 	_require(game.start_screen.compendium.visible and game.start_screen.compendium.list.get_child_count() == 6, "技能图鉴不完整")
 	_require(game.start_screen.bottom_bar.current_page == "compendium" and game.start_screen.bottom_bar.visible, "图鉴没有作为第三主导航显示")
 	game.start_screen.bottom_bar.buttons["start"].pressed.emit()
+	_require(not game.hud.joystick.active and is_zero_approx(game.hud.joystick.fade_time), "浮动摇杆默认仍然可见")
 	var touch := InputEventScreenTouch.new()
 	touch.index = 7
 	touch.pressed = true
-	touch.position = Vector2(42, 180)
+	touch.position = Vector2(430, 620)
 	game.hud.joystick._gui_input(touch)
+	_require(game.hud.joystick.active and game.hud.joystick.base_position.x > 400.0, "浮动摇杆没有在任意战场触点出现")
 	var drag := InputEventScreenDrag.new()
 	drag.index = 7
-	drag.position = Vector2(220, 180)
+	drag.position = Vector2(520, 620)
 	game.hud.joystick._gui_input(drag)
 	_require(game.hud.joystick.value.length() > 0.95, "浮动摇杆拖动无效")
 	touch.pressed = false
 	game.hud.joystick._gui_input(touch)
-	_require(game.hud.joystick.value == Vector2.ZERO, "浮动摇杆未复位")
+	_require(game.hud.joystick.value == Vector2.ZERO and not game.hud.joystick.active and game.hud.joystick.fade_time > 0.0, "浮动摇杆未复位或缺少松手淡出")
 
 
 func _test_running_session(game: Node) -> void:
@@ -100,6 +102,11 @@ func _test_running_session(game: Node) -> void:
 	_require(session.enemies.enemies.size() == session.level.initial_enemy_count, "初始刷怪数量错误")
 	_require(session.skills.levels["star_lance"] == 1 and not session.skills.levels.has("sun_orbit"), "第一关技能池没有只启用签名技能")
 	_require(session.stage_director.current_stage().stage_id == "awakening", "初始阶段错误")
+	_require(not game.hud.skill_dock.detail_panel.visible, "技能明细默认展开并遮挡战场")
+	game.hud.skill_dock.launcher_button.pressed.emit()
+	_require(game.hud.skill_dock.detail_panel.visible and game.hud.skill_dock.icons.size() == 3 and game.hud.skill_dock.badges[0].text == "I", "技能入口无法显示完整技能明细")
+	game.hud.skill_dock.launcher_button.pressed.emit()
+	_require(not game.hud.skill_dock.detail_panel.visible, "技能明细无法收起")
 
 
 func _begin_pause(game: Node) -> void:

@@ -9,10 +9,9 @@ const CARD_GOLD := Color(1.0, 0.94, 0.72, 0.99)
 
 static func apply_content(views: Dictionary, quality_seams: Array[Panel], shape_id: String, rarity_level: int, highlighted: bool) -> void:
 	var accent := _shape_accent(shape_id)
-	var soft_surface := _shape_surface(shape_id, highlighted)
-	views["icon_back"].add_theme_stylebox_override("panel", _shaped_panel_style(soft_surface, accent, shape_id, 2))
-	views["type_panel"].add_theme_stylebox_override("panel", _shaped_panel_style(Color(soft_surface, 0.94), accent, shape_id, 1))
-	views["metric_band"].add_theme_stylebox_override("panel", _shaped_panel_style(Color(soft_surface, 0.72), Color(accent, 0.46), shape_id, 1))
+	views["icon_back"].add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	views["type_panel"].add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	views["metric_band"].add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	views["title_rule"].color = Color(accent, 0.42)
 	views["type"].add_theme_color_override("font_color", accent.darkened(0.2))
 	for symbol in views["metric_symbols"]:
@@ -105,16 +104,6 @@ static func _shape_accent(shape_id: String) -> Color:
 	if shape_id == "supply":
 		return UiFactory.HEALING
 	return UiFactory.PRIMARY
-
-
-static func _shape_surface(shape_id: String, highlighted: bool) -> Color:
-	if highlighted:
-		return UiFactory.ACCENT_LIGHT
-	if shape_id == "relic":
-		return UiFactory.SURFACE_ALT.lerp(UiFactory.RARE, 0.12)
-	if shape_id == "supply":
-		return Color(UiFactory.SURFACE_ALT, 0.98)
-	return Color(UiFactory.SURFACE_ALT, 0.9)
 
 
 static func _quality_accent(shape_id: String, rarity_level: int) -> Color:

@@ -33,6 +33,9 @@ func _initialize() -> void:
 
 func _validate_stage_entries(level: LevelConfig) -> void:
 	for stage in level.stages:
+		if not stage.spawning_enabled:
+			_require(stage.enemy_entries.is_empty(), "%s/%s 停刷阶段仍配置了怪物权重" % [level.level_id, stage.stage_id])
+			continue
 		var total := 0.0
 		for entry in stage.enemy_entries:
 			_require(entry.weight > 0.0, "%s/%s 含零权重怪物" % [level.level_id, stage.stage_id])

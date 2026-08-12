@@ -77,7 +77,12 @@ func _build_summary_card() -> void:
 	var summary_card := Panel.new()
 	summary_card.position = Vector2(30, 154)
 	summary_card.size = Vector2(432, 184)
-	SunlitCardStyle.apply_panel(summary_card, UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.58), 10.0, false, true, "ribbon")
+	var summary_style := StyleBoxFlat.new()
+	summary_style.bg_color = Color(UiFactory.SURFACE_ALT, 0.48)
+	summary_style.border_color = Color(UiFactory.PRIMARY, 0.58)
+	summary_style.border_width_top = 2
+	summary_style.border_width_bottom = 2
+	summary_card.add_theme_stylebox_override("panel", summary_style)
 	pause_card.add_child(summary_card)
 	var section_mark := _plain_label("本局构筑", 21, UiFactory.INK)
 	section_mark.position = Vector2(20, 16)

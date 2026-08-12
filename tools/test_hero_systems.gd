@@ -54,8 +54,6 @@ func _test_star_lance(host: Node2D, effects: Node2D) -> void:
 	_require(session.projectiles.projectiles.size() == 3, "星陨万华没有生成三枚星枪")
 	_require(session.player.hero_rig.current_state == "cast", "技能真实释放没有触发施法骨骼动画")
 	session.free()
-
-
 func _test_sun_orbit(host: Node2D, effects: Node2D) -> void:
 	var session := _create_session(host, effects, "star_warden", 13)
 	_select_only_skill(session, "sun_orbit")
@@ -64,24 +62,24 @@ func _test_sun_orbit(host: Node2D, effects: Node2D) -> void:
 	session.skills.runtime.orbit_phase = 0.0
 	session.skills.runtime.orbit_hit_timer = 0.0
 	session.skills.advance(0.0, 0.0, 1.0)
-	_require(enemy.health == health_before - 12.0, "日冕圣环没有造成独立接触伤害")
+	_require(enemy.health == health_before - 16.0, "日冕圣环没有造成独立接触伤害")
 	session.free()
-
-
 func _test_frost_tide(host: Node2D, effects: Node2D) -> void:
 	var session := _create_session(host, effects, "star_warden", 14)
 	_select_only_skill(session, "frost_tide")
-	var enemy = _durable_enemy(session, session.player.position)
-	var health_before: float = enemy.health
+	var radius: float = HeroCatalog.skill("frost_tide")["runtime"]["radius"][5]
+	var targets: Array[Node] = []
+	for index in range(4):
+		var enemy: Node = session.enemies.enemies[0] if index == 0 else session.enemies.spawn_enemy("green_grub", null, 0.0)
+		targets.append(_durable_enemy(session, session.player.position + Vector2.from_angle(index * TAU / 4.0) * radius * 0.72, enemy))
+	session.player.facing = Vector2.RIGHT
 	session.skills.runtime.pulse_timer = 0.0
 	session.skills.advance(0.0, 0.0, 2.0)
-	_require(enemy.health == health_before and session.skills.runtime.timeline.pending_count("frost_tide") == 1, "时凝星海在波前抵达前提前结算伤害")
-	session.skills.advance(0.0, 0.04, 2.04)
-	_require(enemy.health == health_before - 49.0, "时凝星海没有造成独立范围伤害")
-	_require(is_equal_approx(enemy.slow_factor, 0.28) and session.skills.runtime.pulse_visual_time > 0.0, "时凝星海减速或视觉没有生效")
+	_require(targets.all(func(enemy: Node) -> bool: return enemy.health == 999.0) and session.skills.runtime.timeline.pending_count("frost_tide") == 4, "时凝星海在波前抵达前提前结算伤害")
+	session.skills.advance(0.0, 0.3, 2.3)
+	_require(targets.all(func(enemy: Node) -> bool: return enemy.health == 950.0), "时凝星海没有覆盖角色四周的 360 度范围")
+	_require(targets.all(func(enemy: Node) -> bool: return is_equal_approx(enemy.slow_factor, 0.28)) and session.skills.runtime.pulse_visual_time > 0.0, "时凝星海减速或视觉没有生效")
 	session.free()
-
-
 func _test_ember_passive_and_turning(host: Node2D, effects: Node2D) -> void:
 	var session := _create_session(host, effects, "ember_ranger", 23)
 	session.player.position.x = session.level.map.world_bounds.end.x - 24.0
@@ -219,7 +217,7 @@ func _create_session(host: Node2D, effects: Node2D, hero_id: String, seed_value:
 func _select_only_skill(session: Node, selected_skill_id: String) -> void:
 	session.build_state.skill_slots = [selected_skill_id, "", ""]
 	session.build_state.skill_levels.clear()
-	session.build_state.skill_levels[selected_skill_id] = 3
+	session.build_state.skill_levels[selected_skill_id] = int(HeroCatalog.skill(selected_skill_id)["max_level"])
 	session.skills.sync_after_upgrade(selected_skill_id)
 
 

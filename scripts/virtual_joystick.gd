@@ -5,13 +5,25 @@ var touch_id := -1
 var dragging_mouse := false
 var knob_position := Vector2.ZERO
 var base_position := Vector2.ZERO
+var drag_origin := Vector2.ZERO
 var active := false
+var fade_time := 0.0
 const MAX_DISTANCE := 58.0
+const EDGE_MARGIN := 78.0
+const RELEASE_FADE_DURATION := 0.16
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_reset()
+	set_process(false)
+
+
+func _process(delta: float) -> void:
+	fade_time = maxf(0.0, fade_time - delta)
+	queue_redraw()
+	if fade_time <= 0.0:
+		set_process(false)
 
 
 func _notification(what: int) -> void:
@@ -26,7 +38,7 @@ func _gui_input(event: InputEvent) -> void:
 			_begin_input(event.position)
 		elif not event.pressed and event.index == touch_id:
 			touch_id = -1
-			_reset()
+			_release_input()
 	elif event is InputEventScreenDrag and event.index == touch_id:
 		_update_value(event.position)
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -34,13 +46,13 @@ func _gui_input(event: InputEvent) -> void:
 		if dragging_mouse:
 			_begin_input(event.position)
 		else:
-			_reset()
+			_release_input()
 	elif event is InputEventMouseMotion and dragging_mouse:
 		_update_value(event.position)
 
 
 func _update_value(local_position: Vector2) -> void:
-	var offset := local_position - base_position
+	var offset := local_position - drag_origin
 	value = offset.limit_length(MAX_DISTANCE) / MAX_DISTANCE
 	knob_position = base_position + value * MAX_DISTANCE
 	queue_redraw()
@@ -48,19 +60,34 @@ func _update_value(local_position: Vector2) -> void:
 
 func _begin_input(local_position: Vector2) -> void:
 	base_position = Vector2(
-		clampf(local_position.x, 78.0, size.x - 78.0),
-		clampf(local_position.y, 78.0, size.y - 78.0)
+		clampf(local_position.x, EDGE_MARGIN, size.x - EDGE_MARGIN),
+		clampf(local_position.y, EDGE_MARGIN, size.y - EDGE_MARGIN)
 	)
+	drag_origin = local_position
 	knob_position = base_position
+	value = Vector2.ZERO
 	active = true
-	_update_value(local_position)
+	fade_time = 0.0
+	set_process(false)
+	queue_redraw()
+
+
+func _release_input() -> void:
+	value = Vector2.ZERO
+	knob_position = base_position
+	active = false
+	fade_time = RELEASE_FADE_DURATION
+	set_process(true)
+	queue_redraw()
 
 
 func _reset() -> void:
 	value = Vector2.ZERO
 	base_position = Vector2(108.0, maxf(92.0, size.y - 130.0))
+	drag_origin = base_position
 	knob_position = base_position
 	active = false
+	fade_time = 0.0
 	queue_redraw()
 
 
@@ -71,10 +98,12 @@ func cancel_input() -> void:
 
 
 func _draw() -> void:
+	var visual_alpha := 1.0 if active else fade_time / RELEASE_FADE_DURATION
+	if visual_alpha <= 0.001:
+		return
 	var center := base_position
-	var visual_alpha := 1.0 if active else 0.38
-	draw_circle(center, 71.0, Color(0.14, 0.31, 0.32, 0.46 * visual_alpha))
-	draw_arc(center, 71.0, 0.0, TAU, 64, Color(0.31, 0.65, 0.71, 0.78 * visual_alpha), 3.0)
+	draw_circle(center, 71.0, Color(0.14, 0.31, 0.32, 0.42 * visual_alpha))
+	draw_arc(center, 71.0, 0.0, TAU, 64, Color(0.31, 0.65, 0.71, 0.84 * visual_alpha), 3.0)
 	draw_arc(center, 57.0, 0.0, TAU, 48, Color(1.0, 0.96, 0.89, 0.52 * visual_alpha), 1.5)
 	for index in range(4):
 		var direction := Vector2.from_angle(index * PI * 0.5)

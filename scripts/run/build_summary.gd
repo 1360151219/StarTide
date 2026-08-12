@@ -2,6 +2,7 @@ extends RefCounted
 
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const RelicCatalog = preload("res://scripts/relic_catalog.gd")
+const ChoiceFactory = preload("res://scripts/systems/upgrade_choice_factory.gd")
 
 
 static func text(build_state: RefCounted) -> String:
@@ -22,7 +23,7 @@ static func _skill_line(build_state: RefCounted) -> String:
 			continue
 		var entry := "%s %s" % [
 			SkillCatalog.skill(skill_id)["name"],
-			_level_mark(int(build_state.skill_levels.get(skill_id, 1))),
+			ChoiceFactory.roman(int(build_state.skill_levels.get(skill_id, 1))),
 		]
 		if build_state.skill_branches.has(skill_id):
 			var branch := SkillCatalog.branch(skill_id, str(build_state.skill_branches[skill_id]))
@@ -39,11 +40,10 @@ static func _relic_line(build_state: RefCounted) -> String:
 			continue
 		entries.append("%s %s" % [
 			RelicCatalog.relic(relic_id)["name"],
-			_level_mark(int(build_state.relic_levels[relic_id])),
+			ChoiceFactory.level_mark(
+				int(build_state.relic_levels[relic_id]),
+				int(RelicCatalog.relic(relic_id)["max_level"]),
+				true
+			),
 		])
 	return "遗物：" + (" / ".join(entries) if not entries.is_empty() else "暂无")
-
-
-static func _level_mark(level: int) -> String:
-	var marks := ["", "I", "II", "III"]
-	return marks[clampi(level, 0, marks.size() - 1)]

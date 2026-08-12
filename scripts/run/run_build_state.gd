@@ -2,6 +2,7 @@ extends RefCounted
 
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const RelicCatalog = preload("res://scripts/relic_catalog.gd")
+const UltimateOfferPity = preload("res://scripts/run/ultimate_offer_pity.gd")
 const SKILL_SLOT_LIMIT := 3
 const RELIC_SLOT_LIMIT := 4
 const INITIAL_REROLLS := 1
@@ -15,6 +16,8 @@ var run_modifiers: Dictionary = {}
 var rerolls_remaining := INITIAL_REROLLS
 var pending_choices: Dictionary = {}
 var last_offer_key := ""
+var ultimate_pity := UltimateOfferPity.new()
+var pinned_choice_keys := PackedStringArray()
 
 
 func _init(selected_hero_id := "", signature_skill_id := "") -> void:
@@ -30,6 +33,8 @@ func reset(selected_hero_id: String, signature_skill_id := "") -> void:
 	rerolls_remaining = INITIAL_REROLLS
 	pending_choices.clear()
 	last_offer_key = ""
+	ultimate_pity.reset()
+	pinned_choice_keys.clear()
 	_rebuild_modifiers()
 	var signature := signature_skill_id
 	if signature.is_empty():
@@ -81,7 +86,10 @@ func can_upgrade_skill(skill_id: String) -> bool:
 func upgrade_skill(skill_id: String) -> bool:
 	if not can_upgrade_skill(skill_id):
 		return false
-	skill_levels[skill_id] = int(skill_levels[skill_id]) + 1
+	var max_level := int(SkillCatalog.skill(skill_id)["max_level"])
+	var next_level := int(skill_levels[skill_id]) + 1
+	skill_levels[skill_id] = next_level
+	ultimate_pity.track_upgrade(skill_id, next_level, max_level)
 	return true
 
 
@@ -141,8 +149,17 @@ func modifier(modifier_id: String) -> float:
 	return float(run_modifiers.get(modifier_id, _modifier_default(modifier_id)))
 
 
-func remember_offer(choices: Array) -> void:
+func ultimate_pity_due_skill_ids() -> PackedStringArray:
+	return ultimate_pity.due_skill_ids(skill_levels)
+
+
+func record_upgrade_offer(choices: Array) -> void:
+	ultimate_pity.record_offer(choices, skill_levels)
+
+
+func remember_offer(choices: Array, required_choice_keys := PackedStringArray()) -> void:
 	pending_choices.clear()
+	pinned_choice_keys = PackedStringArray(required_choice_keys)
 	var keys := PackedStringArray()
 	for raw_choice in choices:
 		var choice: Dictionary = raw_choice
@@ -161,6 +178,7 @@ func pending_choice(choice_key: String) -> Dictionary:
 
 func clear_offer() -> void:
 	pending_choices.clear()
+	pinned_choice_keys.clear()
 
 
 func consume_reroll() -> bool:

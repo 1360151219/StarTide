@@ -6,12 +6,9 @@ const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const RoutePin = preload("res://scripts/ui/expedition_route_pin.gd")
 const ExpeditionBrief = preload("res://scripts/ui/expedition_brief.gd")
 const SwipeGesture = preload("res://scripts/ui/swipe_gesture.gd")
+const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const HeroRigScene = preload("res://scenes/presentation/hero_rig_2d.tscn")
-const MAP_TEXTURE := preload("res://assets/art/sunlit/backgrounds/expedition_route_map.png")
 const COMPASS_BANNER := preload("res://assets/art/ui/home/home_compass_banner.png")
-const PIN_CENTERS := [Vector2(270, 614), Vector2(428, 414), Vector2(298, 176)]
-const HERO_POSITIONS := [Vector2(155, 628), Vector2(338, 494), Vector2(225, 318)]
-const PIN_COLORS := [UiFactory.ACCENT, UiFactory.PRIMARY, UiFactory.DANGER]
 
 var records: RefCounted
 var levels: Array[LevelConfig] = []
@@ -24,6 +21,7 @@ var compass_banner: TextureRect
 var preview_hero: HeroRig2D
 var title_label: Label
 var detail_label: Label
+var page_label: Label
 var expedition_brief: Control
 var animation_player: AnimationPlayer
 var requested_active := true
@@ -33,8 +31,9 @@ var phase := 0.0:
 	set(value):
 		phase = value
 		if is_instance_valid(preview_hero):
-			var base: Vector2 = HERO_POSITIONS[current_index]
-			preview_hero.position = base + Vector2(sin(phase * TAU) * 3.0, sin(phase * TAU * 2.0) * 1.5)
+			if current_index < levels.size():
+				var base: Vector2 = levels[current_index].map.route_hero_position
+				preview_hero.position = base + Vector2(sin(phase * TAU) * 3.0, sin(phase * TAU * 2.0) * 1.5)
 		for pin in route_pins:
 			pin.set_phase(phase)
 
@@ -75,6 +74,7 @@ func move_by(direction: int) -> void:
 
 func show_level(level: LevelConfig, unlocked: bool) -> void:
 	title_label.text = level.display_name
+	expedition_brief.set_page(current_index + 1, levels.size())
 	var active_snapshot: Dictionary = records.get_permanent_snapshot(records.get_active_hero_id())
 	var power := int(active_snapshot.get("power", {}).get("total", 0))
 	expedition_brief.configure(level, power, unlocked, records.has_cleared_level(level.level_id))
@@ -85,7 +85,7 @@ func show_level(level: LevelConfig, unlocked: bool) -> void:
 func refresh() -> void:
 	for index in range(route_pins.size()):
 		var level := levels[index]
-		route_pins[index].configure(level.level_id, level.map.biome_id, PIN_COLORS[index], not records.is_level_unlocked(level.level_id))
+		route_pins[index].configure(level.level_id, level.map.route_icon, level.map.border_color, not records.is_level_unlocked(level.level_id))
 	_refresh_selection(false)
 
 
@@ -122,7 +122,7 @@ func _ensure_built() -> void:
 
 func _build_background() -> void:
 	scene_texture = TextureRect.new()
-	scene_texture.texture = MAP_TEXTURE
+	scene_texture.texture = LevelCatalog.route_map_texture()
 	scene_texture.size = size
 	scene_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	scene_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -156,11 +156,12 @@ func _build_information() -> void:
 	add_child(expedition_brief)
 	title_label = expedition_brief.title_label
 	detail_label = expedition_brief.current_power_label
+	page_label = expedition_brief.page_label
 
 
 func _build_hero() -> void:
 	preview_hero = HeroRigScene.instantiate()
-	preview_hero.position = HERO_POSITIONS[0]
+	preview_hero.position = Vector2.ZERO
 	preview_hero.z_index = 6
 	add_child(preview_hero)
 	preview_hero.configure("star_warden", 150.0)
@@ -174,7 +175,7 @@ func _build_pins() -> void:
 	for index in range(levels.size()):
 		var level := levels[index]
 		var pin := RoutePin.new()
-		pin.position = PIN_CENTERS[index] - Vector2(44, 54)
+		pin.position = level.map.route_pin_center - Vector2(44, 54)
 		pin.z_index = 7
 		pin.tooltip_text = "%s · %s" % [level.display_name, level.subtitle]
 		pin.pressed.connect(select_level.bind(level.level_id))
@@ -201,9 +202,9 @@ func _build_animation() -> void:
 func _refresh_selection(_animate: bool) -> void:
 	for index in range(route_pins.size()):
 		route_pins[index].set_selected(index == current_index)
-	if not is_instance_valid(preview_hero) or current_index >= HERO_POSITIONS.size():
+	if not is_instance_valid(preview_hero) or current_index >= levels.size():
 		return
-	preview_hero.position = HERO_POSITIONS[current_index]
+	preview_hero.position = levels[current_index].map.route_hero_position
 
 
 func _handle_pointer_input(event: InputEvent) -> void:

@@ -63,10 +63,10 @@ func _on_process_frame() -> void:
 	_require(screen.route_map.animation_player.is_playing() and screen.route_map.compass_banner.texture.resource_path == "res://assets/art/ui/home/home_compass_banner.png", "远征路线动画或左上罗盘挂旗缺失")
 	_require(screen.route_map.preview_hero.has_method("play_state"), "远征路线没有接入动态英雄")
 	_require(screen.route_map.phase > 0.0, "远征路线画面没有随时间更新")
-	_require(screen.route_map.route_pins.size() == 3, "远征路线没有固定三个生态节点")
-	_require(screen.route_map.page_label.text == "1 / 3", "远征路线页码错误")
-	_require(screen.route_map.expedition_brief.current_power_caption_label.text == "当前战力" and screen.route_map.detail_label.text == "1000", "大厅没有对齐展示当前战力")
-	_require(screen.route_map.expedition_brief.recommended_caption_label.text == "推荐战力" and screen.route_map.expedition_brief.recommended_label.text == "1000" and screen.route_map.expedition_brief.frame_texture_path() == "res://assets/art/ui/home/expedition_brief_frame.png", "远征简报没有对齐展示推荐战力")
+	_require(screen.route_map.route_pins.size() == 5, "远征路线没有配置五个生态节点")
+	_require(screen.route_map.page_label.text == "1 / 5", "远征路线页码错误")
+	_require(screen.route_map.expedition_brief.current_power_caption_label.text == "养成评分" and screen.route_map.detail_label.text == "1000", "大厅没有对齐展示养成评分")
+	_require(screen.route_map.expedition_brief.recommended_caption_label.text == "建议评分" and screen.route_map.expedition_brief.recommended_label.text == "1000" and screen.route_map.expedition_brief.frame_texture_path() == "res://assets/art/ui/home/expedition_brief_frame.png", "远征简报没有对齐展示建议评分")
 	_require(screen.route_map.expedition_brief.reward_title_label.text == "首通奖励" and screen.route_map.expedition_brief.title_label.position.x == 36.0 and screen.route_map.expedition_brief.page_label.position.x + screen.route_map.expedition_brief.page_label.size.x == 293.0 and screen.route_map.expedition_brief.current_power_label.position.x + screen.route_map.expedition_brief.current_power_label.size.x == 153.0 and screen.route_map.expedition_brief.reward_count_label.position.x + screen.route_map.expedition_brief.reward_count_label.size.x == 293.0, "远征简报文字没有落入结构安全区")
 	_require(screen.route_map.expedition_brief.reward_icon.visible
 		and screen.route_map.expedition_brief.reward_label.text == "萤翼航标" and screen.route_map.expedition_brief.reward_count_label.text == "×1" and screen.route_map.expedition_brief.recommended_icon.size == Vector2(24, 24) and screen.route_map.expedition_brief.recommended_icon.texture.resource_path == "res://assets/art/ui/home/brief_icon_recommended.png" and screen.route_map.expedition_brief.power_icon.texture.resource_path == "res://assets/art/ui/home/brief_icon_power.png" and screen.route_map.expedition_brief.first_clear_icon.texture.resource_path == "res://assets/art/ui/home/brief_icon_first_clear.png" and screen.route_map.expedition_brief.reward_icon.texture.resource_path == "res://assets/art/ui/home/brief_icon_reward.png", "首通奖励缺少图标或数量")
@@ -113,13 +113,13 @@ func _on_process_frame() -> void:
 	)
 	for button in screen.bottom_bar.buttons.values():
 		_require(button.is_visible_in_tree() and button.modulate.a > 0.99, "图鉴页丢失底部主导航入口")
-	_require(screen.compendium.list.get_child_count() == 4, "锁定内容没有保留图鉴槽位")
+	_require(screen.compendium.list.get_child_count() == 7, "锁定内容没有保留完整怪物图鉴槽位")
 	_require(screen.compendium.list.get_child(0).get_node_or_null("SunlitFrame") != null, "图鉴内容卡没有复用日光远征装饰组件")
-	_require(screen.compendium.tab_buttons["enemies"].text == "怪物 0/4", "怪物图鉴进度错误")
+	_require(screen.compendium.tab_buttons["enemies"].text == "怪物 0/7", "怪物图鉴进度错误")
 	_require(not bool(screen.compendium.list.get_child(0).get_meta("discovered", true)), "新存档错误显示怪物详情")
 	screen.records.discover_content("enemies", "green_grub")
 	screen.compendium.show_category("enemies")
-	_require(screen.compendium.tab_buttons["enemies"].text == "怪物 1/4", "发现怪物后图鉴进度没有刷新")
+	_require(screen.compendium.tab_buttons["enemies"].text == "怪物 1/7", "发现怪物后图鉴进度没有刷新")
 	_require(bool(screen.compendium.list.get_child(0).get_meta("discovered", false)), "发现怪物后图鉴详情仍被锁定")
 	screen.compendium.show_category("relics")
 	_require(screen.compendium.list.get_child_count() == 6, "遗物没有保留全部图鉴槽位")
@@ -153,7 +153,7 @@ func _on_process_frame() -> void:
 		and HomeShellContract.snapshot(screen) == home_shell_instances
 		and screen.route_map.selected_level_id == "level_02"
 		and screen.route_map.title_label.text == "金砂绿洲"
-		and screen.route_map.page_label.text == "2 / 3"
+		and screen.route_map.page_label.text == "2 / 5"
 		and bool(screen.bottom_bar.buttons["start"].get_meta("selected", false)),
 		"切换关卡时替换了远征页面，而不是更新同一页面的数据"
 	)
@@ -204,7 +204,7 @@ func _on_process_frame() -> void:
 	screen.character_page.equipment_panel.detail_sheet.action_button.pressed.emit()
 	_require(not str(screen.records.equipment_loadout_snapshot("ember_ranger")["weapon"]).is_empty(), "角色页无法装备物品")
 	screen.character_page.show_section("status")
-	_require(screen.character_page.status_panel.power_label.text.contains("战力"), "角色状态没有展示战力")
+	_require(screen.character_page.status_panel.power_label.text.contains("养成评分"), "角色状态没有展示养成评分")
 	screen.bottom_bar.buttons["start"].pressed.emit()
 	_require(screen.lobby_view.visible and not screen.character_page.visible, "底部导航无法返回开始页")
 	_require(
@@ -216,12 +216,12 @@ func _on_process_frame() -> void:
 	_require(screen.route_map.detail_label.text == str(equipped_power), "装备后的战力没有同步回大厅")
 	screen.start_button.pressed.emit()
 	_require(screen.expedition_confirm.visible and start_payload.is_empty(), "开始远征没有先打开出征确认")
-	_require(screen.expedition_confirm.hero_label.text == "烬羽" and screen.expedition_confirm.level_label.text.contains("风铃草原"), "出征确认没有展示当前英雄或关卡")
+	_require(screen.expedition_confirm.hero_label.text == "烬羽" and screen.expedition_confirm.level_label.text.contains("风铃草原") and screen.expedition_confirm.power_label.text.contains("养成评分") and screen.expedition_confirm.power_hint_label.text.contains("建议评分"), "出征确认没有展示角色、关卡或建议评分语义")
 	_require(not screen.bottom_bar.visible, "出征确认期间底部导航仍可误触")
 	screen.expedition_confirm.confirm_button.pressed.emit()
 	_require(start_payload == ["ember_ranger", "level_01"], "开始事件没有保留 hero_id/level_id 接口")
 	if not failed:
-		print("START_UI_OK frontend=route_map character=status_equipment_skills active_hero=persisted destinations=3 swipe=true compendium=discovery")
+		print("START_UI_OK frontend=route_map character=status_equipment_skills active_hero=persisted destinations=5 swipe=true compendium=discovery")
 	quit(1 if failed else 0)
 
 
@@ -238,7 +238,7 @@ func _test_stable_route_nodes() -> void:
 	var refreshed_instances: Array[int] = []
 	for pin in screen.route_map.route_pins:
 		refreshed_instances.append(pin.get_instance_id())
-	_require(LevelCatalog.all().size() == 3, "三生态远征地图与战役关卡数量不一致")
+	_require(LevelCatalog.all().size() == 5, "五生态远征地图与战役关卡数量不一致")
 	_require(screen.route_map.get_child_count() == child_count and refreshed_instances == pin_instances, "刷新进度时替换了远征路线节点")
 
 

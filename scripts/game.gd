@@ -5,6 +5,7 @@ const CombatEffects = preload("res://scripts/combat_effects.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const RunRecords = preload("res://scripts/run_records.gd")
 const RunSession = preload("res://scripts/run/run_session.gd")
+const BalanceSampleStore = preload("res://scripts/run/balance_sample_store.gd")
 const CombatFeedback = preload("res://scripts/presentation/combat_feedback.gd")
 const FrontendShell = preload("res://scripts/ui/frontend_shell.gd")
 const GameHud = preload("res://scripts/ui/game_hud.gd")
@@ -23,6 +24,7 @@ var pause_overlay: CanvasLayer
 var upgrade_overlay: CanvasLayer
 var result_overlay: CanvasLayer
 var random_streams: Dictionary
+var balance_sample_store := BalanceSampleStore.new()
 
 
 func _ready() -> void:
@@ -70,8 +72,8 @@ func start_run(hero_id: String, level_id: String) -> void:
 	session = RunSession.new()
 	add_child(session)
 	_connect_session()
-	session.configure(hero_id, level, run_records, audio_manager, combat_effects, random_streams)
-	hud.configure(session.skills.active_skill_ids, level.opening_tutorial_grace)
+	session.configure(hero_id, level, run_records, audio_manager, combat_effects, random_streams, balance_sample_store)
+	hud.configure(session.build_state.skill_slots, level.opening_tutorial_grace)
 	hud.visible = true
 	start_screen.visible = false
 	feedback.configure(session.camera, hud.damage_flash)
@@ -93,7 +95,8 @@ func _connect_session() -> void:
 func refresh_presentation() -> void:
 	if not is_instance_valid(session):
 		return
-	hud.refresh(session.state, session.level, session.player, session.skills, session.pickups, session.passives, session.stage_director.current_stage(), session.elite_enemy)
+	var strong_enemy: Node = session.boss_enemy if is_instance_valid(session.boss_enemy) else session.elite_enemy
+	hud.refresh(session.state, session.level, session.player, session.skills, session.pickups, session.passives, session.stage_director.current_stage(), strong_enemy)
 
 
 func _show_pickup_destination(pickup_id: String) -> void:

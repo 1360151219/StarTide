@@ -324,6 +324,66 @@ def _music(profile):
             "chime_every": 10,
             "chime_gain": 0.022,
         },
+        "cloudwood": {
+            "seed": 901,
+            "root": 246.94,
+            "mode": [0, 2, 4, 6, 7, 9, 11],
+            "step": 0.4,
+            "swing": 0.12,
+            "rhythm": [1, 1, 0, 1, 1, 0, 1, 1],
+            "progression": [0, 4, 2, 5],
+            "melody_gain": 0.12,
+            "note_length": 0.7,
+            "damping": 0.994,
+            "brightness": 0.54,
+            "wind_gain": 0.075,
+            "wind_brightness": 0.5,
+            "wood_step": 1.2,
+            "wood_frequency": 164.0,
+            "wood_gain": 0.045,
+            "chime_every": 7,
+            "chime_gain": 0.04,
+        },
+        "cloudcourt": {
+            "seed": 1001,
+            "root": 293.66,
+            "mode": [0, 2, 4, 6, 7, 9, 11],
+            "step": 0.5,
+            "swing": 0.0,
+            "rhythm": [1, 0, 1, 1, 0, 1, 0, 1],
+            "progression": [0, 3, 5, 1],
+            "melody_gain": 0.105,
+            "note_length": 0.92,
+            "damping": 0.995,
+            "brightness": 0.45,
+            "wind_gain": 0.082,
+            "wind_brightness": 0.55,
+            "wood_step": 2.0,
+            "wood_frequency": 186.0,
+            "wood_gain": 0.032,
+            "chime_every": 8,
+            "chime_gain": 0.052,
+        },
+        "zouwu": {
+            "seed": 1101,
+            "root": 220.0,
+            "mode": [0, 2, 3, 5, 7, 9, 10],
+            "step": 0.32,
+            "swing": 0.08,
+            "rhythm": [1, 1, 0, 1, 1, 1, 0, 1],
+            "progression": [0, 4, 3, 5],
+            "melody_gain": 0.122,
+            "note_length": 0.5,
+            "damping": 0.9925,
+            "brightness": 0.68,
+            "wind_gain": 0.11,
+            "wind_brightness": 0.72,
+            "wood_step": 0.8,
+            "wood_frequency": 112.0,
+            "wood_gain": 0.058,
+            "chime_every": 9,
+            "chime_gain": 0.04,
+        },
     }
     settings = profiles[profile]
     seed = settings["seed"]
@@ -594,6 +654,87 @@ def _build_sounds():
     return sounds
 
 
+def _build_campaign_extension_sounds():
+    sounds = {}
+    sounds["cloud_hart_charge.wav"] = (_compose(0.58, [
+        (_wind(0.55, 901, 0.5, 0.72), 0.0, 0.26),
+        (_wood_tap(0.22, 168, 902, 0.42, 11.0), 0.0, 0.42),
+        (_enamel_chime(0.42, 510, 903, 7.0, 0.52), 0.08, 0.38),
+    ]), 0.6)
+    sounds["cloud_hart_sweep.wav"] = (_compose(0.32, [
+        (_wind(0.3, 904, 0.7, 0.9), 0.0, 0.56),
+        (_canvas_friction(0.24, 905, 0.48, 11.0, 0.002, 0.05), 0.035, 0.3),
+    ]), 0.58)
+    sounds["cloud_hart_impact.wav"] = (_compose(0.24, [
+        (_wood_tap(0.2, 194, 906, 0.58, 13.0), 0.0, 0.64),
+        (_enamel_chime(0.16, 650, 907, 12.0, 0.46), 0.035, 0.3),
+    ]), 0.62)
+    sounds["bellfeather_charge.wav"] = (_compose(0.62, [
+        (_wind(0.58, 908, 0.58, 0.8), 0.0, 0.28),
+        (_enamel_chime(0.5, 620, 909, 6.5, 0.62), 0.0, 0.44),
+        (_enamel_chime(0.36, 930, 910, 8.0, 0.56), 0.18, 0.32),
+    ]), 0.6)
+    sounds["bellfeather_mark.wav"] = (_compose(0.3, [
+        (_reverse(_wind(0.27, 911, 0.72, 0.82)), 0.0, 0.46),
+        (_enamel_chime(0.18, 1180, 912, 13.0, 0.62), 0.08, 0.42),
+    ]), 0.58)
+    sounds["bellfeather_impact.wav"] = (_compose(0.27, [
+        (_wood_tap(0.22, 224, 913, 0.5, 14.0), 0.0, 0.52),
+        (_enamel_chime(0.18, 780, 914, 11.0, 0.54), 0.04, 0.34),
+    ]), 0.6)
+    sounds["zouwu_appear.wav"] = (_compose(0.94, [
+        (_wind(0.9, 915, 0.72, 0.92), 0.0, 0.42),
+        (_wood_tap(0.62, 74, 916, 0.7, 5.8), 0.0, 0.76),
+        (_enamel_chime(0.66, 330, 917, 5.2, 0.68), 0.12, 0.38),
+        (_enamel_chime(0.48, 660, 918, 6.5, 0.62), 0.3, 0.3),
+    ], 1.12), 0.76)
+    sounds["zouwu_dash_charge.wav"] = (_compose(0.68, [
+        (_reverse(_wind(0.64, 919, 0.82, 0.96)), 0.0, 0.58),
+        (_canvas_friction(0.54, 920, 0.52, 8.0, 0.01, 0.07), 0.05, 0.28),
+    ]), 0.62)
+    sounds["zouwu_dash.wav"] = (_compose(0.3, [
+        (_wind(0.28, 921, 0.95, 1.0), 0.0, 0.72),
+        (_canvas_friction(0.24, 922, 0.7, 18.0, 0.002, 0.04), 0.025, 0.38),
+    ], 1.08), 0.68)
+    sounds["zouwu_dash_hit.wav"] = (_compose(0.32, [
+        (_wood_tap(0.28, 104, 923, 0.8, 8.5), 0.0, 0.82),
+        (_canvas_friction(0.26, 924, 0.82, 16.0, 0.001, 0.08), 0.0, 0.56),
+    ], 1.22), 0.72)
+    sounds["zouwu_tail_charge.wav"] = (_compose(0.7, [
+        (_wind(0.66, 925, 0.56, 0.84), 0.0, 0.34),
+        (_enamel_chime(0.54, 420, 926, 6.0, 0.54), 0.04, 0.38),
+    ]), 0.58)
+    sounds["zouwu_tail_sweep.wav"] = (_compose(0.4, [
+        (_wind(0.38, 927, 0.88, 0.98), 0.0, 0.72),
+        (_canvas_friction(0.3, 928, 0.55, 14.0, 0.002, 0.06), 0.04, 0.32),
+    ]), 0.66)
+    sounds["zouwu_tail_hit.wav"] = (_compose(0.3, [
+        (_wood_tap(0.26, 126, 929, 0.72, 9.0), 0.0, 0.76),
+        (_canvas_friction(0.22, 930, 0.74, 15.0, 0.001, 0.06), 0.02, 0.46),
+    ]), 0.7)
+    sounds["zouwu_mark_charge.wav"] = (_compose(0.66, [
+        (_wind(0.62, 931, 0.46, 0.72), 0.0, 0.24),
+        (_enamel_chime(0.54, 540, 932, 6.2, 0.64), 0.0, 0.4),
+        (_enamel_chime(0.4, 810, 933, 7.4, 0.6), 0.14, 0.32),
+    ]), 0.6)
+    sounds["zouwu_mark.wav"] = (_compose(0.31, [
+        (_reverse(_wind(0.29, 934, 0.62, 0.82)), 0.0, 0.44),
+        (_enamel_chime(0.2, 980, 935, 11.0, 0.58), 0.07, 0.38),
+    ]), 0.62)
+    sounds["zouwu_mark_hit.wav"] = (_compose(0.28, [
+        (_wood_tap(0.23, 156, 936, 0.64, 10.5), 0.0, 0.66),
+        (_enamel_chime(0.18, 720, 937, 10.0, 0.5), 0.04, 0.3),
+    ]), 0.68)
+    sounds["zouwu_recognition.wav"] = (_compose(1.12, [
+        (_wind(1.08, 938, 0.34, 0.52), 0.0, 0.16),
+        (_pluck(0.82, 330, 939, 0.996, 0.34), 0.0, 0.28),
+        (_pluck(0.72, 440, 940, 0.996, 0.4), 0.16, 0.3),
+        (_pluck(0.62, 659.25, 941, 0.995, 0.46), 0.34, 0.31),
+        (_enamel_chime(0.58, 880, 942, 6.0, 0.56), 0.38, 0.3),
+    ]), 0.74)
+    return sounds
+
+
 def main():
     music_targets = {
         "lobby": ("bgm_lobby.wav", 0.48),
@@ -601,6 +742,17 @@ def main():
         "oasis": ("bgm_oasis.wav", 0.5),
         "volcano": ("bgm_volcano.wav", 0.54),
     }
+    extension_music_targets = {
+        "cloudwood": ("bgm_cloudwood.wav", 0.51),
+        "cloudcourt": ("bgm_cloudcourt.wav", 0.5),
+        "zouwu": ("bgm_zouwu_trial.wav", 0.55),
+    }
+    if "--campaign-extension" in sys.argv:
+        for profile, (file_name, target_peak) in extension_music_targets.items():
+            _write_wav(file_name, _music(profile), stereo=True, target_peak=target_peak)
+        for name, (samples, target_peak) in _build_campaign_extension_sounds().items():
+            _write_wav(name, samples, target_peak=target_peak)
+        return
     for profile, (file_name, target_peak) in music_targets.items():
         _write_wav(file_name, _music(profile), stereo=True, target_peak=target_peak)
     for name, (samples, target_peak) in _build_sounds().items():

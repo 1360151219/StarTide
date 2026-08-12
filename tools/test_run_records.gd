@@ -95,6 +95,17 @@ func _initialize() -> void:
 		push_error("RECORDS_FAILED: 重复通关再次发放首通或越级解锁")
 		_finish(1)
 		return
+	var campaign_config := ConfigFile.new()
+	campaign_config.load(test_path)
+	campaign_config.set_value("level/level_03", "wins", 1)
+	campaign_config.set_value("progress", "unlocked_level_04", false)
+	campaign_config.set_value("progress", "unlocked_level_05", false)
+	campaign_config.save(test_path)
+	var campaign_reloaded := RunRecords.new(test_path)
+	if not campaign_reloaded.is_level_unlocked("level_04") or campaign_reloaded.is_level_unlocked("level_05"):
+		push_error("RECORDS_FAILED: 既有第三关通关存档没有自动补开第四关或错误越级解锁第五关")
+		_finish(1)
+		return
 	var migrated_config := ConfigFile.new()
 	if migrated_config.load(test_path) != OK or migrated_config.get_value("meta", "schema_version", 0) != ProfileSchema.VERSION:
 		push_error("RECORDS_FAILED: 旧存档写回后没有升级 schema")
@@ -135,7 +146,7 @@ func _initialize() -> void:
 		push_error("RECORDS_FAILED: 损坏配置没有安全回退")
 		_finish(1)
 		return
-	print("RECORDS_OK persistence=true isolated=true migration=true unlocks=true discovery=true schema3_growth=true corruption_safe=true")
+	print("RECORDS_OK persistence=true isolated=true migration=true unlocks=true level3_repair=true discovery=true schema3_growth=true corruption_safe=true")
 	_finish(0)
 
 

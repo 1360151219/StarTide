@@ -37,6 +37,7 @@ func _ready() -> void:
 	design_frame = DesignFrame.new()
 	screen_overlay.add_child(design_frame)
 	_build_heading()
+	_build_choice_board()
 	for index in range(3):
 		_build_choice_card(index)
 	_build_footer()
@@ -124,6 +125,15 @@ func _build_choice_card(index: int) -> void:
 	choice_cards.append(card)
 	buttons.append(card)
 	choice_views.append(card.views)
+
+
+func _build_choice_board() -> void:
+	var board := Panel.new()
+	board.position = Vector2(22, 166)
+	board.size = Vector2(496, 576)
+	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	SunlitCardStyle.apply_panel(board, Color(UiFactory.SURFACE, 0.12), Color(UiFactory.PRIMARY, 0.42), 10.0, false, true, "canvas")
+	design_frame.add_child(board)
 
 
 func _build_footer() -> void:

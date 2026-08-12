@@ -3,6 +3,7 @@ extends RefCounted
 const EquipmentCatalog = preload("res://scripts/equipment_catalog.gd")
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const PowerRatingService = preload("res://scripts/profile/power_rating_service.gd")
+const BASE_ATTACK_POWER := 100.0
 
 const STAT_CAPS := {
 	"damage_percent": 0.40,
@@ -20,30 +21,68 @@ static func resolve(hero_id: String, progression: Dictionary, equipment_inventor
 	var result := progression.duplicate(true)
 	var equipment_stats := _equipment_stats(hero_id, equipment_inventory)
 	var hero: Dictionary = HeroCatalog.hero(hero_id)
+	var base_health := float(hero["max_health"])
+	var base_speed := float(hero["speed"])
 	var level_health := float(progression.get("health_multiplier", 1.0))
-	var health_multiplier := level_health * (1.0 + float(equipment_stats["max_health_percent"]))
-	health_multiplier += float(equipment_stats["max_health_flat"]) / maxf(1.0, float(hero["max_health"]))
-	var damage_multiplier := float(progression.get("damage_multiplier", 1.0)) * (1.0 + float(equipment_stats["damage_percent"]))
+	var equipment_health_multiplier := 1.0 + float(equipment_stats["max_health_percent"])
+	var equipment_health_flat := float(equipment_stats["max_health_flat"])
+	var health_multiplier := level_health * equipment_health_multiplier
+	health_multiplier += equipment_health_flat / maxf(1.0, base_health)
+	var level_damage_multiplier := float(progression.get("damage_multiplier", 1.0))
+	var equipment_damage_multiplier := 1.0 + float(equipment_stats["damage_percent"])
+	var damage_multiplier := level_damage_multiplier * equipment_damage_multiplier
 	var cooldown_multiplier := 1.0 - float(equipment_stats["cooldown_reduction"])
 	var range_multiplier := 1.0 + float(equipment_stats["range_percent"])
 	var projectile_speed_multiplier := 1.0 + float(equipment_stats["projectile_speed_percent"])
+	var move_speed_multiplier := 1.0 + float(equipment_stats["move_speed_percent"])
+	var pickup_radius_multiplier := 1.0 + float(equipment_stats["pickup_radius_percent"])
+	var max_health := base_health * health_multiplier
+	var speed := base_speed * move_speed_multiplier
+	var attack_power := BASE_ATTACK_POWER * damage_multiplier
+	var skill_frequency := 1.0 / maxf(0.001, cooldown_multiplier)
 	result["damage_multiplier"] = damage_multiplier
 	result["health_multiplier"] = health_multiplier
-	result["move_speed_multiplier"] = 1.0 + float(equipment_stats["move_speed_percent"])
-	result["pickup_radius_multiplier"] = 1.0 + float(equipment_stats["pickup_radius_percent"])
+	result["move_speed_multiplier"] = move_speed_multiplier
+	result["pickup_radius_multiplier"] = pickup_radius_multiplier
 	result["skill_modifiers"] = _skill_modifiers(
-		progression.get("skill_modifiers", {}), 1.0 + float(equipment_stats["damage_percent"]),
+		progression.get("skill_modifiers", {}), equipment_damage_multiplier,
 		cooldown_multiplier, range_multiplier, projectile_speed_multiplier
 	)
-	result["base_stats"] = {"max_health": hero["max_health"], "speed": hero["speed"]}
+	result["base_stats"] = {"attack_power": BASE_ATTACK_POWER, "max_health": base_health, "speed": base_speed}
 	result["resolved_stats"] = {
-		"max_health": float(hero["max_health"]) * health_multiplier,
-		"speed": float(hero["speed"]) * float(result["move_speed_multiplier"]),
+		"attack_power": attack_power,
+		"max_health": max_health,
+		"speed": speed,
+		"skill_frequency": skill_frequency,
 		"damage_multiplier": damage_multiplier,
 		"cooldown_multiplier": cooldown_multiplier,
 		"range_multiplier": range_multiplier,
 		"projectile_speed_multiplier": projectile_speed_multiplier,
-		"pickup_radius_multiplier": result["pickup_radius_multiplier"],
+		"pickup_radius_multiplier": pickup_radius_multiplier,
+	}
+	result["stat_breakdown"] = {
+		"attack_power": {
+			"base": BASE_ATTACK_POWER,
+			"level_multiplier": level_damage_multiplier,
+			"equipment_multiplier": equipment_damage_multiplier,
+			"final": attack_power,
+		},
+		"max_health": {
+			"base": base_health,
+			"level_multiplier": level_health,
+			"equipment_multiplier": equipment_health_multiplier,
+			"equipment_flat": equipment_health_flat,
+			"final": max_health,
+		},
+		"speed": {
+			"base": base_speed,
+			"equipment_multiplier": move_speed_multiplier,
+			"final": speed,
+		},
+		"skill_frequency": {
+			"interval_multiplier": cooldown_multiplier,
+			"final": skill_frequency,
+		},
 	}
 	result["equipment"] = {
 		"slots": EquipmentCatalog.SLOTS.duplicate(),

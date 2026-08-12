@@ -7,6 +7,7 @@ const CombatTimeline = preload("res://scripts/combat/combat_timeline.gd")
 const TelegraphRenderer = preload("res://scripts/presentation/enemy_telegraph_renderer.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
+const HudPickupFeedback = preload("res://scripts/ui/hud_pickup_feedback.gd")
 
 var failed := false
 var timeline_events: Array[String] = []
@@ -17,6 +18,8 @@ func _initialize() -> void:
 	_test_effect_budgets()
 	_test_combat_timeline()
 	_test_warning_progress()
+	_test_pickup_feedback()
+	_test_environment_normalization()
 	_test_color_roles()
 	_test_visual_language_contract()
 	if not failed:
@@ -26,9 +29,13 @@ func _initialize() -> void:
 
 func _test_audio_catalog_and_buses() -> void:
 	_require(CueCatalog.validation_errors().is_empty(), "音频 Cue 目录存在无效配置")
-	_require(CueCatalog.MUSIC.size() == 4, "大厅与三个生态没有独立音乐循环")
-	_require(CueCatalog.music("level_01") != CueCatalog.music("level_02") and CueCatalog.music("level_02") != CueCatalog.music("level_03"), "三个生态错误复用同一条音乐")
-	for cue_id in ["enemy_warning", "grub_roll_charge", "grub_roll_move", "grub_roll_miss", "bat_bolt_charge", "bat_bolt_launch", "bat_bolt_impact", "pickup_xp", "pickup_heal", "pickup_magnet", "pickup_haste", "pickup_bomb", "elite_appear", "elite_defeat", "result_victory", "result_failure"]:
+	_require(CueCatalog.MUSIC.size() == 7, "大厅、五个生态与驺吾试炼没有独立音乐循环")
+	var music_profiles := ["lobby", "level_01", "level_02", "level_03", "level_04", "level_05", "boss_zouwu"]
+	var music_streams := {}
+	for profile_id in music_profiles:
+		music_streams[CueCatalog.music(profile_id)] = true
+	_require(music_streams.size() == music_profiles.size(), "生态或 Boss 错误复用同一条音乐")
+	for cue_id in ["enemy_warning", "grub_roll_charge", "grub_roll_move", "grub_roll_miss", "bat_bolt_charge", "bat_bolt_launch", "bat_bolt_impact", "cloud_hart_charge", "cloud_hart_sweep", "cloud_hart_impact", "bellfeather_charge", "bellfeather_mark", "bellfeather_impact", "zouwu_appear", "zouwu_dash_charge", "zouwu_dash", "zouwu_dash_hit", "zouwu_tail_charge", "zouwu_tail_sweep", "zouwu_tail_hit", "zouwu_mark_charge", "zouwu_mark", "zouwu_mark_hit", "zouwu_recognition", "pickup_xp", "pickup_heal", "pickup_magnet", "pickup_haste", "pickup_bomb", "elite_appear", "elite_defeat", "result_victory", "result_failure"]:
 		_require(not CueCatalog.cue(cue_id).is_empty(), "缺少关键声音 Cue：%s" % cue_id)
 	_require(int(CueCatalog.cue("enemy_warning")["priority"]) > int(CueCatalog.cue("impact")["priority"]), "危险声音优先级没有高于普通命中")
 	var manager := AudioManager.new()
@@ -99,6 +106,41 @@ func _test_warning_progress() -> void:
 	renderer.free()
 
 
+func _test_pickup_feedback() -> void:
+	var feedback := HudPickupFeedback.new()
+	feedback.size = Vector2(540, 960)
+	root.add_child(feedback)
+	var xp_bar := Control.new()
+	xp_bar.position = Vector2(102, 62)
+	xp_bar.size = Vector2(322, 6)
+	feedback.add_child(xp_bar)
+	var health_bar := Control.new()
+	health_bar.position = Vector2(102, 10)
+	health_bar.size = Vector2(322, 19)
+	feedback.add_child(health_bar)
+	var status_panel := Control.new()
+	status_panel.position = Vector2(18, 86)
+	status_panel.size = Vector2(504, 48)
+	feedback.add_child(status_panel)
+	feedback.show_destination("xp", Vector2(270, 480), xp_bar, health_bar, status_panel)
+	var trail_count := 0
+	var glyph_count := 0
+	for child in feedback.get_children():
+		trail_count += int(child is Line2D and child.width >= 4.0)
+		glyph_count += int(child is Panel and child.size == Vector2(34, 34))
+	_require(trail_count == 1 and glyph_count == 1, "拾取反馈没有使用 34px 隔离徽章与 4px 可追踪尾迹")
+	feedback.free()
+
+
+func _test_environment_normalization() -> void:
+	var world_file := FileAccess.open("res://scripts/presentation/world_renderer.gd", FileAccess.READ)
+	_require(world_file != null, "无法读取战斗地表渲染器")
+	if world_file == null:
+		return
+	var source := world_file.get_as_text()
+	_require(source.contains("high_frequency_strength") and source.contains("quiet_zone * 0.38"), "高频生态和玩家周围低噪声区没有共享运行时归一化")
+
+
 func _test_color_roles() -> void:
 	_require(UiFactory.BACKGROUND == Color("ddefe7") and UiFactory.SURFACE == Color("fff6e2") and UiFactory.PRIMARY == Color("4fa7b5"), "方案 D 基础色没有使用审阅后的稳定 Token")
 	_require(UiFactory.ACCENT == Color("f2b84b") and UiFactory.DANGER == Color("e45b5b") and UiFactory.SUPPORTING == Color("76b77a"), "方案 D 功能色没有使用审阅后的稳定 Token")
@@ -136,7 +178,7 @@ func _test_visual_language_contract() -> void:
 	var world_file := FileAccess.open("res://scripts/presentation/world_renderer.gd", FileAccess.READ)
 	_require(world_file != null and not world_file.get_as_text().contains("draw_rect(map.world_bounds, map.border_color"), "开放地图仍绘制可见竞技场边界")
 	var start_file := FileAccess.open("res://scripts/ui/start_screen.gd", FileAccess.READ)
-	_require(start_file != null and start_file.get_as_text().contains("ExpeditionRouteMap"), "远征首页没有接入三生态路线地图")
+	_require(start_file != null and start_file.get_as_text().contains("ExpeditionRouteMap"), "远征首页没有接入五生态路线地图")
 	_require(not FileAccess.file_exists("res://scripts/ui/level_preview.gd") and not FileAccess.file_exists("res://scripts/ui/level_selector.gd"), "旧门户轮播实现仍与远征地图并存")
 
 

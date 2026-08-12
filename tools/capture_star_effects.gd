@@ -1,6 +1,7 @@
 extends SceneTree
 
 const CaptureSetup = preload("res://tools/support/capture_setup.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 
 var frame_count := 0
 
@@ -25,7 +26,12 @@ func _on_process_frame() -> void:
 		game.start_run("star_warden", "level_01")
 	elif frame_count == 8:
 		_prepare_showcase(game)
-	elif frame_count == 20:
+	elif frame_count == 11:
+		game.session.skills.runtime.pulse_center = game.session.player.position
+		game.session.skills.runtime.pulse_visual_time = game.session.skills.runtime.FROST_TRAVEL_TIME * 0.5
+		game.session.skills.visuals.queue_redraw()
+		game.refresh_presentation()
+	elif frame_count == 12:
 		game.session.pause()
 		if CaptureSetup.capture(self, "ultimate.png"):
 			print("CAPTURE_OK set=star_effects")
@@ -38,14 +44,14 @@ func _prepare_showcase(game: Node) -> void:
 	var session: Node = game.session
 	session.player.max_health = 999.0
 	session.player.health = 999.0
-	for skill_id in session.skills.active_skill_ids:
-		session.skills.levels[skill_id] = 3
+	session.build_state.skill_slots = ["star_lance", "sun_orbit", "frost_tide"]
+	for skill_id in session.build_state.skill_slots:
+		if SkillCatalog.has(str(skill_id)):
+			session.skills.levels[skill_id] = int(SkillCatalog.skill(skill_id)["max_level"])
 	var positions := [Vector2(-115, -155), Vector2(145, -115), Vector2(165, 135), Vector2(-145, 165), Vector2(-185, 20)]
 	var kinds := ["slime", "bat", "brute", "slime", "bat"]
-	if session.enemies.enemies.size() < 5:
-		push_error("CAPTURE_FAILED: 星潮技能预览至少需要 5 个初始敌人")
-		quit(1)
-		return
+	while session.enemies.enemies.size() < 5:
+		session.enemies.spawn_enemy(kinds[session.enemies.enemies.size()], null, session.state.elapsed)
 	for index in range(5):
 		var enemy = session.enemies.enemies[index]
 		enemy.configure(kinds[index], {"health": 1.0, "speed": 1.0, "damage": 1.0})

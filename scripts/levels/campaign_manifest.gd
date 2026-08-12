@@ -7,6 +7,7 @@ extends Resource
 @export var difficulty_profiles: Array[DifficultyProfileConfig] = []
 @export var levels: Array[LevelConfig] = []
 @export var starter_equipment_reward: EquipmentRewardConfig
+@export var route_map_texture: Texture2D
 
 
 func profile_by_id(profile_id: String) -> DifficultyProfileConfig:
@@ -35,4 +36,6 @@ func validation_errors() -> PackedStringArray:
 		errors.append("战役至少需要一个章节")
 	if difficulty_profiles.is_empty():
 		errors.append("战役至少需要一条难度曲线")
+	if route_map_texture == null:
+		errors.append("战役路线底图不能为空")
 	return errors

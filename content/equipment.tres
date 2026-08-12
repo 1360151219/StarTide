@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/generated/equipment/crystal_vest.png" id="6_vest"]
 [ext_resource type="Texture2D" path="res://assets/generated/equipment/windbell_charm.png" id="7_windbell"]
 [ext_resource type="Texture2D" path="res://assets/generated/equipment/timeglass_charm.png" id="8_timeglass"]
+[ext_resource type="Texture2D" path="res://assets/generated/equipment/thousand_mile_windseal.png" id="9_windseal"]
 
 [sub_resource type="Resource" id="Starwand"]
 script = ExtResource("2_entry")
@@ -93,7 +94,21 @@ data = {
 "stats_per_enhance": {"cooldown_reduction": 0.006, "range_percent": 0.006}
 }
 
+[sub_resource type="Resource" id="ThousandMileWindseal"]
+script = ExtResource("2_entry")
+content_id = "thousand_mile_windseal"
+data = {
+"base_stats": {"cooldown_reduction": 0.022857143, "move_speed_percent": 0.034285714},
+"content_tier": 5,
+"default_rarity": "top",
+"description": "驺吾认可远征者后留下的长风印记，提高移动速度并缩短技能间隔。",
+"icon": ExtResource("9_windseal"),
+"name": "千里风印",
+"slot": "charm",
+"stats_per_enhance": {"cooldown_reduction": 0.001714286, "move_speed_percent": 0.002285714}
+}
+
 [resource]
 script = ExtResource("1_manifest")
 catalog_id = "equipment"
-entries = Array[ExtResource("2_entry")]([SubResource("Starwand"), SubResource("Bow"), SubResource("Guard"), SubResource("Vest"), SubResource("Windbell"), SubResource("Timeglass")])
+entries = Array[ExtResource("2_entry")]([SubResource("Starwand"), SubResource("Bow"), SubResource("Guard"), SubResource("Vest"), SubResource("Windbell"), SubResource("Timeglass"), SubResource("ThousandMileWindseal")])

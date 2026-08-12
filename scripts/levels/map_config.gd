@@ -5,6 +5,9 @@ extends Resource
 @export var display_name := ""
 @export var biome_id := "windbell_meadow"
 @export var floor_texture: Texture2D
+@export var route_icon: Texture2D
+@export var route_pin_center := Vector2.ZERO
+@export var route_hero_position := Vector2.ZERO
 @export var world_bounds := Rect2(-1600.0, -1600.0, 3200.0, 3200.0)
 @export var player_start := Vector2.ZERO
 @export var spawn_distance_min := 570.0
@@ -36,6 +39,10 @@ func validation_errors() -> PackedStringArray:
 		errors.append("地图生态 ID 不能为空")
 	if floor_texture == null:
 		errors.append("地图贴图不能为空")
+	if route_icon == null:
+		errors.append("路线图标不能为空")
+	if route_pin_center == Vector2.ZERO or route_hero_position == Vector2.ZERO:
+		errors.append("路线关卡钉与英雄位置不能为空")
 	if world_bounds.size.x <= 0.0 or world_bounds.size.y <= 0.0:
 		errors.append("地图边界必须为正数")
 	var spawn_area_size := world_bounds.size - Vector2(60.0, 60.0)

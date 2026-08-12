@@ -12,7 +12,7 @@ func _initialize() -> void:
 
 func _on_process_frame() -> void:
 	frame_count += 1
-	if frame_count > 70:
+	if frame_count > 110:
 		push_error("CAPTURE_FAILED: 生态截图流程超时")
 		quit(1)
 		return
@@ -23,7 +23,7 @@ func _on_process_frame() -> void:
 		2:
 			CaptureSetup.isolate_records(game)
 			_silence_audio(game)
-			for level_id in ["level_01", "level_02", "level_03"]:
+			for level_id in ["level_01", "level_02", "level_03", "level_04", "level_05"]:
 				game.run_records.unlocked_levels[level_id] = true
 		5:
 			game.start_run("star_warden", "level_01")
@@ -46,7 +46,23 @@ func _on_process_frame() -> void:
 		38:
 			_prepare_scene(game)
 		42:
-			if _capture("biome_volcano.png"):
+			_capture("biome_volcano.png")
+		44:
+			_clear_run(game)
+		47:
+			game.start_run("star_warden", "level_04")
+		52:
+			_prepare_scene(game)
+		56:
+			_capture("biome_cloudwood.png")
+		58:
+			_clear_run(game)
+		61:
+			game.start_run("star_warden", "level_05")
+		66:
+			_prepare_scene(game)
+		70:
+			if _capture("biome_cloudcourt.png"):
 				_clear_run(game)
 				_silence_audio(game)
 				print("CAPTURE_OK set=biomes")
@@ -58,6 +74,8 @@ func _prepare_scene(game: Node) -> void:
 	session.player.max_health = 999.0
 	session.player.health = 999.0
 	var kinds := ["green_grub", "slime", "bat", "brute"]
+	if session.level.level_id in ["level_04", "level_05"]:
+		kinds = ["cloud_hart", "bellfeather_kite", "slime", "brute"]
 	var positions := [Vector2(-135, -95), Vector2(135, -105), Vector2(-145, 155), Vector2(135, 155)]
 	while session.enemies.enemies.size() < kinds.size():
 		session.enemies.spawn_enemy(kinds[session.enemies.enemies.size()], null, session.state.elapsed)

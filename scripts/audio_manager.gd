@@ -4,6 +4,7 @@ signal settings_changed
 
 const CueCatalog = preload("res://scripts/audio_cue_catalog.gd")
 const BusLayoutBuilder = preload("res://scripts/audio_bus_layout.gd")
+const MusicController = preload("res://scripts/audio_music_controller.gd")
 const SETTINGS_PATH := "user://audio_settings.cfg"
 const MUSIC_BASE_DB := -9.0
 const SFX_BASE_DB := -4.0
@@ -19,6 +20,8 @@ var sfx_volume := 0.75
 var music_ducked := false
 var audio_output_available := true
 var music_player: AudioStreamPlayer
+var music_fade_player: AudioStreamPlayer
+var music_controller: Node
 var sfx_players: Array[AudioStreamPlayer] = []
 var save_timer: Timer
 var cooldowns: Dictionary = {}
@@ -37,9 +40,11 @@ func _ready() -> void:
 	save_timer.wait_time = 0.35
 	save_timer.timeout.connect(_save_settings)
 	add_child(save_timer)
-	music_player = AudioStreamPlayer.new()
-	music_player.bus = CueCatalog.BUS_MUSIC
-	add_child(music_player)
+	music_controller = MusicController.new()
+	add_child(music_controller)
+	music_controller.configure()
+	music_controller.players_swapped.connect(_sync_music_players)
+	_sync_music_players(music_controller.active, music_controller.standby)
 	for _index in range(VOICE_COUNT):
 		var player := AudioStreamPlayer.new()
 		player.bus = CueCatalog.BUS_SFX
@@ -69,9 +74,8 @@ func _exit_tree() -> void:
 		if save_timer.time_left > 0.0:
 			_save_settings()
 		save_timer.stop()
-	if is_instance_valid(music_player):
-		music_player.stop()
-		music_player.stream = null
+	if is_instance_valid(music_controller):
+		music_controller.stop_all()
 	for player in sfx_players:
 		if is_instance_valid(player):
 			player.stop()
@@ -83,16 +87,19 @@ func play_music(profile_id := "lobby") -> void:
 	current_music_profile = profile_id
 	if not audio_output_available or not music_enabled:
 		return
-	var stream := CueCatalog.music(profile_id)
-	if music_player.playing and music_player.stream == stream:
+	music_controller.play(CueCatalog.music(profile_id))
+
+
+func crossfade_music(profile_id: String, duration := 0.45) -> void:
+	current_music_profile = profile_id
+	if not audio_output_available or not music_enabled:
 		return
-	music_player.stop()
-	if stream is AudioStreamWAV:
-		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		stream.loop_begin = 0
-		stream.loop_end = int(stream.get_length() * stream.mix_rate)
-	music_player.stream = stream
-	music_player.play()
+	music_controller.crossfade(CueCatalog.music(profile_id), duration)
+
+
+func _sync_music_players(active: AudioStreamPlayer, standby: AudioStreamPlayer) -> void:
+	music_player = active
+	music_fade_player = standby
 
 
 func play_cue(cue_id: String, volume_db := 0.0, pitch_scale := 1.0) -> void:
@@ -126,7 +133,7 @@ func toggle_music() -> bool:
 	if music_enabled:
 		play_music(current_music_profile)
 	else:
-		music_player.stop()
+		music_controller.stop_all()
 	_save_settings()
 	settings_changed.emit()
 	return music_enabled
@@ -205,19 +212,13 @@ func _ensure_audio_buses() -> void:
 func _apply_music_volume() -> void:
 	var bus_index := AudioServer.get_bus_index(CueCatalog.BUS_MUSIC)
 	if bus_index >= 0:
-		AudioServer.set_bus_volume_db(bus_index, _volume_db(music_volume, MUSIC_BASE_DB) + music_duck_offset_db)
+		AudioServer.set_bus_volume_db(bus_index, BusLayoutBuilder.volume_db(music_volume, MUSIC_BASE_DB) + music_duck_offset_db)
 
 
 func _apply_sfx_volume() -> void:
 	var bus_index := AudioServer.get_bus_index(CueCatalog.BUS_SFX)
 	if bus_index >= 0:
-		AudioServer.set_bus_volume_db(bus_index, _volume_db(sfx_volume, SFX_BASE_DB))
-
-
-func _volume_db(value: float, base_db: float) -> float:
-	if value <= 0.001:
-		return -80.0
-	return base_db + linear_to_db(value)
+		AudioServer.set_bus_volume_db(bus_index, BusLayoutBuilder.volume_db(sfx_volume, SFX_BASE_DB))
 
 
 func _load_settings() -> void:

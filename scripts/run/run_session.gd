@@ -29,6 +29,7 @@ var enemies: Node2D
 var projectiles: Node2D
 var enemy_projectiles: Node2D
 var enemy_abilities: Node2D
+var boss_abilities: Node2D
 var pickups: Node2D
 var skills: Node2D
 var passives: RefCounted
@@ -39,9 +40,11 @@ var relic_pool_ids := PackedStringArray()
 var skill_pool_weights: Dictionary = {}
 var relic_pool_weights: Dictionary = {}
 var elite_enemy: Node
+var boss_enemy: Node
 var damage_resolver := PlayerDamageResolver.new()
 var safety := RunSafetyController.new()
-func configure(hero_id: String, level_config: LevelConfig, run_records: RefCounted, audio_manager: Node, combat_effects: Node2D, random_streams: Dictionary) -> void:
+var result_service := RunResultService.new()
+func configure(hero_id: String, level_config: LevelConfig, run_records: RefCounted, audio_manager: Node, combat_effects: Node2D, random_streams: Dictionary, sample_store: RefCounted = null, sample_context: Dictionary = {}) -> void:
 	level = level_config
 	records = run_records
 	records.clear_new_content_discoveries()
@@ -49,13 +52,15 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	effects = combat_effects
 	state.reset(hero_id, level.level_id)
 	build_state = RunBuildState.new(hero_id)
+	var progression: Dictionary = records.progression_snapshot(hero_id)
+	result_service.begin_balance_sample(hero_id, level, progression, random_streams, sample_store, sample_context)
 	var content_pool := RunContentResolver.resolve(level.level_id, hero_id, records, random_streams["upgrade"])
 	skill_pool_ids = content_pool["skill_ids"]
 	relic_pool_ids = content_pool["relic_ids"]
 	skill_pool_weights = content_pool["skill_weights"]
 	relic_pool_weights = content_pool["relic_weights"]
+	result_service.set_resolved_content_pool(content_pool)
 	stage_director.configure(level)
-	var progression: Dictionary = records.progression_snapshot(hero_id)
 	var nodes := RunWorldBuilder.new().build(self, state, build_state, level, stage_director, audio, effects, random_streams, progression)
 	player = nodes["player"]
 	camera = nodes["camera"]
@@ -63,6 +68,7 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	projectiles = nodes["projectiles"]
 	enemy_projectiles = nodes["enemy_projectiles"]
 	enemy_abilities = nodes["enemy_abilities"]
+	boss_abilities = nodes["boss_abilities"]
 	pickups = nodes["pickups"]
 	skills = nodes["skills"]
 	passives = nodes["passives"]
@@ -70,18 +76,20 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	damage_resolver.configure(player, level, passives, effects, audio)
 	safety.reset()
 	damage_resolver.hit_feedback_requested.connect(player_hit_feedback_requested.emit)
+	result_service.attach_balance_sources(damage_resolver, enemies, player, skills)
 	enemies.enemy_defeated.connect(_on_enemy_defeated)
 	enemies.enemy_spawned.connect(func(enemy: Node) -> void: records.discover_content("enemies", enemy.kind))
 	enemy_abilities.player_hit_requested.connect(_apply_player_hit)
+	boss_abilities.player_hit_requested.connect(_apply_player_hit)
 	enemy_projectiles.player_hit_requested.connect(_apply_player_hit)
 	pickups.experience_collected.connect(add_experience)
-	pickups.heal_requested.connect(player.heal)
+	pickups.heal_requested.connect(func(amount: float) -> void: player.heal(amount, "pickup:heart"))
 	pickups.pickup_collected.connect(func(pickup_id: String) -> void: records.discover_content("pickups", pickup_id))
 	pickups.pickup_collected.connect(pickup_collected.emit)
 	records.discover_content("skills", str(build_state.skill_slots[0]))
 	enemies.spawn_initial()
 	var stage := stage_director.current_stage()
-	stage_banner_requested.emit("%s · %s" % [level.display_name, stage.display_name], RunResultService.new().victory_hint(level), 2.6)
+	stage_banner_requested.emit("%s · %s" % [level.display_name, stage.display_name], result_service.victory_hint(level), 2.6)
 	state_changed.emit()
 
 func advance(delta: float, direction: Vector2) -> void:
@@ -93,17 +101,20 @@ func advance(delta: float, direction: Vector2) -> void:
 	_update_stage_events()
 	effects.advance(delta)
 	var movement: Vector2 = player.move(direction, delta)
+	result_service.record_movement(delta, movement.length_squared() > 0.0001)
 	var skill_delta: float = passives.advance(movement, delta, state.elapsed)
 	if not safety.combat_ready(direction, state.elapsed, level):
 		state_changed.emit()
 		return
 	enemies.advance_spawning(delta, state.elapsed)
 	enemy_abilities.advance(delta, state.elapsed)
+	boss_abilities.advance(delta, state.elapsed)
 	if state.finished:
 		return
 	_handle_enemy_contacts()
 	if state.finished:
 		return
+	result_service.record_skill_uptime(delta, build_state.active_skill_ids())
 	skills.advance(skill_delta, delta, state.elapsed)
 	if state.finished or state.paused:
 		return
@@ -129,6 +140,7 @@ func select_upgrade(choice_key: String) -> bool:
 	if not bool(result.get("success", false)):
 		return false
 	var choice: Dictionary = result["choice"]
+	result_service.record_upgrade(state.elapsed, choice)
 	var content_id := str(choice["content_id"])
 	if [UpgradeSystem.SKILL_UNLOCK, UpgradeSystem.SKILL_UPGRADE, UpgradeSystem.SKILL_BRANCH].has(str(choice["kind"])):
 		skills.sync_after_upgrade(content_id)
@@ -138,7 +150,7 @@ func select_upgrade(choice_key: String) -> bool:
 	elif str(choice["kind"]) == UpgradeSystem.RELIC_UPGRADE:
 		records.discover_content("relics", content_id)
 	player.apply_build_modifiers(build_state)
-	player.apply_acquire_effects(result["effects"])
+	player.apply_acquire_effects(result["effects"], "upgrade:%s" % content_id)
 	state.pending_upgrades -= 1
 	if state.pending_upgrades > 0:
 		_request_upgrade()
@@ -147,7 +159,6 @@ func select_upgrade(choice_key: String) -> bool:
 		state.paused = false
 	state_changed.emit()
 	return true
-
 func reroll_upgrade() -> bool:
 	if state.finished or state.pending_upgrades <= 0:
 		return false
@@ -158,33 +169,15 @@ func reroll_upgrade() -> bool:
 	upgrade_requested.emit(state.player_level, result["choices"], upgrades, build_state)
 	state_changed.emit()
 	return true
-
-
 func add_experience(amount: int) -> void:
 	if state.add_experience(amount) > 0 and not state.paused:
 		_request_upgrade()
 func _update_stage_events() -> void:
-	var events := stage_director.advance(state.elapsed)
-	var transitions: Array = events["transitions"]
-	if not transitions.is_empty():
-		var stage: StageConfig = transitions[-1]
-		stage_banner_requested.emit(stage.display_name, stage.subtitle, 2.4)
-		audio.play_sfx("stage_transition", -1.0)
-	if events["elite_due"]:
-		state.elite_spawned = true
-		elite_enemy = enemies.spawn_elite(level.elite, state.elapsed)
-		if is_instance_valid(elite_enemy):
-			effects.add_effect(elite_enemy.position, elite_enemy.radius + 52.0, Color("f6c968"), 0.72, "elite_appear")
-		audio.play_sfx("elite_appear", 0.0)
-		stage_banner_requested.emit("%s · %s降临" % [stage_director.current_stage().display_name, level.elite.display_name], "击败可获得额外赐福与星引磁场", 2.8)
-
-
+	preload("res://scripts/run/run_stage_event_service.gd").apply(self, stage_director.advance(state.elapsed))
 func _handle_enemy_contacts() -> void:
 	damage_resolver.apply_contacts(enemies, state)
 	if damage_resolver.player_defeated:
 		_finish(false, RunState.END_DEFEATED)
-
-
 func _apply_player_hit(hit: PlayerHit) -> bool:
 	var applied := damage_resolver.apply(hit, state.elapsed, state.finished)
 	if damage_resolver.player_defeated:
@@ -194,6 +187,13 @@ func _apply_player_hit(hit: PlayerHit) -> bool:
 
 func _on_enemy_defeated(enemy: Node) -> void:
 	state.kills += 1
+	if enemy.is_boss:
+		state.boss_defeated = true
+		boss_abilities.clear_all()
+		audio.play_sfx("zouwu_recognition", 0.0)
+		stage_banner_requested.emit("千里巡守认可", "驺吾收势，千里云庭为你开启", 1.4)
+		_finish(true, RunState.END_COMPLETED)
+		return
 	pickups.drop_for_enemy(enemy)
 	if not enemy.is_elite:
 		return
@@ -225,10 +225,10 @@ func _request_upgrade() -> void:
 
 
 func _resolve_time_boundary() -> bool:
-	if level.victory.is_victory(state.elapsed, level.duration, state.elite_defeated):
+	if level.victory.is_victory(state.elapsed, level.duration, state.elite_defeated, state.boss_defeated):
 		_finish(true, RunState.END_COMPLETED)
 		return true
-	if level.victory.is_timeout_failure(state.elapsed, level.duration, state.elite_defeated):
+	if level.victory.is_timeout_failure(state.elapsed, level.duration, state.elite_defeated, state.boss_defeated):
 		_finish(false, RunState.END_OBJECTIVE_TIMEOUT)
 		return true
 	return false
@@ -244,5 +244,6 @@ func _finish(won: bool, end_reason: String) -> void:
 		player.trigger_victory_animation()
 	state.paused = true
 	enemy_abilities.clear_all()
+	boss_abilities.clear_all()
 	enemy_projectiles.clear_all()
-	finished.emit(RunResultService.new().finalize(records, state, level, passives, build_state))
+	finished.emit(result_service.finalize(records, state, level, passives, build_state, player))

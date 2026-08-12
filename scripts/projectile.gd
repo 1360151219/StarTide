@@ -10,6 +10,7 @@ var trail_color := Color("56d9ef")
 var core_color := Color("dffcff")
 var outline_color := Color("07506a")
 var visual_kind := "star_lance"
+var source_id := "unknown"
 var age := 0.0
 var previous_position := Vector2.ZERO
 var hit_ids: Dictionary = {}

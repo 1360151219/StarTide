@@ -20,6 +20,8 @@ var victory := false
 var end_reason := ""
 var elite_spawned := false
 var elite_defeated := false
+var boss_spawned := false
+var boss_defeated := false
 
 
 func reset(selected_hero_id: String, selected_level_id: String) -> void:
@@ -37,6 +39,8 @@ func reset(selected_hero_id: String, selected_level_id: String) -> void:
 	end_reason = ""
 	elite_spawned = false
 	elite_defeated = false
+	boss_spawned = false
+	boss_defeated = false
 
 
 func add_experience(amount: int) -> int:

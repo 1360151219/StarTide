@@ -10,6 +10,12 @@
 [ext_resource type="Texture2D" path="res://assets/art/enemies/duskwing_bat_side.png" id="8_bat_side"]
 [ext_resource type="Texture2D" path="res://assets/art/enemies/meteor_brute.png" id="9_brute_front"]
 [ext_resource type="Texture2D" path="res://assets/art/enemies/meteor_brute_side.png" id="10_brute_side"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/cloud_hart.png" id="11_cloud_hart_front"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/cloud_hart_side.png" id="12_cloud_hart_side"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/bellfeather_kite.png" id="13_bellfeather_front"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/bellfeather_kite_side.png" id="14_bellfeather_side"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/zouwu.png" id="15_zouwu_front"]
+[ext_resource type="Texture2D" path="res://assets/art/enemies/zouwu_side.png" id="16_zouwu_side"]
 
 [sub_resource type="Resource" id="GreenGrub"]
 script = ExtResource("2_entry")
@@ -87,7 +93,64 @@ data = {
 "subtitle": "重型魔物"
 }
 
+[sub_resource type="Resource" id="CloudHart"]
+script = ExtResource("2_entry")
+content_id = "cloud_hart"
+data = {
+"accent": Color(0.243137, 0.678431, 0.631373, 1),
+"color": Color(0.713725, 0.898039, 0.85098, 1),
+"damage": 10.0,
+"description": "借云角汇聚回风，蓄势后扫出扇形冲击。\n观察角尖朝向，及时移动到侧后方。",
+"experience": 12,
+"front": ExtResource("11_cloud_hart_front"),
+"health": 54.0,
+"name": "云角鹿",
+"radius": 21.0,
+"role": "melee",
+"side": ExtResource("12_cloud_hart_side"),
+"speed": 84.0,
+"subtitle": "回风魔物"
+}
+
+[sub_resource type="Resource" id="BellfeatherKite"]
+script = ExtResource("2_entry")
+content_id = "bellfeather_kite"
+data = {
+"accent": Color(0.941176, 0.721569, 0.294118, 1),
+"color": Color(0.560784, 0.823529, 0.843137, 1),
+"damage": 8.0,
+"description": "盘旋在远处，以铃羽锁定地面落印。\n圆形预警锁定后不会继续追踪。",
+"experience": 10,
+"front": ExtResource("13_bellfeather_front"),
+"health": 30.0,
+"name": "铃羽鸢",
+"radius": 17.0,
+"role": "ranged",
+"side": ExtResource("14_bellfeather_side"),
+"speed": 108.0,
+"subtitle": "落印魔物"
+}
+
+[sub_resource type="Resource" id="Zouwu"]
+script = ExtResource("2_entry")
+content_id = "zouwu"
+data = {
+"accent": Color(0.941176, 0.721569, 0.294118, 1),
+"color": Color(0.94902, 0.909804, 0.788235, 1),
+"damage": 10.0,
+"description": "虎形五采，长尾逾身，踏云一日可行千里。\n千里云庭的远征试炼官。",
+"experience": 1,
+"front": ExtResource("15_zouwu_front"),
+"health": 6000.0,
+"name": "千里巡守·驺吾",
+"radius": 52.0,
+"role": "melee",
+"side": ExtResource("16_zouwu_side"),
+"speed": 72.0,
+"subtitle": "山海异兽 · 远征试炼官"
+}
+
 [resource]
 script = ExtResource("1_manifest")
 catalog_id = "enemies"
-entries = Array[ExtResource("2_entry")]([SubResource("GreenGrub"), SubResource("Slime"), SubResource("Bat"), SubResource("Brute")])
+entries = Array[ExtResource("2_entry")]([SubResource("GreenGrub"), SubResource("Slime"), SubResource("Bat"), SubResource("Brute"), SubResource("CloudHart"), SubResource("BellfeatherKite"), SubResource("Zouwu")])

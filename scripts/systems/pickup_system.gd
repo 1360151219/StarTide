@@ -90,7 +90,7 @@ func advance(delta: float, elapsed: float) -> void:
 			_begin_pull(pickup, distance, pickup_radius)
 		if pickup.is_pulling:
 			_advance_pull(pickup, delta)
-			pickup.z_index = level.map.depth_index(pickup.position.y)
+			pickup.z_index = 3920
 		if pickup.position.distance_to(player.position) <= 28.0:
 			_collect(pickup, elapsed)
 			if run_state.paused or run_state.finished:
@@ -149,7 +149,7 @@ func _collect(pickup: Node, elapsed: float) -> void:
 		"area_damage":
 			audio.play_sfx("pickup_bomb", 0.0, rng.randf_range(0.97, 1.03))
 			effects.add_effect(pickup.position, float(data["effect_radius"]), data["accent"], 0.48, "pickup_bomb")
-			enemies.damage_area(pickup.position, float(data["effect_radius"]), float(data["amount"]))
+			enemies.damage_area(pickup.position, float(data["effect_radius"]), float(data["amount"]), null, "pickup:%s" % pickup.kind)
 		_:
 			audio.play_sfx("pickup", -2.0, rng.randf_range(0.95, 1.08))
 	pickup_collected.emit(pickup.kind)

@@ -25,6 +25,7 @@ extends Resource
 @export var enemy_ability_budget: EnemyAbilityBudgetConfig
 @export var stages: Array[StageConfig] = []
 @export var elite: EliteConfig
+@export var boss: BossConfig
 @export var victory: VictoryConfig
 @export var reward: RewardConfig
 
@@ -87,14 +88,16 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 	else:
 		_append_prefixed(errors, "怪物技能预算", enemy_ability_budget.validation_errors())
 	_validate_stages(errors, valid_enemy_ids, valid_ability_ids)
-	if elite == null:
-		errors.append("精英配置不能为空")
-	else:
+	if elite != null:
 		_append_prefixed(errors, "精英", elite.validation_errors(duration, valid_enemy_ids))
+	if boss != null:
+		_append_prefixed(errors, "Boss", boss.validation_errors(duration, valid_enemy_ids, valid_ability_ids))
+	if elite == null and boss == null:
+		errors.append("精英与 Boss 配置不能同时为空")
 	if victory == null:
 		errors.append("胜利条件不能为空")
 	else:
-		_append_prefixed(errors, "胜利", victory.validation_errors(elite != null and elite.enabled))
+		_append_prefixed(errors, "胜利", victory.validation_errors(elite != null and elite.enabled, boss != null and boss.enabled))
 	if reward == null:
 		errors.append("奖励配置不能为空")
 	else:

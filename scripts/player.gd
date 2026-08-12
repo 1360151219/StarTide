@@ -1,5 +1,7 @@
 extends Node2D
 
+signal healing_resolved(source_id: String, requested: float, applied: float, overheal: float)
+
 const HeroRigScene = preload("res://scenes/presentation/hero_rig_2d.tscn")
 
 var hero_id := "star_warden"
@@ -60,12 +62,12 @@ func apply_build_modifiers(build_state: RefCounted) -> void:
 	set_build_speed_bonus(build_state.modifier("move_speed_multiplier") - 1.0)
 
 
-func apply_acquire_effects(effects: Dictionary) -> void:
+func apply_acquire_effects(effects: Dictionary, source_id := "upgrade") -> void:
 	if not effects.has("heal"):
 		return
 	if effects.has("full_health_max") and is_equal_approx(health, max_health):
 		max_health += float(effects["full_health_max"])
-	heal(float(effects["heal"]))
+	heal(float(effects["heal"]), source_id)
 
 
 func set_temporary_speed_multiplier(multiplier: float) -> void:
@@ -102,8 +104,13 @@ func take_damage(amount: float) -> bool:
 	return health <= 0.0
 
 
-func heal(amount: float) -> void:
+func heal(amount: float, source_id := "unknown") -> float:
+	var previous_health := health
 	health = minf(max_health, health + amount)
+	var applied := health - previous_health
+	var requested := maxf(0.0, amount)
+	healing_resolved.emit(source_id, requested, maxf(0.0, applied), maxf(0.0, requested - applied))
+	return applied
 
 
 func trigger_cast_animation() -> void:
@@ -121,17 +128,17 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.42))
 	draw_circle(Vector2(3, 60), 32.0, Color(0.01, 0.02, 0.07, 0.48))
 	draw_set_transform(Vector2.ZERO)
-	draw_circle(Vector2.ZERO, 31.0, Color(0.23, 0.87, 1.0, 0.08))
-	draw_arc(Vector2.ZERO, 31.0, 0.0, TAU, 36, Color(0.55, 0.95, 1.0, 0.68), 2.2)
+	draw_circle(Vector2.ZERO, 31.0, Color(0.23, 0.87, 1.0, 0.06))
+	draw_arc(Vector2.ZERO, 31.0, 0.0, TAU, 36, Color(0.55, 0.95, 1.0, 0.52), 2.2)
 	if passive_active and hero_id == "star_warden":
-		draw_circle(Vector2.ZERO, 43.0, Color(0.25, 0.9, 1.0, 0.08))
-		draw_arc(Vector2.ZERO, 43.0, animation_time * 0.45, animation_time * 0.45 + PI * 1.55, 48, Color(0.48, 0.94, 1.0, 0.86), 3.2)
+		draw_circle(Vector2.ZERO, 43.0, Color(0.25, 0.9, 1.0, 0.06))
+		draw_arc(Vector2.ZERO, 43.0, animation_time * 0.45, animation_time * 0.45 + PI * 1.55, 48, Color(0.48, 0.94, 1.0, 0.62), 3.2)
 		for index in range(6):
-			draw_circle(Vector2.from_angle(animation_time * 0.35 + index * TAU / 6.0) * 43.0, 2.8, Color("d9fbff"))
+			draw_circle(Vector2.from_angle(animation_time * 0.35 + index * TAU / 6.0) * 43.0, 2.8, Color(0.85, 0.98, 1.0, 0.72))
 	elif passive_active and hero_id == "ember_ranger":
 		for index in range(3):
 			var wind_radius := 34.0 + index * 7.0
-			draw_arc(Vector2.ZERO, wind_radius, animation_time * 2.5 + index, animation_time * 2.5 + index + PI * 0.9, 22, Color(1.0, 0.46 + index * 0.1, 0.18, 0.72 - index * 0.12), 2.8)
+			draw_arc(Vector2.ZERO, wind_radius, animation_time * 2.5 + index, animation_time * 2.5 + index + PI * 0.9, 22, Color(1.0, 0.46 + index * 0.1, 0.18, 0.54 - index * 0.09), 2.8)
 
 
 func _ensure_hero_rig() -> void:

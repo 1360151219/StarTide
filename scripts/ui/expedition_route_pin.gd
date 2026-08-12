@@ -3,13 +3,10 @@ extends Button
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const AVAILABLE_FRAME := preload("res://assets/art/ui/home/route_pin_available.png")
 const SELECTED_FRAME := preload("res://assets/art/ui/home/route_pin_selected.png")
-const MEADOW_ICON := preload("res://assets/art/ui/home/route_icon_meadow.png")
-const OASIS_ICON := preload("res://assets/art/ui/home/route_icon_oasis.png")
-const VOLCANO_ICON := preload("res://assets/art/ui/home/route_icon_volcano.png")
 const LOCKED_ICON := preload("res://assets/art/ui/home/route_icon_locked.png")
 
 var level_id := ""
-var biome_id := "windbell_meadow"
+var route_icon: Texture2D
 var accent := UiFactory.ACCENT
 var locked := false
 var selected := false
@@ -36,9 +33,9 @@ func _ready() -> void:
 	resized.connect(_layout_assets)
 
 
-func configure(id: String, biome: String, color: Color, is_locked: bool) -> void:
+func configure(id: String, icon: Texture2D, color: Color, is_locked: bool) -> void:
 	level_id = id
-	biome_id = biome
+	route_icon = icon
 	accent = color
 	locked = is_locked
 	accessibility_name = "%s%s" % [tooltip_text, "，尚未解锁" if locked else ""]
@@ -102,18 +99,8 @@ func _refresh_assets() -> void:
 		return
 	_frame.texture = SELECTED_FRAME if selected and not locked else AVAILABLE_FRAME
 	_frame.modulate = Color(0.70, 0.73, 0.71, 0.86) if locked else Color.WHITE
-	_icon.texture = LOCKED_ICON if locked else _biome_icon()
+	_icon.texture = LOCKED_ICON if locked else route_icon
 	_icon.modulate = Color(0.86, 0.88, 0.86, 0.92) if locked else Color.WHITE
-
-
-func _biome_icon() -> Texture2D:
-	match biome_id:
-		"golden_oasis":
-			return OASIS_ICON
-		"crystal_volcano":
-			return VOLCANO_ICON
-		_:
-			return MEADOW_ICON
 
 
 func _set_hovered(value: bool) -> void:

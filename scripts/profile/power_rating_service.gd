@@ -11,6 +11,8 @@ static func rate(hero_id: String, progression: Dictionary, equipment_stats: Dict
 	var equipment_power := _equipment_power(hero_id, equipment_stats)
 	return {
 		"formula_version": Config.FORMULA_VERSION,
+		"purpose": "progression_score",
+		"calibrated": false,
 		"total": Config.BASE_POWER + level_power + training_power + equipment_power,
 		"base": Config.BASE_POWER,
 		"level": level_power,

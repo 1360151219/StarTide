@@ -78,6 +78,19 @@ func _draw_elite_burst(center: Vector2, radius: float, progress: float, alpha: f
 		_draw_small_star(point, 5.0 + int(defeated) * 2.0, Color(1.0, 0.93, 0.62, alpha), Color(0.1, 0.3, 0.34, alpha))
 
 
+func _draw_boss_appear(center: Vector2, radius: float, progress: float, alpha: float) -> void:
+	var colors := [Color("77c8c2"), Color("f1c45b"), Color("e98d78"), Color("78b979"), Color("6679b9")]
+	var ring := radius * (0.24 + progress * 0.86)
+	for index in range(colors.size()):
+		var start_angle := -PI * 0.5 + index * TAU / colors.size() + progress * 0.22
+		var color: Color = colors[index]
+		color.a = alpha
+		draw_arc(center, ring, start_angle, start_angle + TAU / colors.size() - 0.08, 16, Color(0.06, 0.24, 0.28, alpha * 0.8), 8.0, true)
+		draw_arc(center, ring, start_angle, start_angle + TAU / colors.size() - 0.08, 16, color, 3.2, true)
+		var point := center + Vector2.from_angle(start_angle + TAU / colors.size() * 0.5) * ring
+		_draw_small_star(point, 7.0, Color(color.r, color.g, color.b, alpha), Color(0.08, 0.27, 0.3, alpha))
+
+
 func _draw_defeat(center: Vector2, radius: float, progress: float, alpha: float, color: Color) -> void:
 	for index in range(9):
 		var angle := index * TAU / 9.0 + index * 0.21

@@ -1,5 +1,7 @@
 extends Node2D
 
+signal skill_released(skill_id: String)
+
 const StarRuntime = preload("res://scripts/skills/star_skill_runtime.gd")
 const StarVisuals = preload("res://scripts/skills/star_skill_visuals.gd")
 const EmberRuntime = preload("res://scripts/skills/ember_skill_runtime.gd")
@@ -24,6 +26,8 @@ func configure(hero_id: String, build: RefCounted, player: Node2D, enemies: Node
 	runtime.skill_released.connect(_on_skill_released)
 	if hero_id == "star_warden":
 		visuals = StarVisuals.new()
+		visuals.z_as_relative = false
+		visuals.z_index = 0
 		visuals.configure(runtime, player, levels)
 		add_child(visuals)
 
@@ -63,5 +67,6 @@ func _sync_state() -> void:
 
 func _on_skill_released(skill_id: String) -> void:
 	flash_until[skill_id] = current_elapsed + 0.16
+	skill_released.emit(skill_id)
 	if player.has_method("trigger_cast_animation"):
 		player.trigger_cast_animation()

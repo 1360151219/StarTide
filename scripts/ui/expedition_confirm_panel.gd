@@ -95,10 +95,10 @@ func show_for(hero_id: String, level: LevelConfig) -> void:
 	objective_label.text = level.description
 	hero_label.text = hero["name"]
 	role_label.text = "%s  ·  %s" % [hero["title"], hero["passive_name"]]
-	power_label.text = "战力 %d  /  推荐 %d" % [current_power, level.recommended_power]
+	power_label.text = "养成评分 %d  /  建议 %d" % [current_power, level.recommended_power]
 	var ready := current_power >= level.recommended_power
-	power_label.add_theme_color_override("font_color", UiFactory.ACCENT_DARK if ready else UiFactory.DANGER_DARK)
-	power_hint_label.text = "状态良好，可以出发" if ready else "战力偏低，仍可挑战；也可先调整角色"
+	power_label.add_theme_color_override("font_color", UiFactory.ACCENT_DARK if ready else UiFactory.PRIMARY_DARK)
+	power_hint_label.text = "已达到建议评分，仍需合理构筑" if ready else "未达到建议评分，仍可挑战；也可先调整角色"
 	visible = true
 
 

@@ -142,7 +142,7 @@ func _trim_damage_numbers() -> void:
 
 func _priority_for(kind: String) -> int:
 	match kind:
-		"meteor_warning", "meteor_impact", "phoenix", "phoenix_impact", "pickup_bomb", "elite_appear", "elite_defeat":
+		"meteor_warning", "meteor_impact", "phoenix", "phoenix_impact", "pickup_bomb", "elite_appear", "elite_defeat", "boss_appear":
 			return 88
 		"pickup_heal", "pickup_magnet", "pickup_haste", "bat_impact", "grub_recover":
 			return 74
@@ -193,6 +193,8 @@ func _draw() -> void:
 				_draw_bat_impact(center, radius, progress, alpha, effect["kind"] == "bat_dissolve")
 			"elite_appear", "elite_defeat":
 				_draw_elite_burst(center, radius, progress, alpha, effect["kind"] == "elite_defeat")
+			"boss_appear":
+				_draw_boss_appear(center, radius, progress, alpha)
 			"ember":
 				_draw_ember_bloom(center, radius, progress, alpha, color)
 			"star_hit":

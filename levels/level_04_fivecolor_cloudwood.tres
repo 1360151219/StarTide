@@ -1,0 +1,454 @@
+[gd_resource type="Resource" script_class="LevelConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_config.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/levels/map_config.gd" id="2_map"]
+[ext_resource type="Script" path="res://scripts/levels/difficulty_config.gd" id="3_difficulty"]
+[ext_resource type="Script" path="res://scripts/levels/loot_config.gd" id="4_loot"]
+[ext_resource type="Script" path="res://scripts/levels/stage_config.gd" id="5_stage"]
+[ext_resource type="Script" path="res://scripts/levels/elite_config.gd" id="6_elite"]
+[ext_resource type="Script" path="res://scripts/levels/victory_config.gd" id="7_victory"]
+[ext_resource type="Script" path="res://scripts/levels/reward_config.gd" id="8_reward"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/fivecolor_cloudwood_floor.png" id="9_floor"]
+[ext_resource type="Script" path="res://scripts/levels/enemy_ability_budget_config.gd" id="10_abilities"]
+[ext_resource type="Script" path="res://scripts/levels/drop_entry_config.gd" id="11_drop"]
+[ext_resource type="Script" path="res://scripts/levels/level_content_pool_config.gd" id="12_pool"]
+[ext_resource type="Script" path="res://scripts/levels/weighted_content_entry_config.gd" id="13_weighted"]
+[ext_resource type="Script" path="res://scripts/levels/enemy_spawn_entry_config.gd" id="14_enemy"]
+[ext_resource type="Script" path="res://scripts/levels/equipment_drop_table_config.gd" id="15_drop_table"]
+[ext_resource type="Script" path="res://scripts/levels/equipment_grant_entry_config.gd" id="16_grant"]
+[ext_resource type="Script" path="res://scripts/levels/equipment_reward_config.gd" id="17_equipment_reward"]
+[ext_resource type="Texture2D" path="res://assets/art/ui/home/route_icon_cloudwood.png" id="18_route_icon"]
+
+[sub_resource type="Resource" id="ContentPool"]
+script = ExtResource("12_pool")
+inherit_from_level_id = "level_03"
+relic_pool_limit = 4
+
+[sub_resource type="Resource" id="Difficulty"]
+script = ExtResource("3_difficulty")
+health_start = 1.51
+health_end = 2.27
+speed_start = 1.03
+speed_end = 1.1
+damage_start = 1.24
+damage_end = 1.37
+
+[sub_resource type="Resource" id="Elite"]
+script = ExtResource("6_elite")
+spawn_time = 100.0
+enemy_id = "cloud_hart"
+display_name = "云角领路者"
+health_multiplier = 12.0
+speed_multiplier = 0.94
+damage_multiplier = 1.8
+radius_multiplier = 1.5
+visual_scale = 1.65
+experience = 150
+bonus_upgrade_count = 2
+magnet_duration = 8.0
+
+[sub_resource type="Resource" id="AbilityBudget"]
+script = ExtResource("10_abilities")
+opening_protection_time = 2.0
+max_telegraphs = 4
+max_projectiles = 3
+min_start_interval = 0.42
+max_player_danger_areas = 2
+
+[sub_resource type="Resource" id="DropHeart"]
+script = ExtResource("11_drop")
+pickup_id = "heart"
+chance = 0.065
+max_per_run = 8
+
+[sub_resource type="Resource" id="DropMagnet"]
+script = ExtResource("11_drop")
+pickup_id = "magnet"
+chance = 0.025
+max_per_run = 4
+
+[sub_resource type="Resource" id="DropHaste"]
+script = ExtResource("11_drop")
+pickup_id = "haste_leaf"
+chance = 0.014
+max_per_run = 3
+
+[sub_resource type="Resource" id="DropBomb"]
+script = ExtResource("11_drop")
+pickup_id = "star_bomb"
+chance = 0.01
+max_per_run = 2
+
+[sub_resource type="Resource" id="Loot"]
+script = ExtResource("4_loot")
+bonus_entries = Array[ExtResource("11_drop")]([SubResource("DropHeart"), SubResource("DropMagnet"), SubResource("DropHaste"), SubResource("DropBomb")])
+
+[sub_resource type="Resource" id="Map"]
+script = ExtResource("2_map")
+map_id = "fivecolor_cloudwood"
+display_name = "五色云林"
+biome_id = "fivecolor_cloudwood"
+floor_texture = ExtResource("9_floor")
+route_icon = ExtResource("18_route_icon")
+route_pin_center = Vector2(172, 264)
+route_hero_position = Vector2(92, 306)
+world_bounds = Rect2(-1200, -1200, 2400, 2400)
+spawn_distance_min = 540.0
+spawn_distance_max = 650.0
+elite_spawn_distance_min = 480.0
+elite_spawn_distance_max = 540.0
+background_color = Color(0.76, 0.89, 0.75, 1)
+floor_tint = Color(0.98, 1, 0.94, 0.98)
+border_color = Color(0.31, 0.67, 0.54, 0.75)
+glow_color = Color(0.34, 0.76, 0.69, 0.045)
+scene_saturation = 0.72
+scene_exposure = 1.02
+decoration_count = 54
+environment_particle_color = Color(0.95, 0.88, 0.48, 0.58)
+
+[sub_resource type="Resource" id="FirstClearEquipmentEntry"]
+script = ExtResource("16_grant")
+instance_id = "clear-level-04-windstring-bow"
+definition_id = "windstring_bow"
+rarity_id = "top"
+
+[sub_resource type="Resource" id="FirstClearEquipment"]
+script = ExtResource("17_equipment_reward")
+reward_id = "first_clear_level_04_equipment_v1"
+entries = Array[ExtResource("16_grant")]([SubResource("FirstClearEquipmentEntry")])
+
+[sub_resource type="Resource" id="Reward"]
+script = ExtResource("8_reward")
+reward_id = "unlock_thousand_mile_court"
+display_name = "云门齐开"
+description = "获得顶级风弦短弓，并开放千里云庭试炼"
+unlock_level_id = "level_05"
+first_clear_equipment_reward = SubResource("FirstClearEquipment")
+
+[sub_resource type="Resource" id="DropStarwand"]
+script = ExtResource("13_weighted")
+content_id = "apprentice_starwand"
+weight = 0.5
+
+[sub_resource type="Resource" id="DropGuard"]
+script = ExtResource("13_weighted")
+content_id = "meadow_guard"
+weight = 0.5
+
+[sub_resource type="Resource" id="DropWindbell"]
+script = ExtResource("13_weighted")
+content_id = "windbell_charm"
+weight = 0.5
+
+[sub_resource type="Resource" id="DropBow"]
+script = ExtResource("13_weighted")
+content_id = "windstring_bow"
+weight = 1.25
+
+[sub_resource type="Resource" id="DropVest"]
+script = ExtResource("13_weighted")
+content_id = "crystal_vest"
+weight = 1.25
+
+[sub_resource type="Resource" id="DropTimeglass"]
+script = ExtResource("13_weighted")
+content_id = "timeglass_charm"
+weight = 1.5
+
+[sub_resource type="Resource" id="EquipmentDrops"]
+script = ExtResource("15_drop_table")
+table_id = "level_04_clear_drops_v1"
+equipment_entries = Array[ExtResource("13_weighted")]([SubResource("DropStarwand"), SubResource("DropGuard"), SubResource("DropWindbell"), SubResource("DropBow"), SubResource("DropVest"), SubResource("DropTimeglass")])
+rarity_weights = {"common": 55.0, "rare": 30.0, "top": 15.0}
+max_level = 4
+
+[sub_resource type="Resource" id="S1Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.45
+max_active = 28
+
+[sub_resource type="Resource" id="S1Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.25
+max_active = 18
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="S1Hart"]
+script = ExtResource("14_enemy")
+enemy_id = "cloud_hart"
+weight = 0.3
+max_active = 18
+ability_variant_id = "cloud_hart_sector"
+
+[sub_resource type="Resource" id="Stage1"]
+script = ExtResource("5_stage")
+stage_id = "forest_wind_steps"
+display_name = "林风试步"
+subtitle = "云角聚风，扇形预警会在冲击前锁定"
+spawn_interval_start = 0.82
+spawn_interval_end = 0.7
+extra_spawn_chance = 0.08
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("S1Slime"), SubResource("S1Grub"), SubResource("S1Hart")])
+transition_rest_duration = 0.0
+
+[sub_resource type="Resource" id="S2Hart"]
+script = ExtResource("14_enemy")
+enemy_id = "cloud_hart"
+weight = 0.5
+max_active = 28
+ability_variant_id = "cloud_hart_sector"
+
+[sub_resource type="Resource" id="S2Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.25
+max_active = 22
+
+[sub_resource type="Resource" id="S2Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.15
+max_active = 14
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="S2Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.1
+max_active = 5
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage2"]
+script = ExtResource("5_stage")
+stage_id = "cloud_horn_turn"
+display_name = "云角回旋"
+subtitle = "从云角鹿的侧后方穿过回风角"
+start_time = 25.0
+spawn_interval_start = 0.66
+spawn_interval_end = 0.56
+extra_spawn_chance = 0.14
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("S2Hart"), SubResource("S2Slime"), SubResource("S2Grub"), SubResource("S2Bat")])
+transition_rest_duration = 1.5
+
+[sub_resource type="Resource" id="S3Kite"]
+script = ExtResource("14_enemy")
+enemy_id = "bellfeather_kite"
+weight = 0.35
+max_active = 8
+ability_variant_id = "bellfeather_circle"
+
+[sub_resource type="Resource" id="S3Hart"]
+script = ExtResource("14_enemy")
+enemy_id = "cloud_hart"
+weight = 0.3
+max_active = 24
+ability_variant_id = "cloud_hart_sector"
+
+[sub_resource type="Resource" id="S3Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.2
+max_active = 18
+
+[sub_resource type="Resource" id="S3Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.15
+max_active = 7
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage3"]
+script = ExtResource("5_stage")
+stage_id = "bellfeather_marks"
+display_name = "铃羽落印"
+subtitle = "扇形回风与圆形落印开始交替出现"
+start_time = 52.0
+spawn_interval_start = 0.58
+spawn_interval_end = 0.5
+extra_spawn_chance = 0.18
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("S3Kite"), SubResource("S3Hart"), SubResource("S3Slime"), SubResource("S3Bat")])
+transition_rest_duration = 1.5
+
+[sub_resource type="Resource" id="S4Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.3
+max_active = 18
+
+[sub_resource type="Resource" id="S4Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.25
+max_active = 14
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="S4Hart"]
+script = ExtResource("14_enemy")
+enemy_id = "cloud_hart"
+weight = 0.25
+max_active = 16
+ability_variant_id = "cloud_hart_sector"
+
+[sub_resource type="Resource" id="S4Kite"]
+script = ExtResource("14_enemy")
+enemy_id = "bellfeather_kite"
+weight = 0.2
+max_active = 5
+ability_variant_id = "bellfeather_circle"
+
+[sub_resource type="Resource" id="Stage4"]
+script = ExtResource("5_stage")
+stage_id = "cloud_breath_respite"
+display_name = "云息整备"
+subtitle = "攻势回落，收拢经验并完成升级"
+start_time = 72.0
+spawn_interval_start = 0.8
+spawn_interval_end = 0.72
+extra_spawn_chance = 0.0
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("S4Slime"), SubResource("S4Grub"), SubResource("S4Hart"), SubResource("S4Kite")])
+transition_rest_duration = 2.0
+
+[sub_resource type="Resource" id="S5Hart"]
+script = ExtResource("14_enemy")
+enemy_id = "cloud_hart"
+weight = 0.35
+max_active = 26
+ability_variant_id = "cloud_hart_sector"
+
+[sub_resource type="Resource" id="S5Kite"]
+script = ExtResource("14_enemy")
+enemy_id = "bellfeather_kite"
+weight = 0.35
+max_active = 9
+ability_variant_id = "bellfeather_circle"
+
+[sub_resource type="Resource" id="S5Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.15
+max_active = 12
+
+[sub_resource type="Resource" id="S5Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.15
+max_active = 18
+
+[sub_resource type="Resource" id="Stage5"]
+script = ExtResource("5_stage")
+stage_id = "fivecolor_encirclement"
+display_name = "五采合围"
+subtitle = "辨清预警轮廓，不被五色环境干扰"
+start_time = 88.0
+spawn_interval_start = 0.5
+spawn_interval_end = 0.43
+extra_spawn_chance = 0.25
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("S5Hart"), SubResource("S5Kite"), SubResource("S5Brute"), SubResource("S5Slime")])
+transition_rest_duration = 1.0
+
+[sub_resource type="Resource" id="S6Hart"]
+script = ExtResource("14_enemy")
+enemy_id = "cloud_hart"
+weight = 0.35
+max_active = 28
+ability_variant_id = "cloud_hart_sector"
+
+[sub_resource type="Resource" id="S6Kite"]
+script = ExtResource("14_enemy")
+enemy_id = "bellfeather_kite"
+weight = 0.25
+max_active = 8
+ability_variant_id = "bellfeather_circle"
+
+[sub_resource type="Resource" id="S6Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.2
+max_active = 18
+
+[sub_resource type="Resource" id="S6Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.2
+max_active = 14
+
+[sub_resource type="Resource" id="Stage6"]
+script = ExtResource("5_stage")
+stage_id = "guide_trial"
+display_name = "领路试炼"
+subtitle = "云角领路者降临，普通敌潮维持中等密度"
+start_time = 100.0
+spawn_interval_start = 0.66
+spawn_interval_end = 0.56
+extra_spawn_chance = 0.12
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("S6Hart"), SubResource("S6Kite"), SubResource("S6Slime"), SubResource("S6Brute")])
+transition_rest_duration = 1.0
+
+[sub_resource type="Resource" id="S7Hart"]
+script = ExtResource("14_enemy")
+enemy_id = "cloud_hart"
+weight = 0.4
+max_active = 32
+ability_variant_id = "cloud_hart_sector"
+
+[sub_resource type="Resource" id="S7Kite"]
+script = ExtResource("14_enemy")
+enemy_id = "bellfeather_kite"
+weight = 0.35
+max_active = 10
+ability_variant_id = "bellfeather_circle"
+
+[sub_resource type="Resource" id="S7Brute"]
+script = ExtResource("14_enemy")
+enemy_id = "brute"
+weight = 0.25
+max_active = 18
+
+[sub_resource type="Resource" id="Stage7"]
+script = ExtResource("5_stage")
+stage_id = "cloud_gate_open"
+display_name = "云门齐开"
+subtitle = "通过最后的扇形、落印与重型敌潮组合考核"
+start_time = 118.0
+spawn_interval_start = 0.44
+spawn_interval_end = 0.36
+extra_spawn_chance = 0.34
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("S7Hart"), SubResource("S7Kite"), SubResource("S7Brute")])
+transition_rest_duration = 1.0
+
+[sub_resource type="Resource" id="Victory"]
+script = ExtResource("7_victory")
+mode = "survive_and_defeat_elite"
+perfect_requires_elite = false
+normal_heading = "云门已开启"
+failure_heading = "云林试炼未竟"
+
+[resource]
+script = ExtResource("1_level")
+level_id = "level_04"
+order = 4
+chapter_id = "chapter_01"
+content_tier = 4
+difficulty_profile_id = "chapter_01_curve"
+difficulty_step = 3
+difficulty_rating = 4
+recommended_power = 1450
+display_name = "五色云林"
+subtitle = "组合考核 · 坚持 135 秒"
+description = "在云林中学习扇形回风与圆形落印，击败云角领路者并通过最终组合考核。"
+map = SubResource("Map")
+duration = 135.0
+initial_enemy_count = 7
+max_enemies = 74
+max_ranged_enemies = 10
+difficulty = SubResource("Difficulty")
+loot = SubResource("Loot")
+content_pool = SubResource("ContentPool")
+equipment_drop_table = SubResource("EquipmentDrops")
+enemy_ability_budget = SubResource("AbilityBudget")
+stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3"), SubResource("Stage4"), SubResource("Stage5"), SubResource("Stage6"), SubResource("Stage7")])
+elite = SubResource("Elite")
+victory = SubResource("Victory")
+reward = SubResource("Reward")

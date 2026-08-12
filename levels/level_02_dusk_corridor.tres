@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/levels/equipment_drop_table_config.gd" id="15_drop_table"]
 [ext_resource type="Script" path="res://scripts/levels/equipment_grant_entry_config.gd" id="16_grant"]
 [ext_resource type="Script" path="res://scripts/levels/equipment_reward_config.gd" id="17_equipment_reward"]
+[ext_resource type="Texture2D" path="res://assets/art/ui/home/route_icon_oasis.png" id="18_route_icon"]
 
 [sub_resource type="Resource" id="SkillSunOrbit"]
 script = ExtResource("13_weighted")
@@ -105,6 +106,9 @@ map_id = "dusk_corridor"
 display_name = "金砂绿洲"
 biome_id = "golden_oasis"
 floor_texture = ExtResource("9_floor")
+route_icon = ExtResource("18_route_icon")
+route_pin_center = Vector2(420, 514)
+route_hero_position = Vector2(334, 550)
 world_bounds = Rect2(-1050, -1800, 2100, 3600)
 spawn_distance_min = 550.0
 spawn_distance_max = 660.0
@@ -176,14 +180,14 @@ max_level = 2
 [sub_resource type="Resource" id="Stage1Bat"]
 script = ExtResource("14_enemy")
 enemy_id = "bat"
-weight = 0.3
+weight = 0.25
 max_active = 5
 ability_variant_id = "bat_bolt"
 
 [sub_resource type="Resource" id="Stage1Grub"]
 script = ExtResource("14_enemy")
 enemy_id = "green_grub"
-weight = 0.25
+weight = 0.3
 max_active = 24
 ability_variant_id = "green_grub_roll"
 
@@ -198,9 +202,9 @@ script = ExtResource("5_stage")
 stage_id = "corridor_entry"
 display_name = "暮色侵染"
 subtitle = "回廊入口，翼群正在试探"
-spawn_interval_start = 0.84
-spawn_interval_end = 0.7
-extra_spawn_chance = 0.04
+spawn_interval_start = 0.88
+spawn_interval_end = 0.76
+extra_spawn_chance = 0.02
 enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage1Bat"), SubResource("Stage1Grub"), SubResource("Stage1Slime")])
 transition_rest_duration = 0.0
 
@@ -214,14 +218,14 @@ ability_variant_id = "bat_bolt"
 [sub_resource type="Resource" id="Stage2Grub"]
 script = ExtResource("14_enemy")
 enemy_id = "green_grub"
-weight = 0.12
+weight = 0.15
 max_active = 18
 ability_variant_id = "green_grub_roll"
 
 [sub_resource type="Resource" id="Stage2Slime"]
 script = ExtResource("14_enemy")
 enemy_id = "slime"
-weight = 0.28
+weight = 0.25
 max_active = 28
 
 [sub_resource type="Resource" id="Stage2"]
@@ -229,43 +233,106 @@ script = ExtResource("5_stage")
 stage_id = "wing_swarm"
 display_name = "翼群折返"
 subtitle = "暮翼从回廊两端高速合围"
-start_time = 35.0
-spawn_interval_start = 0.66
-spawn_interval_end = 0.52
-extra_spawn_chance = 0.18
+start_time = 22.0
+spawn_interval_start = 0.68
+spawn_interval_end = 0.55
+extra_spawn_chance = 0.16
 enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage2Bat"), SubResource("Stage2Grub"), SubResource("Stage2Slime")])
 transition_rest_duration = 2.5
 
 [sub_resource type="Resource" id="Stage3Bat"]
 script = ExtResource("14_enemy")
 enemy_id = "bat"
-weight = 0.67
+weight = 0.45
 max_active = 8
 ability_variant_id = "bat_bolt"
 
 [sub_resource type="Resource" id="Stage3Grub"]
 script = ExtResource("14_enemy")
 enemy_id = "green_grub"
-weight = 0.08
+weight = 0.1
 max_active = 14
 ability_variant_id = "green_grub_roll"
 
 [sub_resource type="Resource" id="Stage3Slime"]
 script = ExtResource("14_enemy")
 enemy_id = "slime"
+weight = 0.45
+max_active = 34
+
+[sub_resource type="Resource" id="Stage3"]
+script = ExtResource("5_stage")
+stage_id = "sand_encirclement"
+display_name = "金沙合围"
+subtitle = "翼群与凝胶从两侧压缩路线"
+start_time = 48.0
+spawn_interval_start = 0.54
+spawn_interval_end = 0.44
+extra_spawn_chance = 0.25
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage3Bat"), SubResource("Stage3Grub"), SubResource("Stage3Slime")])
+transition_rest_duration = 2.5
+
+[sub_resource type="Resource" id="Stage4Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.2
+max_active = 4
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage4Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.5
+max_active = 20
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="Stage4Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
+weight = 0.3
+max_active = 24
+
+[sub_resource type="Resource" id="Stage4"]
+script = ExtResource("5_stage")
+stage_id = "oasis_respite"
+display_name = "绿洲整备"
+subtitle = "攻势短暂松动，准备迎击女王"
+start_time = 65.0
+spawn_interval_start = 1.0
+spawn_interval_end = 0.9
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage4Bat"), SubResource("Stage4Grub"), SubResource("Stage4Slime")])
+transition_rest_duration = 2.5
+
+[sub_resource type="Resource" id="Stage5Bat"]
+script = ExtResource("14_enemy")
+enemy_id = "bat"
+weight = 0.67
+max_active = 8
+ability_variant_id = "bat_bolt"
+
+[sub_resource type="Resource" id="Stage5Grub"]
+script = ExtResource("14_enemy")
+enemy_id = "green_grub"
+weight = 0.08
+max_active = 14
+ability_variant_id = "green_grub_roll"
+
+[sub_resource type="Resource" id="Stage5Slime"]
+script = ExtResource("14_enemy")
+enemy_id = "slime"
 weight = 0.25
 max_active = 24
 
-[sub_resource type="Resource" id="Stage3"]
+[sub_resource type="Resource" id="Stage5"]
 script = ExtResource("5_stage")
 stage_id = "queen_blockade"
 display_name = "女王封锁"
 subtitle = "击破暮翼女王才能重新点亮星门"
 start_time = 70.0
 spawn_interval_start = 0.5
-spawn_interval_end = 0.38
+spawn_interval_end = 0.37
 extra_spawn_chance = 0.3
-enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage3Bat"), SubResource("Stage3Grub"), SubResource("Stage3Slime")])
+enemy_entries = Array[ExtResource("14_enemy")]([SubResource("Stage5Bat"), SubResource("Stage5Grub"), SubResource("Stage5Slime")])
 transition_rest_duration = 2.5
 
 [sub_resource type="Resource" id="Victory"]
@@ -298,7 +365,7 @@ loot = SubResource("Loot")
 content_pool = SubResource("ContentPool")
 equipment_drop_table = SubResource("EquipmentDrops")
 enemy_ability_budget = SubResource("AbilityBudget")
-stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3")])
+stages = Array[ExtResource("5_stage")]([SubResource("Stage1"), SubResource("Stage2"), SubResource("Stage3"), SubResource("Stage4"), SubResource("Stage5")])
 elite = SubResource("Elite")
 victory = SubResource("Victory")
 reward = SubResource("Reward")

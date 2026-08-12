@@ -54,12 +54,37 @@ static func validation_errors() -> PackedStringArray:
 	var signatures: Dictionary = {}
 	for skill_id in SKILLS:
 		var data: Dictionary = SKILLS[skill_id]
-		if int(data.get("max_level", 0)) <= 0 or int(data.get("branch_level", 0)) <= 0:
+		var max_level := int(data.get("max_level", 0))
+		var branch_level := int(data.get("branch_level", 0))
+		if max_level <= 0 or branch_level <= 1 or branch_level >= max_level:
 			errors.append("%s 技能等级配置无效" % skill_id)
-		if data.get("icon") == null or data.get("runtime", {}).is_empty():
+		var descriptions = data.get("descriptions", [])
+		if not descriptions is Array or descriptions.size() != max_level + 1:
+			errors.append("%s 技能描述没有覆盖 0 到 %d 级" % [skill_id, max_level])
+		var runtime = data.get("runtime", {})
+		if data.get("icon") == null or not runtime is Dictionary or runtime.is_empty():
 			errors.append("%s 技能运行时或图标为空" % skill_id)
-		if data.get("branches", {}).size() != 2:
+		elif runtime is Dictionary:
+			for field in runtime:
+				var values = runtime[field]
+				if not values is Array or values.size() != max_level + 1:
+					errors.append("%s 运行时字段 %s 没有覆盖 0 到 %d 级" % [skill_id, field, max_level])
+		var branches = data.get("branches", {})
+		if not branches is Dictionary or branches.size() != 2:
 			errors.append("%s 必须配置两个技能分支" % skill_id)
+		elif branches is Dictionary:
+			for branch_id in branches:
+				var branch_data: Dictionary = branches[branch_id]
+				var overrides = branch_data.get("level_overrides", {})
+				if not overrides is Dictionary:
+					errors.append("%s/%s 缺少分支等级配置" % [skill_id, branch_id])
+					continue
+				for required_level in [branch_level, max_level - 1, max_level]:
+					if not overrides.has(required_level):
+						errors.append("%s/%s 缺少 %d 级分支强化" % [skill_id, branch_id, required_level])
+				for override_level in overrides:
+					if int(override_level) < branch_level or int(override_level) > max_level:
+						errors.append("%s/%s 包含越界的 %s 级分支强化" % [skill_id, branch_id, str(override_level)])
 		if bool(data.get("is_signature", false)):
 			var hero_id := str(data.get("owner_hero_id", ""))
 			if signatures.has(hero_id):

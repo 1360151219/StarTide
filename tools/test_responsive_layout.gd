@@ -65,8 +65,20 @@ func _test_compact_ui(game: Node) -> void:
 	_require(not health_rect.intersects(xp_rect), "生命条与经验条发生重叠")
 	_require(xp_rect.position.y - health_rect.end.y >= 4.0, "生命条与经验条间距不足 4 像素")
 	_require(_contains_rect(top_rect, health_rect, 0.01) and _contains_rect(top_rect, xp_rect, 0.01), "顶部状态条子控件越过面板")
-	_require(game.hud.skill_dock.anchor_top == 1.0 and game.hud.skill_dock.size.x <= 286.0, "自动技能状态栏没有保持在右下区域")
-	_require(game.hud.skill_dock.icons.size() == 3 and game.hud.skill_dock.badges.size() == 3, "技能状态栏没有保持图标化三槽")
+	for label in [game.hud.level_label, game.hud.health_label, game.hud.stats_label, game.hud.top_panel.kills_label]:
+		_require(_contains_rect(top_rect, label.get_global_rect(), 0.01), "顶部状态栏文字越过容器")
+		_require(label.vertical_alignment == VERTICAL_ALIGNMENT_CENTER and label.clip_text, "顶部状态栏文字未垂直居中或未裁切溢出")
+	var stage_panel: Control = game.hud.stage_hud.status_panel
+	var stage_rect := stage_panel.get_global_rect()
+	for label in [game.hud.stage_hud.stage_label, game.hud.stage_hud.passive_label, game.hud.stage_hud.item_label]:
+		_require(_contains_rect(stage_rect, label.get_global_rect(), 0.01), "战斗进度栏文字越过容器")
+		_require(label.vertical_alignment == VERTICAL_ALIGNMENT_CENTER and label.clip_text, "战斗进度栏文字未垂直居中或未裁切溢出")
+	_require(game.hud.skill_dock.anchor_top == 1.0 and game.hud.skill_dock.launcher_button.size == Vector2(72, 72), "自动技能入口没有保持在右下区域")
+	_require(game.hud.joystick.anchor_right == 1.0 and game.hud.joystick.anchor_bottom == 1.0 and not game.hud.joystick.active, "浮动摇杆没有覆盖完整安全战场或默认隐藏")
+	_require(not game.hud.skill_dock.detail_panel.visible, "技能明细不应常驻遮挡战场")
+	game.hud.skill_dock.launcher_button.pressed.emit()
+	_require(game.hud.skill_dock.detail_panel.visible and game.hud.skill_dock.detail_rows.get_child_count() == 3, "圆形技能入口没有展开三项技能明细")
+	game.hud.skill_dock.collapse()
 	_require(game.hud.stage_hud.banner.size.y <= 64.0, "阶段提示高度超过 64 像素")
 	_require(_contains_rect(game.hud.tutorial_panel.get_global_rect(), game.hud.tutorial_label.get_global_rect(), 0.01), "新手提示文字越过深色承载底板")
 	_require(game.start_screen.lobby_view.visible and not game.start_screen.character_page.visible, "开始页没有默认停留在关卡大厅")
@@ -92,7 +104,7 @@ func _test_compact_ui(game: Node) -> void:
 		"discovery_count": 1,
 		"build_snapshot": {
 			"skill_slots": ["star_lance", "sun_orbit", "frost_tide"],
-			"skill_levels": {"star_lance": 3, "sun_orbit": 3, "frost_tide": 3},
+			"skill_levels": {"star_lance": 5, "sun_orbit": 5, "frost_tide": 5},
 			"skill_branches": {"star_lance": "star_lance_fan", "sun_orbit": "sun_orbit_swarm", "frost_tide": "frost_tide_field"},
 			"relic_levels": {"star_core": 3, "energy_prism": 3, "time_gear": 3, "echo_lens": 3},
 		},

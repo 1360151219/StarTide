@@ -25,6 +25,7 @@ func spawn_projectile(config: Dictionary) -> Node:
 	projectile.pierce = config["pierce"]
 	projectile.blast_radius = config.get("blast_radius", 0.0)
 	projectile.visual_kind = config["visual_kind"]
+	projectile.source_id = str(config.get("source_id", "unknown"))
 	if projectile.visual_kind == "ember_arrow":
 		projectile.trail_color = Color("ff743c")
 		projectile.core_color = Color("fff0b0")
@@ -57,7 +58,7 @@ func _resolve_collisions(projectile: Node) -> void:
 			continue
 		audio.play_sfx("impact", -3.0, rng.randf_range(0.92, 1.08))
 		var color := Color("ffbd62") if projectile.visual_kind == "ember_arrow" else Color("a9f6ff")
-		enemy_system.damage_enemy(enemy, projectile.damage, color, projectile.previous_position)
+		enemy_system.damage_enemy(enemy, projectile.damage, color, projectile.previous_position, projectile.source_id)
 		_add_impact_effect(projectile, enemy)
 		if projectile.register_hit(enemy):
 			_remove(projectile)
@@ -66,7 +67,7 @@ func _resolve_collisions(projectile: Node) -> void:
 
 func _add_impact_effect(projectile: Node, enemy: Node) -> void:
 	if projectile.blast_radius > 0.0:
-		enemy_system.damage_area(projectile.position, projectile.blast_radius, projectile.damage * 0.55, enemy)
+		enemy_system.damage_area(projectile.position, projectile.blast_radius, projectile.damage * 0.55, enemy, projectile.source_id)
 		effects.add_effect(projectile.position, projectile.blast_radius, Color("ff7a35"), 0.32, "ember")
 	elif projectile.visual_kind == "star_lance":
 		effects.add_effect(projectile.position, 38.0, Color("75eaff"), 0.26, "star_hit")

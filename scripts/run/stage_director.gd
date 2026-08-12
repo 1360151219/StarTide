@@ -4,6 +4,7 @@ var level: LevelConfig
 var stage_index := 0
 var spawn_rest_until := 0.0
 var elite_triggered := false
+var boss_triggered := false
 
 
 func configure(level_config: LevelConfig) -> void:
@@ -11,6 +12,7 @@ func configure(level_config: LevelConfig) -> void:
 	stage_index = 0
 	spawn_rest_until = 0.0
 	elite_triggered = false
+	boss_triggered = false
 
 
 func advance(elapsed: float) -> Dictionary:
@@ -21,10 +23,14 @@ func advance(elapsed: float) -> Dictionary:
 	if not transitions.is_empty():
 		spawn_rest_until = elapsed + current_stage().transition_rest_duration
 	var elite_due := false
-	if level.elite.enabled and not elite_triggered and elapsed >= level.elite.spawn_time:
+	if level.elite != null and level.elite.enabled and not elite_triggered and elapsed >= level.elite.spawn_time:
 		elite_triggered = true
 		elite_due = true
-	return {"transitions": transitions, "elite_due": elite_due}
+	var boss_due := false
+	if level.boss != null and level.boss.enabled and not boss_triggered and elapsed >= level.boss.spawn_time(level.duration):
+		boss_triggered = true
+		boss_due = true
+	return {"transitions": transitions, "elite_due": elite_due, "boss_due": boss_due}
 
 
 func current_stage() -> StageConfig:

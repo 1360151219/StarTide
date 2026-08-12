@@ -92,6 +92,7 @@ func _build_content() -> void:
 	icon_back.position = Vector2(18, 34)
 	icon_back.size = Vector2(108, 108)
 	icon_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_back.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(icon_back)
 	var icon := TextureRect.new()
 	icon.position = Vector2(12, 10)
@@ -104,6 +105,7 @@ func _build_content() -> void:
 	type_panel.position = Vector2(144, 16)
 	type_panel.size = Vector2(126, 28)
 	type_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	type_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(type_panel)
 	var type_label := _surface_label("", 14, TEAL)
 	type_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -128,6 +130,7 @@ func _build_content() -> void:
 	metric_band.position = Vector2(144, 96)
 	metric_band.size = Vector2(300, 60)
 	metric_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	metric_band.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(metric_band)
 	var metric_views := _build_metric_panels(metric_band)
 	var special_panel := _build_special_panel()

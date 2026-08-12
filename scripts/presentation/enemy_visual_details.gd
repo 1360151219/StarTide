@@ -15,12 +15,6 @@ static func body_scale(enemy: Node) -> Vector2:
 	return Vector2.ONE
 
 
-static func draw_texture_outline(enemy: Node2D, texture: Texture2D, rect: Rect2, alpha: float) -> void:
-	var outline := Color(0.10, 0.18, 0.19, alpha * 0.94)
-	for offset in [Vector2(-2.5, 0), Vector2(2.5, 0), Vector2(0, -2.5), Vector2(0, 2.5), Vector2(-1.8, -1.8), Vector2(1.8, -1.8), Vector2(-1.8, 1.8), Vector2(1.8, 1.8)]:
-		enemy.draw_texture_rect(texture, Rect2(rect.position + offset, rect.size), false, outline)
-
-
 static func draw_slow_fragments(enemy: Node2D) -> void:
 	for index in range(7):
 		var angle: float = index * TAU / 7.0 + enemy.animation_time * 0.18

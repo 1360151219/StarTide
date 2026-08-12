@@ -12,6 +12,11 @@ data = {
 "distance": 100.0,
 "enemy_id": "green_grub",
 "hit_type": "grub_roll",
+	"warning_cue": "enemy_warning",
+	"charge_cue": "grub_roll_charge",
+	"execute_cue": "grub_roll_move",
+	"hit_cue": "impact",
+	"miss_cue": "grub_roll_miss",
 "is_default": true,
 "lane_width": 38.0,
 "max_range": 260.0,
@@ -33,6 +38,10 @@ data = {
 "damage": 6.0,
 "enemy_id": "bat",
 "hit_type": "bat_bolt",
+	"warning_cue": "enemy_warning",
+	"charge_cue": "bat_bolt_charge",
+	"execute_cue": "bat_bolt_launch",
+	"hit_cue": "bat_bolt_impact",
 "is_default": true,
 "lock_time": 0.3,
 "max_range": 480.0,
@@ -48,7 +57,130 @@ data = {
 "warning": 0.9
 }
 
+[sub_resource type="Resource" id="CloudHartSector"]
+script = ExtResource("2_entry")
+content_id = "cloud_hart_sector"
+data = {
+"arc_degrees": 110.0,
+"charge_cue": "cloud_hart_charge",
+"cooldown": 4.8,
+"damage": 12.0,
+"enemy_id": "cloud_hart",
+"execute_cue": "cloud_hart_sweep",
+"hit_cue": "cloud_hart_impact",
+"hit_type": "cloud_hart_sector",
+"is_default": true,
+"max_range": 210.0,
+"min_range": 45.0,
+"name": "回风角",
+"radius": 150.0,
+"recovery": 0.5,
+"runtime_kind": "burst",
+"shape": "sector",
+"threat_multiplier": 1.35,
+"warning": 0.9,
+"warning_cue": "enemy_warning"
+}
+
+[sub_resource type="Resource" id="BellfeatherCircle"]
+script = ExtResource("2_entry")
+content_id = "bellfeather_circle"
+data = {
+"charge_cue": "bellfeather_charge",
+"cooldown": 5.2,
+"damage": 11.0,
+"enemy_id": "bellfeather_kite",
+"execute_cue": "bellfeather_mark",
+"hit_cue": "bellfeather_impact",
+"hit_type": "bellfeather_circle",
+"is_default": true,
+"max_range": 460.0,
+"min_range": 120.0,
+"name": "风铃落印",
+"radius": 70.0,
+"recovery": 0.45,
+"runtime_kind": "burst",
+"shape": "circle",
+"threat_multiplier": 1.4,
+"warning": 1.1,
+"warning_cue": "enemy_warning"
+}
+
+[sub_resource type="Resource" id="ZouwuDash"]
+script = ExtResource("2_entry")
+content_id = "zouwu_dash"
+data = {
+"charge_cue": "zouwu_dash_charge",
+"cooldown": 1.0,
+"damage": 20.0,
+"distance": 520.0,
+"enemy_id": "zouwu",
+"execute_cue": "zouwu_dash",
+"hit_cue": "zouwu_dash_hit",
+"hit_type": "zouwu_dash",
+"lane_width": 70.0,
+"max_range": 900.0,
+"min_range": 0.0,
+"name": "千里踏云",
+"recovery": 0.35,
+"runtime_kind": "boss_dash",
+"shape": "lane",
+"speed": 780.0,
+"threat_multiplier": 1.0,
+"warning": 1.0,
+"warning_cue": "enemy_warning"
+}
+
+[sub_resource type="Resource" id="ZouwuTail"]
+script = ExtResource("2_entry")
+content_id = "zouwu_tail"
+data = {
+"arc_degrees": 270.0,
+"charge_cue": "zouwu_tail_charge",
+"cooldown": 1.0,
+"damage": 18.0,
+"enemy_id": "zouwu",
+"execute_cue": "zouwu_tail_sweep",
+"hit_cue": "zouwu_tail_hit",
+"hit_type": "zouwu_tail",
+"inner_radius": 70.0,
+"knockback": 30.0,
+"max_range": 900.0,
+"min_range": 0.0,
+"name": "长尾回澜",
+"outer_radius": 230.0,
+"recovery": 0.45,
+"runtime_kind": "boss_tail_sweep",
+"shape": "annular_sector",
+"threat_multiplier": 1.0,
+"warning": 1.15,
+"warning_cue": "enemy_warning"
+}
+
+[sub_resource type="Resource" id="ZouwuMarks"]
+script = ExtResource("2_entry")
+content_id = "zouwu_marks"
+data = {
+"charge_cue": "zouwu_mark_charge",
+"cooldown": 1.0,
+"damage": 16.0,
+"enemy_id": "zouwu",
+"execute_cue": "zouwu_mark",
+"hit_cue": "zouwu_mark_hit",
+"hit_type": "zouwu_marks",
+"max_range": 900.0,
+"min_range": 0.0,
+"name": "五采流痕",
+"radius": 64.0,
+"recovery": 0.35,
+"runtime_kind": "boss_marks",
+"shape": "circle",
+"threat_multiplier": 1.0,
+"warning": 1.05,
+"warning_cue": "enemy_warning"
+}
+
 [resource]
 script = ExtResource("1_manifest")
 catalog_id = "enemy_abilities"
-entries = Array[ExtResource("2_entry")]([SubResource("GreenGrubRoll"), SubResource("BatBolt")])
+entries = Array[ExtResource("2_entry")]([SubResource("GreenGrubRoll"), SubResource("BatBolt"), SubResource("CloudHartSector"), SubResource("BellfeatherCircle"), SubResource("ZouwuDash"), SubResource("ZouwuTail"), SubResource("ZouwuMarks")])

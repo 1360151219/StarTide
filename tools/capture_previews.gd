@@ -1,6 +1,7 @@
 extends SceneTree
 
 const CaptureSetup = preload("res://tools/support/capture_setup.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 
 var frame_count := 0
 
@@ -106,7 +107,7 @@ func _on_process_frame() -> void:
 			"discovery_count": 2,
 			"build_snapshot": {
 				"skill_slots": ["ember_volley", "meteor_rain", ""],
-				"skill_levels": {"ember_volley": 3, "meteor_rain": 2},
+				"skill_levels": {"ember_volley": 5, "meteor_rain": 4},
 				"skill_branches": {"ember_volley": "ember_volley_flock", "meteor_rain": "meteor_rain_focus"},
 				"relic_levels": {"energy_prism": 2, "flow_feather": 1},
 			},
@@ -158,7 +159,8 @@ func _prepare_ember_ultimate(game: Node) -> void:
 		game.upgrade_overlay.choice_selected.emit(str(game.upgrade_overlay.buttons[0].get_meta("choice_id")))
 	var session: Node = game.session
 	for skill_id in session.skills.active_skill_ids:
-		session.skills.levels[skill_id] = 3
+		if SkillCatalog.has(str(skill_id)):
+			session.skills.levels[skill_id] = int(SkillCatalog.skill(skill_id)["max_level"])
 	session.skills.runtime.volley_timer = 0.0
 	session.skills.runtime.meteor_timer = 0.0
 	session.skills.runtime.phoenix_timer = 0.0

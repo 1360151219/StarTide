@@ -18,24 +18,41 @@ func _ready() -> void:
 func _draw() -> void:
 	if size.x < 160.0:
 		return
-	var line_y := 12.0
+	var line_y := 22.0
 	var start_x := 44.0
 	var end_x := size.x - 42.0
-	_draw_mountain(Vector2(18, line_y + 1))
-	_draw_chest(Vector2(size.x - 18, line_y))
-	var segment_count := 18
+	_draw_mountain(Vector2(26, line_y + 1))
+	_draw_chest(Vector2(size.x - 26, line_y + 1))
+	var segment_count := 8
 	for index in range(segment_count):
 		var from_x := lerpf(start_x, end_x, float(index) / segment_count)
-		var to_x := lerpf(start_x, end_x, float(index + 0.65) / segment_count)
+		var to_x := lerpf(start_x, end_x, float(index + 0.78) / segment_count)
 		var reached := float(index + 1) / segment_count <= progress
-		draw_line(Vector2(from_x, line_y), Vector2(to_x, line_y), UiFactory.ACCENT if reached else Color(UiFactory.SURFACE, 0.62), 2.0, true)
+		_draw_rope_segment(Vector2(from_x, line_y), Vector2(to_x, line_y), reached)
 	for index in range(4):
 		var ratio := float(index + 1) / 5.0
 		var center := Vector2(lerpf(start_x, end_x, ratio), line_y)
 		var reached := ratio <= progress
-		draw_circle(center, 5.0, UiFactory.ACCENT if reached else UiFactory.SURFACE)
-		draw_circle(center, 2.5, UiFactory.HUD_SURFACE)
+		_draw_waypoint(center, index, reached)
 	_draw_flag(Vector2(lerpf(start_x, end_x, clampf(progress, 0.04, 0.96)), line_y - 1))
+
+
+func _draw_rope_segment(start: Vector2, finish: Vector2, reached: bool) -> void:
+	var outer := UiFactory.ACCENT_DARK if reached else Color(UiFactory.INK, 0.58)
+	var inner := UiFactory.ACCENT if reached else Color(UiFactory.SURFACE, 0.58)
+	draw_line(start, finish, outer, 4.0, true)
+	draw_line(start, finish, inner, 1.8, true)
+
+
+func _draw_waypoint(center: Vector2, index: int, reached: bool) -> void:
+	var outer := PackedVector2Array()
+	var sides := 4 + index % 2
+	for point_index in range(sides):
+		outer.append(center + Vector2.from_angle(-PI * 0.5 + point_index * TAU / sides) * 6.0)
+	draw_colored_polygon(outer, UiFactory.ACCENT if reached else UiFactory.SURFACE)
+	var outline := outer.duplicate()
+	outline.append(outer[0])
+	draw_polyline(outline, UiFactory.INK, 1.4, true)
 
 
 func _draw_mountain(at: Vector2) -> void:

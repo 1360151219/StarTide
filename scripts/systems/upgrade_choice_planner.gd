@@ -40,9 +40,12 @@ func legal_candidates(build_state: RefCounted, skill_pool_ids, relic_pool_ids, h
 	return choices
 
 
-func pick_group(build_state: RefCounted, skill_pool_ids, relic_pool_ids, health_ratio: float, excluded_group_key: String) -> Array:
+func pick_group(build_state: RefCounted, skill_pool_ids, relic_pool_ids, health_ratio: float, excluded_group_key: String, required_choice_keys := PackedStringArray()) -> Array:
 	var available: Array = []
-	for group in _choice_groups(build_state, skill_pool_ids, relic_pool_ids, health_ratio):
+	var groups := _choice_groups(build_state, skill_pool_ids, relic_pool_ids, health_ratio)
+	if not required_choice_keys.is_empty():
+		groups = _required_choice_groups(legal_candidates(build_state, skill_pool_ids, relic_pool_ids, health_ratio), required_choice_keys)
+	for group in groups:
 		if group_key(group) != excluded_group_key:
 			available.append(group)
 	if available.is_empty():
@@ -113,6 +116,54 @@ func _choice_groups(build_state: RefCounted, skill_pool_ids, relic_pool_ids, hea
 	return groups
 
 
+func _required_choice_groups(candidates: Array, required_choice_keys) -> Array:
+	var candidates_by_key: Dictionary = {}
+	var branch_pairs: Dictionary = {}
+	var regular_fillers: Array = []
+	for choice in candidates:
+		candidates_by_key[str(choice["choice_key"])] = choice
+		if str(choice["kind"]) == ChoiceFactory.SKILL_BRANCH:
+			var skill_id := str(choice["content_id"])
+			if not branch_pairs.has(skill_id):
+				branch_pairs[skill_id] = []
+			branch_pairs[skill_id].append(choice)
+		elif not required_choice_keys.has(str(choice["choice_key"])):
+			regular_fillers.append(choice)
+	var required: Array = []
+	for raw_key in required_choice_keys:
+		var choice_key := str(raw_key)
+		if not candidates_by_key.has(choice_key):
+			return []
+		required.append(candidates_by_key[choice_key])
+	if required.is_empty() or required.size() > 3:
+		return []
+	var groups: Array = []
+	var seen: Dictionary = {}
+	var remaining := 3 - required.size()
+	if remaining == 0:
+		_append_group(groups, seen, required)
+	elif remaining == 1:
+		if regular_fillers.is_empty():
+			regular_fillers.append(ChoiceFactory.recovery())
+		for filler in regular_fillers:
+			_append_group(groups, seen, required + [filler])
+	else:
+		for skill_id in branch_pairs:
+			var pair: Array = branch_pairs[skill_id]
+			if pair.size() == 2:
+				_append_group(groups, seen, required + pair)
+		if regular_fillers.size() < 2 and not _has_choice_key(regular_fillers, "utility:recovery"):
+			regular_fillers.append(ChoiceFactory.recovery())
+		for first in range(regular_fillers.size()):
+			for second in range(first + 1, regular_fillers.size()):
+				_append_group(groups, seen, required + [regular_fillers[first], regular_fillers[second]])
+	if groups.is_empty():
+		if regular_fillers.is_empty():
+			regular_fillers.append(ChoiceFactory.recovery())
+		_append_group(groups, seen, required + regular_fillers.slice(0, remaining))
+	return groups
+
+
 func _append_group(groups: Array, seen: Dictionary, group: Array) -> void:
 	var key := group_key(group)
 	if seen.has(key):
@@ -124,6 +175,13 @@ func _append_group(groups: Array, seen: Dictionary, group: Array) -> void:
 func _has_kind(group: Array, kinds: Array) -> bool:
 	for choice in group:
 		if kinds.has(str(choice["kind"])):
+			return true
+	return false
+
+
+func _has_choice_key(choices: Array, choice_key: String) -> bool:
+	for choice in choices:
+		if str(choice.get("choice_key", "")) == choice_key:
 			return true
 	return false
 

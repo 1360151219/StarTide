@@ -28,3 +28,9 @@ func is_contact() -> bool:
 
 func can_knockback_source() -> bool:
 	return is_contact() and is_instance_valid(source)
+
+
+func telemetry_source_id() -> String:
+	if is_contact() and is_instance_valid(source):
+		return "contact:%s" % str(source.kind)
+	return "ability:%s" % hit_type

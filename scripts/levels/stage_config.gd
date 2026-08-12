@@ -10,6 +10,7 @@ extends Resource
 @export_range(0.0, 1.0, 0.01) var extra_spawn_chance := 0.0
 @export var enemy_entries: Array[EnemySpawnEntryConfig] = []
 @export var transition_rest_duration := 3.0
+@export var spawning_enabled := true
 
 
 func spawn_interval_at(elapsed: float, end_time: float) -> float:
@@ -50,7 +51,7 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 		errors.append("刷怪间隔必须大于 0")
 	if transition_rest_duration < 0.0:
 		errors.append("阶段喘息时间不能小于 0")
-	if enemy_entries.is_empty():
+	if spawning_enabled and enemy_entries.is_empty():
 		errors.append("怪物编成不能为空")
 	var total_weight := 0.0
 	var seen_enemy_ids: Dictionary = {}
@@ -64,6 +65,6 @@ func validation_errors(valid_enemy_ids: PackedStringArray, valid_ability_ids := 
 			errors.append("怪物编成重复：%s" % entry.enemy_id)
 		seen_enemy_ids[entry.enemy_id] = true
 		total_weight += entry.weight
-	if not is_equal_approx(total_weight, 1.0):
+	if spawning_enabled and not is_equal_approx(total_weight, 1.0):
 		errors.append("怪物权重总和必须为 1，当前为 %.3f" % total_weight)
 	return errors

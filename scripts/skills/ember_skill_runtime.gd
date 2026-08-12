@@ -85,7 +85,7 @@ func _update_ember_volley(delta: float) -> void:
 			"damage": data["damage"][skill_level] * _multiplier("ember_volley", "damage_multiplier"), "radius": data["radius"][skill_level],
 			"pierce": int(_stat("ember_volley", "pierce", data["pierce"][skill_level])),
 			"blast_radius": data["blast_radius"][skill_level] * _multiplier("ember_volley", "range_multiplier") * _branch_multiplier("ember_volley", "blast_radius_multiplier"),
-			"visual_kind": "ember_arrow",
+			"visual_kind": "ember_arrow", "source_id": "skill:ember_volley",
 		})
 	skill_released.emit("ember_volley")
 	audio.play_sfx("skill_ember_volley", -1.0, rng.randf_range(0.95, 1.05))
@@ -153,7 +153,7 @@ func _update_phoenix_heart(delta: float) -> void:
 
 
 func _resolve_meteor_impact(center: Vector2, radius: float, damage: float) -> void:
-	enemies.damage_area(center, radius, damage)
+	enemies.damage_area(center, radius, damage, null, "skill:meteor_rain")
 	effects.add_effect(center, radius, Color("ff7a35"), 0.46, "meteor_impact")
 	audio.play_sfx("meteor_impact", -1.0, rng.randf_range(0.96, 1.04))
 
@@ -161,9 +161,9 @@ func _resolve_meteor_impact(center: Vector2, radius: float, damage: float) -> vo
 func _resolve_phoenix_impact(center: Vector2, radius: float, damage: float, healing: float) -> void:
 	if not is_instance_valid(player):
 		return
-	player.heal(healing)
+	player.heal(healing, "skill:phoenix_heart")
 	effects.add_heal_number(player.position - Vector2(18.0, 36.0), healing)
-	enemies.damage_area(center, radius, damage)
+	enemies.damage_area(center, radius, damage, null, "skill:phoenix_heart")
 	effects.add_effect(center, radius, Color("ff9b3d"), 0.42, "phoenix_impact")
 	audio.play_sfx("phoenix_impact", -1.0, rng.randf_range(0.97, 1.03))
 

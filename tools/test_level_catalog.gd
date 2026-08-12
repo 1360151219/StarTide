@@ -4,6 +4,28 @@ const LevelCatalog = preload("res://scripts/levels/level_catalog.gd")
 const LevelBalance = preload("res://scripts/levels/level_balance.gd")
 const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
 const EnemyAbilityCatalog = preload("res://scripts/enemy_ability_catalog.gd")
+const WAVE_REORDER_BASELINES := {
+	"level_01": {"pressure": 782.93, "spawns": 158.643, "experience": 1318.003},
+	"level_02": {"pressure": 1170.48, "spawns": 214.295, "experience": 1789.120},
+	"level_03": {"pressure": 2545.80, "spawns": 283.473, "experience": 2962.564},
+}
+const WAVE_REORDER_STARTS := {
+	"level_01": [0.0, 20.0, 45.0, 60.0],
+	"level_02": [0.0, 22.0, 48.0, 65.0, 70.0],
+	"level_03": [0.0, 24.0, 50.0, 65.0, 90.0, 105.0],
+}
+const CAMPAIGN_EXTENSION_STARTS := {
+	"level_04": [0.0, 25.0, 52.0, 72.0, 88.0, 100.0, 118.0],
+	"level_05": [0.0, 28.0, 55.0, 70.0, 75.0],
+}
+const RECOMMENDED_POWERS := [1000, 1100, 1250, 1450, 1650]
+const RARITY_WEIGHTS := [
+	{"common": 82.0, "rare": 16.0, "top": 2.0},
+	{"common": 72.0, "rare": 23.0, "top": 5.0},
+	{"common": 62.0, "rare": 28.0, "top": 10.0},
+	{"common": 55.0, "rare": 30.0, "top": 15.0},
+	{"common": 45.0, "rare": 32.0, "top": 23.0},
+]
 
 var failed := false
 
@@ -19,8 +41,10 @@ func _initialize() -> void:
 	_test_pressure_formula()
 	_test_ability_pressure()
 	_test_rest_duration()
+	_test_wave_reorder_budgets()
+	_test_campaign_extension(levels)
 	if not failed:
-		print("LEVELS_OK count=%d manifest=true pressure_curve=true rewards=configured" % levels.size())
+		print("LEVELS_OK count=%d manifest=true pressure_curve=true wave_budgets=stable rewards=configured" % levels.size())
 	quit(1 if failed else 0)
 
 
@@ -39,12 +63,25 @@ func _validate_level(level: LevelConfig, index: int, levels: Array[LevelConfig])
 		var other := levels[other_index]
 		_require(level != other and level.map != other.map and level.difficulty != other.difficulty, "%s 与其他关卡共享核心资源" % level.level_id)
 		_require(level.loot != other.loot and level.reward != other.reward and level.equipment_drop_table != other.equipment_drop_table, "%s 与其他关卡共享规则资源" % level.level_id)
-	var previous_pressure := 0.0
+	if level.order > 3:
+		return
+	var previous_combat_pressure := 0.0
+	var found_respite := false
 	for stage_index in range(level.stages.size()):
+		var stage := level.stages[stage_index]
 		var pressure := LevelBalance.stage_pressure(level, stage_index)
-		if stage_index > 0:
-			_require(pressure >= previous_pressure * 1.15, "%s 相邻阶段压力增长低于 15%%" % level.level_id)
-		previous_pressure = pressure
+		if stage.stage_id.ends_with("_respite"):
+			found_respite = true
+			_require(stage_index > 0 and stage_index + 1 < level.stages.size(), "%s 喘息阶段没有位于两轮战斗之间" % level.level_id)
+			var previous_pressure := LevelBalance.stage_pressure(level, stage_index - 1)
+			var next_pressure := LevelBalance.stage_pressure(level, stage_index + 1)
+			_require(pressure <= previous_pressure * 0.75, "%s 喘息阶段压力回落不足" % level.level_id)
+			_require(next_pressure >= pressure * 1.5, "%s 喘息后的高潮压力不足" % level.level_id)
+			continue
+		if previous_combat_pressure > 0.0:
+			_require(pressure >= previous_combat_pressure * 1.15, "%s 非喘息阶段压力增长低于 15%%" % level.level_id)
+		previous_combat_pressure = pressure
+	_require(found_respite, "%s 缺少明确的波次喘息阶段" % level.level_id)
 
 
 func _test_pressure_formula() -> void:
@@ -79,6 +116,44 @@ func _test_ability_pressure() -> void:
 	_require(is_equal_approx(EnemyAbilityCatalog.threat_multiplier(""), 1.0), "无技能怪物仍有技能威胁倍率")
 
 
+func _test_wave_reorder_budgets() -> void:
+	for level_id in WAVE_REORDER_BASELINES:
+		var level := LevelCatalog.by_id(level_id)
+		var baseline: Dictionary = WAVE_REORDER_BASELINES[level.level_id]
+		var stage_starts: Array = []
+		for stage in level.stages:
+			stage_starts.append(stage.start_time)
+		_require(stage_starts == WAVE_REORDER_STARTS[level.level_id], "%s 波次节点没有保持重排方案" % level.level_id)
+		_require(_within_ratio(LevelBalance.level_pressure(level), float(baseline["pressure"]), 0.05), "%s 重排后的总压力偏离原版超过 5%%" % level.level_id)
+		_require(_within_ratio(LevelBalance.expected_spawn_budget(level), float(baseline["spawns"]), 0.05), "%s 重排后的预期刷怪量偏离原版超过 5%%" % level.level_id)
+		_require(_within_ratio(LevelBalance.expected_experience_budget(level), float(baseline["experience"]), 0.05), "%s 重排后的预期经验偏离原版超过 5%%" % level.level_id)
+
+
+func _test_campaign_extension(levels: Array[LevelConfig]) -> void:
+	_require(levels.size() == 5, "战役关卡数量不是 5")
+	for index in range(levels.size()):
+		_require(levels[index].recommended_power == RECOMMENDED_POWERS[index], "%s 推荐战力错误" % levels[index].level_id)
+		_require(levels[index].equipment_drop_table.rarity_weights == RARITY_WEIGHTS[index], "%s 实际品质掉落权重偏离数值契约" % levels[index].level_id)
+		if index + 1 < levels.size():
+			_require(levels[index].reward.unlock_level_id == levels[index + 1].level_id, "%s 解锁链断裂" % levels[index].level_id)
+	var fourth := LevelCatalog.by_id("level_04")
+	var fifth := LevelCatalog.by_id("level_05")
+	for level in [fourth, fifth]:
+		var starts: Array = []
+		for stage in level.stages:
+			starts.append(stage.start_time)
+		_require(starts == CAMPAIGN_EXTENSION_STARTS[level.level_id], "%s 波次节点错误" % level.level_id)
+	var pressure_ratio := LevelBalance.level_pressure(fourth) / LevelBalance.level_pressure(LevelCatalog.by_id("level_03"))
+	_require(pressure_ratio >= 1.15 and pressure_ratio <= 1.25, "第四关总压力未保持在第三关的 1.15～1.25 倍：%.3f" % pressure_ratio)
+	var fourth_respite_ratio := LevelBalance.stage_pressure(fourth, 3) / LevelBalance.stage_pressure(fourth, 2)
+	_require(fourth_respite_ratio >= 0.5 and fourth_respite_ratio <= 0.65, "第四关喘息压力没有接近前一波 60%%：%.3f" % fourth_respite_ratio)
+	_require(fourth.elite.spawn_time == 100.0 and fourth.elite.bonus_upgrade_count == 2 and fourth.elite.magnet_duration == 8.0, "第四关精英节点或奖励错误")
+	var fifth_respite_ratio := LevelBalance.stage_pressure(fifth, 2) / LevelBalance.stage_pressure(fifth, 1)
+	_require(fifth_respite_ratio >= 0.5 and fifth_respite_ratio <= 0.6, "第五关整备压力没有接近前一波 55%%：%.3f" % fifth_respite_ratio)
+	_require(not fifth.stages[3].spawning_enabled and fifth.boss.spawn_time(fifth.duration) == 75.0, "第五关停潮或 Boss 时间错误")
+	_require(fifth.boss.initial_minion_limit == 6 and fifth.boss.minion_limit == 8, "第五关随从上限错误")
+
+
 func _synthetic_level(duration: float) -> LevelConfig:
 	var level := LevelConfig.new()
 	level.duration = duration
@@ -101,6 +176,10 @@ func _synthetic_stage(start_time: float, rest_duration: float, weights: Dictiona
 		entry.weight = float(weights[enemy_id])
 		stage.enemy_entries.append(entry)
 	return stage
+
+
+func _within_ratio(value: float, baseline: float, tolerance: float) -> bool:
+	return absf(value / baseline - 1.0) <= tolerance
 
 
 func _require(condition: bool, message: String) -> void:

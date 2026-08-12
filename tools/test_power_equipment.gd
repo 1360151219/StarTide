@@ -17,10 +17,11 @@ func _initialize() -> void:
 	_test_schema_four_migration()
 	_test_missing_starter_repair()
 	_test_first_clear_reward()
+	_test_thousand_mile_windseal()
 	for path in cleanup_paths:
 		DirAccess.remove_absolute(path)
 	if not failed:
-		print("POWER_EQUIPMENT_OK schema=6 power_v1=true slots=3 commands=true migration=true active_hero=true")
+		print("POWER_EQUIPMENT_OK schema=6 power_v1=frozen score_semantics=uncalibrated slots=3 commands=true migration=true active_hero=true")
 	quit(1 if failed else 0)
 
 
@@ -49,6 +50,19 @@ func _test_power_commands_and_persistence() -> void:
 	var records := RunRecords.new(path)
 	var initial := records.get_permanent_snapshot("star_warden")
 	_require(initial["hero_xp"] == 0 and initial["power"]["total"] == 1000, "初始等级或战力错误")
+	_require(
+		initial["power"]["formula_version"] == 1
+		and initial["power"]["purpose"] == "progression_score"
+		and not initial["power"]["calibrated"],
+		"战力 v1 没有冻结为未校准养成评分"
+	)
+	_require(
+		is_equal_approx(float(initial["resolved_stats"]["attack_power"]), 100.0)
+		and is_equal_approx(float(initial["resolved_stats"]["skill_frequency"]), 1.0)
+		and is_equal_approx(float(initial["resolved_stats"]["attack_power"]), 100.0 * float(initial["damage_multiplier"]))
+		and is_equal_approx(float(initial["resolved_stats"]["skill_frequency"]), 1.0 / float(initial["resolved_stats"]["cooldown_multiplier"])),
+		"初始攻击力或施法频率没有使用标准化实际值"
+	)
 	_require(initial["equipment"]["inventory"].size() == 3, "新档没有幂等发放三件新手装备")
 	_require(records.set_active_hero("ember_ranger"), "合法英雄无法设为当前英雄")
 	_require(not records.set_active_hero("missing"), "未知英雄被设为当前英雄")
@@ -67,6 +81,15 @@ func _test_power_commands_and_persistence() -> void:
 	var expected_damage := 1.135 * 1.04 * 1.05
 	var lance_damage: float = equipped["snapshot"]["skill_modifiers"]["star_lance"]["damage_multiplier"]
 	_require(is_equal_approx(lance_damage, expected_damage), "装备没有进入永久技能属性快照")
+	var expected_attack := 100.0 * 1.135 * 1.05
+	var attack_breakdown: Dictionary = equipped["snapshot"]["stat_breakdown"]["attack_power"]
+	_require(
+		is_equal_approx(float(equipped["snapshot"]["resolved_stats"]["attack_power"]), expected_attack)
+		and is_equal_approx(float(attack_breakdown["final"]), expected_attack)
+		and is_equal_approx(float(attack_breakdown["level_multiplier"]), 1.135)
+		and is_equal_approx(float(attack_breakdown["equipment_multiplier"]), 1.05),
+		"攻击力实际值或来源拆分没有与现有伤害倍率保持等价"
+	)
 	_require(not records.equip_item("ember_ranger", instance_id)["success"], "同一装备可以跨英雄重复穿戴")
 	var reloaded := RunRecords.new(path)
 	_require(reloaded.get_active_hero_id() == "ember_ranger", "当前英雄没有持久化")
@@ -136,6 +159,15 @@ func _test_first_clear_reward() -> void:
 	retry_records.equipment.items.erase("clear-level-01-weapon")
 	var recovered := retry_records.record_level_run("star_warden", level, true, false, 1, 1, level.duration)
 	_require(not recovered["first_clear"] and recovered["equipment_reward"]["granted"], "首通装备失败后没有在后续通关自动补发")
+
+
+func _test_thousand_mile_windseal() -> void:
+	var level_one := EquipmentCatalog.resolved_stats("thousand_mile_windseal", "top", 1)
+	var level_two := EquipmentCatalog.resolved_stats("thousand_mile_windseal", "top", 2)
+	_require(is_equal_approx(float(level_one["move_speed_percent"]), 0.06) and is_equal_approx(float(level_one["cooldown_reduction"]), 0.04), "千里风印顶级基础属性不是移动速度 6% 与冷却缩减 4%")
+	_require(is_equal_approx(float(level_two["move_speed_percent"]) - float(level_one["move_speed_percent"]), 0.004) and is_equal_approx(float(level_two["cooldown_reduction"]) - float(level_one["cooldown_reduction"]), 0.003), "千里风印每级成长不是移动速度 0.4% 与冷却缩减 0.3%")
+	var reward := LevelCatalog.by_id("level_05").reward.first_clear_equipment_reward.entries[0]
+	_require(reward.definition_id == "thousand_mile_windseal" and reward.rarity_id == "top", "第五关首通没有固定发放顶级千里风印")
 
 
 func _new_test_path(label: String) -> String:

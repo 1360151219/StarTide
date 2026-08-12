@@ -161,7 +161,7 @@ func _train(button: Button) -> void:
 		return
 	reset_armed = false
 	var result: Dictionary = records.train_skill(hero_id, str(button.get_meta("skill_id", "")))
-	status_label.text = "培养成功，战力已更新" if bool(result.get("success", false)) else str(result.get("reason", "技能点不足或已满级"))
+	status_label.text = "培养成功，养成评分已更新" if bool(result.get("success", false)) else str(result.get("reason", "技能点不足或已满级"))
 	training_changed.emit(status_label.text)
 
 

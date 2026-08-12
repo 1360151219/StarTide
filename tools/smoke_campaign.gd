@@ -25,9 +25,14 @@ func _initialize() -> void:
 		_require(session.level == level and session.stage_director.current_stage() == level.stages[0], "%s 未由统一会话加载" % level.display_name)
 		session.player.max_health = 99999.0
 		session.player.health = 99999.0
-		session.advance(level.elite.spawn_time + 0.01, Vector2.ZERO)
-		_require(session.state.elite_spawned and is_instance_valid(session.elite_enemy), "%s 精英未按配置生成" % level.display_name)
-		session.enemies.damage_enemy(session.elite_enemy, session.elite_enemy.max_health + 1.0)
+		if level.boss != null:
+			session.advance(level.boss.spawn_time(level.duration) + 0.01, Vector2.ZERO)
+			_require(session.state.boss_spawned and is_instance_valid(session.boss_enemy), "%s Boss 未按配置生成" % level.display_name)
+			session.enemies.damage_enemy(session.boss_enemy, session.boss_enemy.max_health + 1.0)
+		else:
+			session.advance(level.elite.spawn_time + 0.01, Vector2.ZERO)
+			_require(session.state.elite_spawned and is_instance_valid(session.elite_enemy), "%s 精英未按配置生成" % level.display_name)
+			session.enemies.damage_enemy(session.elite_enemy, session.elite_enemy.max_health + 1.0)
 		var upgrade_steps := 0
 		while session.state.pending_upgrades > 0 and not session.state.finished:
 			var choices: Array = session.build_state.pending_choices.values()
@@ -41,7 +46,7 @@ func _initialize() -> void:
 		_require(session.state.finished and session.state.victory, "%s 未能按独立胜利条件通关" % level.display_name)
 		session.queue_free()
 	if not failed:
-		print("CAMPAIGN_OK levels=%d unlock_chain=true elites=configured upgrades=bounded victory=per_level" % LevelCatalog.all().size())
+		print("CAMPAIGN_OK levels=%d unlock_chain=true strong_enemies=configured upgrades=bounded victory=per_level" % LevelCatalog.all().size())
 	quit(1 if failed else 0)
 
 

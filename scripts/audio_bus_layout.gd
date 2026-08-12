@@ -21,6 +21,10 @@ static func ensure() -> void:
 		AudioServer.add_bus_effect(master_index, limiter)
 
 
+static func volume_db(value: float, base_db: float) -> float:
+	return -80.0 if value <= 0.001 else base_db + linear_to_db(value)
+
+
 static func _ensure_bus(bus_name: StringName, send: StringName) -> void:
 	var bus_index := AudioServer.get_bus_index(bus_name)
 	if bus_index < 0:

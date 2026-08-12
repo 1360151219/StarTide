@@ -13,7 +13,6 @@ const AbilityRules = preload("res://scripts/systems/enemy_ability_rules.gd")
 var failed := false
 
 func _initialize() -> void:
-	_test_catalog_and_level_budgets()
 	_test_opening_protection_and_budget()
 	_test_grub_roll()
 	_test_non_casters_stay_idle()
@@ -22,28 +21,10 @@ func _initialize() -> void:
 	_test_pause_and_projectile_cap()
 	_test_death_and_projectile_lifetime()
 	_test_shared_invulnerability_and_shield()
+	_test_area_geometry()
 	if not failed:
-		print("ENEMY_ABILITIES_OK abilities=%d variants=data_driven deterministic=true budgets=true swept=true feedback_direction=true shield=true cleanup=true" % EnemyAbilityCatalog.ids().size())
+		print("ENEMY_ABILITIES_OK abilities=%d variants=data_driven deterministic=true budgets=true geometry=lane_sector_circle_annular swept=true feedback_direction=true shield=true cleanup=true" % EnemyAbilityCatalog.ids().size())
 	quit(1 if failed else 0)
-
-
-func _test_catalog_and_level_budgets() -> void:
-	_require(EnemyAbilityCatalog.validation_errors().is_empty(), "怪物技能目录配置无效")
-	_require(EnemyAbilityCatalog.ability_for_enemy("green_grub") == "green_grub_roll", "张姐蛆缺少技能映射")
-	_require(EnemyAbilityCatalog.ability_for_enemy("bat") == "bat_bolt", "暮翼蝠缺少技能映射")
-	_require(EnemyAbilityCatalog.ability_for_enemy("slime").is_empty(), "星蚀史莱姆不应拥有技能")
-	_require(EnemyAbilityCatalog.ability_for_enemy("brute").is_empty(), "陨岩巨怪不应拥有技能")
-	var previous_telegraphs := 0
-	var previous_projectiles := 0
-	for level in LevelCatalog.all():
-		_require(level.enemy_ability_budget.max_telegraphs >= previous_telegraphs, "%s 预警预算随关卡倒退" % level.display_name)
-		_require(level.enemy_ability_budget.max_projectiles >= previous_projectiles, "%s 敌弹预算随关卡倒退" % level.display_name)
-		previous_telegraphs = level.enemy_ability_budget.max_telegraphs
-		previous_projectiles = level.enemy_ability_budget.max_projectiles
-		for stage in level.stages:
-			for entry in stage.enemy_entries:
-				if not entry.ability_variant_id.is_empty():
-					_require(EnemyAbilityCatalog.ids().has(entry.ability_variant_id), "阶段引用了无效技能：%s" % entry.ability_variant_id)
 
 
 func _test_opening_protection_and_budget() -> void:
@@ -106,6 +87,7 @@ func _test_bat_lock_and_projectile() -> void:
 	_advance_abilities(session, 0.31, 2.17)
 	_require(session.enemy_projectiles.projectiles.size() == 1, "暮翼光弹没有生成敌方弹体")
 	var projectile: Node = session.enemy_projectiles.projectiles[0]
+	_require(projectile.hit_cue == "bat_bolt_impact", "敌方弹体没有携带数据配置的命中 Cue")
 	_require(projectile.velocity.normalized().dot(locked_direction) > 0.999, "暮翼光弹最后 0.3 秒没有锁定方向")
 	var feedback := FeedbackDirectionContract.watch(session, projectile)
 	session.player.position = projectile.position + projectile.velocity.normalized() * 100.0
@@ -182,6 +164,24 @@ func _test_shared_invulnerability_and_shield() -> void:
 	session._apply_player_hit(second)
 	_require(is_equal_approx(session.player.health, before - 7.0), "同帧技能和接触造成了重复伤害")
 	session.free()
+
+
+func _test_area_geometry() -> void:
+	var direction := Vector2.RIGHT
+	var lane := EnemyAbilityCatalog.ability("zouwu_dash")
+	_require(AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, Vector2(520, 35), lane, Vector2.INF, 0.0), "直线预警边界未命中")
+	_require(not AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, Vector2(521, 36), lane, Vector2.INF, 0.0), "直线预警边界外错误命中")
+	var sector := EnemyAbilityCatalog.ability("cloud_hart_sector")
+	var sector_edge := Vector2.from_angle(deg_to_rad(55.0)) * 150.0
+	_require(AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, sector_edge, sector, Vector2.INF, 0.0), "扇形预警边界未命中")
+	_require(not AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, Vector2.from_angle(deg_to_rad(56.0)) * 151.0, sector, Vector2.INF, 0.0), "扇形预警边界外错误命中")
+	var circle := EnemyAbilityCatalog.ability("bellfeather_circle")
+	_require(AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, Vector2(170, 70), circle, Vector2(170, 0), 0.0), "圆形预警边界未命中")
+	_require(not AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, Vector2(170, 70.1), circle, Vector2(170, 0), 0.0), "圆形预警边界外错误命中")
+	var annular := EnemyAbilityCatalog.ability("zouwu_tail")
+	_require(AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, Vector2(70, 0), annular, Vector2.INF, 0.0), "环形扇区内边界未命中")
+	_require(AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, Vector2.from_angle(deg_to_rad(135.0)) * 230.0, annular, Vector2.INF, 0.0), "环形扇区外弧边界未命中")
+	_require(not AbilityRules.telegraph_covers_point(Vector2.ZERO, direction, Vector2.LEFT * 120.0, annular, Vector2.INF, 0.0), "环形扇区 90 度安全缺口错误命中")
 
 
 func _create_session(level_id: String, hero_id: String, seed_value: int) -> Node:

@@ -12,6 +12,9 @@ const MUSIC := {
 	"level_01": preload("res://assets/audio/bgm_windbell.wav"),
 	"level_02": preload("res://assets/audio/bgm_oasis.wav"),
 	"level_03": preload("res://assets/audio/bgm_volcano.wav"),
+	"level_04": preload("res://assets/audio/bgm_cloudwood.wav"),
+	"level_05": preload("res://assets/audio/bgm_cloudcourt.wav"),
+	"boss_zouwu": preload("res://assets/audio/bgm_zouwu_trial.wav"),
 }
 
 const CUES := {
@@ -40,6 +43,23 @@ const CUES := {
 	"bat_bolt_charge": {"stream": preload("res://assets/audio/bat_bolt_charge.wav"), "bus": BUS_COMBAT, "priority": 74, "cooldown": 0.28, "max_instances": 2},
 	"bat_bolt_launch": {"stream": preload("res://assets/audio/bat_bolt_launch.wav"), "bus": BUS_COMBAT, "priority": 80, "cooldown": 0.16, "max_instances": 3},
 	"bat_bolt_impact": {"stream": preload("res://assets/audio/bat_bolt_impact.wav"), "bus": BUS_COMBAT, "priority": 82, "cooldown": 0.12, "max_instances": 3},
+	"cloud_hart_charge": {"stream": preload("res://assets/audio/cloud_hart_charge.wav"), "bus": BUS_COMBAT, "priority": 76, "cooldown": 0.4, "max_instances": 2},
+	"cloud_hart_sweep": {"stream": preload("res://assets/audio/cloud_hart_sweep.wav"), "bus": BUS_COMBAT, "priority": 82, "cooldown": 0.2, "max_instances": 2},
+	"cloud_hart_impact": {"stream": preload("res://assets/audio/cloud_hart_impact.wav"), "bus": BUS_COMBAT, "priority": 86, "cooldown": 0.12, "max_instances": 2},
+	"bellfeather_charge": {"stream": preload("res://assets/audio/bellfeather_charge.wav"), "bus": BUS_COMBAT, "priority": 76, "cooldown": 0.4, "max_instances": 2},
+	"bellfeather_mark": {"stream": preload("res://assets/audio/bellfeather_mark.wav"), "bus": BUS_COMBAT, "priority": 82, "cooldown": 0.2, "max_instances": 2},
+	"bellfeather_impact": {"stream": preload("res://assets/audio/bellfeather_impact.wav"), "bus": BUS_COMBAT, "priority": 86, "cooldown": 0.12, "max_instances": 2},
+	"zouwu_appear": {"stream": preload("res://assets/audio/zouwu_appear.wav"), "bus": BUS_ALERT, "priority": 100, "cooldown": 1.0, "max_instances": 1},
+	"zouwu_dash_charge": {"stream": preload("res://assets/audio/zouwu_dash_charge.wav"), "bus": BUS_ALERT, "priority": 98, "cooldown": 0.45, "max_instances": 1},
+	"zouwu_dash": {"stream": preload("res://assets/audio/zouwu_dash.wav"), "bus": BUS_COMBAT, "priority": 94, "cooldown": 0.22, "max_instances": 1},
+	"zouwu_dash_hit": {"stream": preload("res://assets/audio/zouwu_dash_hit.wav"), "bus": BUS_COMBAT, "priority": 98, "cooldown": 0.16, "max_instances": 1},
+	"zouwu_tail_charge": {"stream": preload("res://assets/audio/zouwu_tail_charge.wav"), "bus": BUS_ALERT, "priority": 98, "cooldown": 0.5, "max_instances": 1},
+	"zouwu_tail_sweep": {"stream": preload("res://assets/audio/zouwu_tail_sweep.wav"), "bus": BUS_COMBAT, "priority": 94, "cooldown": 0.3, "max_instances": 1},
+	"zouwu_tail_hit": {"stream": preload("res://assets/audio/zouwu_tail_hit.wav"), "bus": BUS_COMBAT, "priority": 98, "cooldown": 0.16, "max_instances": 1},
+	"zouwu_mark_charge": {"stream": preload("res://assets/audio/zouwu_mark_charge.wav"), "bus": BUS_ALERT, "priority": 98, "cooldown": 0.45, "max_instances": 1},
+	"zouwu_mark": {"stream": preload("res://assets/audio/zouwu_mark.wav"), "bus": BUS_COMBAT, "priority": 94, "cooldown": 0.22, "max_instances": 1},
+	"zouwu_mark_hit": {"stream": preload("res://assets/audio/zouwu_mark_hit.wav"), "bus": BUS_COMBAT, "priority": 98, "cooldown": 0.16, "max_instances": 1},
+	"zouwu_recognition": {"stream": preload("res://assets/audio/zouwu_recognition.wav"), "bus": BUS_ALERT, "priority": 100, "cooldown": 1.0, "max_instances": 1},
 	"stage_transition": {"stream": preload("res://assets/audio/stage_transition.wav"), "bus": BUS_ALERT, "priority": 94, "cooldown": 0.6, "max_instances": 1},
 	"elite_appear": {"stream": preload("res://assets/audio/elite_appear.wav"), "bus": BUS_ALERT, "priority": 98, "cooldown": 0.8, "max_instances": 1},
 	"elite_defeat": {"stream": preload("res://assets/audio/elite_defeat.wav"), "bus": BUS_ALERT, "priority": 98, "cooldown": 0.8, "max_instances": 1},
@@ -71,7 +91,7 @@ static func ids() -> PackedStringArray:
 
 static func validation_errors() -> PackedStringArray:
 	var errors := PackedStringArray()
-	for profile_id in ["lobby", "level_01", "level_02", "level_03"]:
+	for profile_id in ["lobby", "level_01", "level_02", "level_03", "level_04", "level_05", "boss_zouwu"]:
 		if MUSIC.get(profile_id) == null:
 			errors.append("音乐配置 %s 缺少资源" % profile_id)
 	for cue_id in CUES:

@@ -5,7 +5,6 @@ const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const RelicCatalog = preload("res://scripts/relic_catalog.gd")
 const ChoiceFactory = preload("res://scripts/systems/upgrade_choice_factory.gd")
 const ChoicePlanner = preload("res://scripts/systems/upgrade_choice_planner.gd")
-const SKILL_MAX_LEVEL := 3
 
 const SKILL_UNLOCK := ChoiceFactory.SKILL_UNLOCK
 const SKILL_UPGRADE := ChoiceFactory.SKILL_UPGRADE
@@ -23,21 +22,24 @@ func _init(random: RandomNumberGenerator) -> void:
 
 
 func build_structured_choices(build_state: RefCounted, skill_pool_ids, relic_pool_ids, health_ratio := 1.0) -> Array:
-	var choices: Array = planner.pick_group(build_state, skill_pool_ids, relic_pool_ids, health_ratio, "")
+	var required_choice_keys := _ultimate_pity_choice_keys(build_state)
+	var choices: Array = planner.pick_group(build_state, skill_pool_ids, relic_pool_ids, health_ratio, "", required_choice_keys)
 	if not choices.is_empty():
-		build_state.remember_offer(choices)
+		build_state.record_upgrade_offer(choices)
+		build_state.remember_offer(choices, required_choice_keys)
 	return choices
 
 
 func reroll_structured_choices(build_state: RefCounted, skill_pool_ids, relic_pool_ids, health_ratio := 1.0) -> Dictionary:
 	if int(build_state.rerolls_remaining) <= 0:
 		return {"success": false, "reason": "本局重抽次数已用完", "choices": []}
-	var choices: Array = planner.pick_group(build_state, skill_pool_ids, relic_pool_ids, health_ratio, str(build_state.last_offer_key))
+	var required_choice_keys: PackedStringArray = build_state.pinned_choice_keys
+	var choices: Array = planner.pick_group(build_state, skill_pool_ids, relic_pool_ids, health_ratio, str(build_state.last_offer_key), required_choice_keys)
 	if choices.is_empty():
 		return {"success": false, "reason": "当前没有不同的合法候选组合", "choices": []}
 	if not build_state.consume_reroll():
 		return {"success": false, "reason": "本局重抽次数已用完", "choices": []}
-	build_state.remember_offer(choices)
+	build_state.remember_offer(choices, required_choice_keys)
 	return {"success": true, "reason": "候选已重抽", "choices": choices}
 
 
@@ -87,8 +89,10 @@ func build_choices(active_skill_ids: Array, levels: Dictionary, health_ratio: fl
 	var locked: Array = []
 	var upgradeable: Array = []
 	for skill_id in active_skill_ids:
+		if not SkillCatalog.has(str(skill_id)):
+			continue
 		var skill_level: int = levels[skill_id]
-		if skill_level >= SKILL_MAX_LEVEL:
+		if skill_level >= int(SkillCatalog.skill(str(skill_id))["max_level"]):
 			continue
 		upgradeable.append(skill_id)
 		if skill_level > 0:
@@ -115,9 +119,10 @@ func choice_text(choice, levels := {}) -> String:
 	if levels.has(choice_id):
 		var next_level: int = levels[choice_id] + 1
 		var skill := HeroCatalog.skill(choice_id)
-		var skill_name: String = skill["ultimate_name"] if next_level == SKILL_MAX_LEVEL else skill["name"]
-		var prefix := "终极 · " if next_level == SKILL_MAX_LEVEL else ""
-		return "%s%s  %s\n%s" % [prefix, skill_name, _roman(next_level), skill["descriptions"][next_level]]
+		var max_level := int(skill["max_level"])
+		var skill_name: String = skill["ultimate_name"] if next_level == max_level else skill["name"]
+		var prefix := "终极 · " if next_level == max_level else ""
+		return "%s%s  %s\n%s" % [prefix, skill_name, ChoiceFactory.roman(next_level), skill["descriptions"][next_level]]
 	if choice_id == "vitality":
 		return "星核扩容\n最大生命 +25，并立刻恢复 25"
 	if choice_id == "swiftness":
@@ -129,13 +134,13 @@ func choice_text(choice, levels := {}) -> String:
 
 func apply(choice_id: String, player: Node2D, skills: Node2D) -> bool:
 	if skills.levels.has(choice_id):
-		if int(skills.levels[choice_id]) >= SKILL_MAX_LEVEL:
+		if not SkillCatalog.has(choice_id) or int(skills.levels[choice_id]) >= int(SkillCatalog.skill(choice_id)["max_level"]):
 			return false
 		skills.upgrade(choice_id)
 		return true
 	if choice_id == "vitality":
 		player.max_health += 25.0
-		player.heal(25.0)
+		player.heal(25.0, "upgrade:vitality")
 		return true
 	if choice_id == "swiftness":
 		player.speed *= 1.12
@@ -144,9 +149,9 @@ func apply(choice_id: String, player: Node2D, skills: Node2D) -> bool:
 		return false
 	if is_equal_approx(player.health, player.max_health):
 		player.max_health += 10.0
-		player.heal(10.0)
+		player.heal(10.0, "upgrade:recovery")
 	else:
-		player.heal(45.0)
+		player.heal(45.0, "upgrade:recovery")
 	return true
 
 
@@ -179,6 +184,15 @@ func _choice_validation_error(choice: Dictionary, build_state: RefCounted) -> St
 	return "未知强化类型"
 
 
+func _ultimate_pity_choice_keys(build_state: RefCounted) -> PackedStringArray:
+	var result := PackedStringArray()
+	for skill_id in build_state.ultimate_pity_due_skill_ids():
+		var data := SkillCatalog.skill(skill_id)
+		if not data.is_empty():
+			result.append(str(ChoiceFactory.skill_upgrade(skill_id, int(data["max_level"]))["choice_key"]))
+	return result
+
+
 func _append_random_unique(target: Array, candidates: Array) -> bool:
 	var available: Array = []
 	for candidate in candidates:
@@ -188,7 +202,3 @@ func _append_random_unique(target: Array, candidates: Array) -> bool:
 		return false
 	target.append(available[rng.randi_range(0, available.size() - 1)])
 	return true
-
-
-func _roman(value: int) -> String:
-	return ["", "I", "II", "III"][clampi(value, 0, 3)]

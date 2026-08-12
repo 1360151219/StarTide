@@ -4,6 +4,7 @@ const PlayerEntity = preload("res://scripts/player.gd")
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const EnemySystem = preload("res://scripts/systems/enemy_system.gd")
 const EnemyAbilitySystem = preload("res://scripts/systems/enemy_ability_system.gd")
+const BossAbilitySystem = preload("res://scripts/systems/boss_ability_system.gd")
 const EnemyProjectileSystem = preload("res://scripts/systems/enemy_projectile_system.gd")
 const ProjectileSystem = preload("res://scripts/systems/projectile_system.gd")
 const PickupSystem = preload("res://scripts/systems/pickup_system.gd")
@@ -37,6 +38,10 @@ func build(parent: Node2D, state: RefCounted, build_state: RefCounted, level: Le
 	enemy_abilities.z_index = 0
 	parent.add_child(enemy_abilities)
 	enemy_abilities.configure(level, state, player, enemies, enemy_projectiles, stage_director, random_streams["enemy_ability"], audio, effects)
+	var boss_abilities := BossAbilitySystem.new()
+	boss_abilities.z_index = 1
+	parent.add_child(boss_abilities)
+	boss_abilities.configure(level, state, player, enemies, audio, effects, random_streams["enemy_ability"])
 	var projectiles := ProjectileSystem.new()
 	projectiles.z_index = 3900
 	parent.add_child(projectiles)
@@ -53,7 +58,8 @@ func build(parent: Node2D, state: RefCounted, build_state: RefCounted, level: Le
 	return {
 		"world": world, "player": player, "camera": camera, "enemies": enemies,
 		"projectiles": projectiles, "enemy_projectiles": enemy_projectiles,
-		"enemy_abilities": enemy_abilities, "pickups": pickups, "skills": skills,
+		"enemy_abilities": enemy_abilities, "boss_abilities": boss_abilities,
+		"pickups": pickups, "skills": skills,
 		"passives": passives, "upgrades": UpgradeSystem.new(random_streams["upgrade"]),
 	}
 

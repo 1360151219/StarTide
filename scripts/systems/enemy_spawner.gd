@@ -16,7 +16,7 @@ func configure(level_config: LevelConfig, director: RefCounted, random: RandomNu
 
 
 func next_spawn_count(delta: float, elapsed: float, current_count: int) -> int:
-	if stage_director.is_spawn_resting(elapsed) or current_count >= level.max_enemies:
+	if not stage_director.current_stage().spawning_enabled or stage_director.is_spawn_resting(elapsed) or current_count >= level.max_enemies:
 		return 0
 	spawn_timer -= delta
 	if spawn_timer > 0.0:

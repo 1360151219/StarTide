@@ -8,6 +8,7 @@ const SKILL_UPGRADE := "skill_upgrade"
 const SKILL_BRANCH := "skill_branch"
 const RELIC_UPGRADE := "relic_upgrade"
 const UTILITY_RECOVERY := "utility_recovery"
+const ROMAN_LEVELS := ["", "I", "II", "III", "IV", "V"]
 
 
 static func skill_unlock(skill_id: String) -> Dictionary:
@@ -59,7 +60,7 @@ static func relic_upgrade(relic_id: String, target_level: int) -> Dictionary:
 		"content_id": relic_id,
 		"target_level": target_level,
 		"branch_id": "",
-		"title": "%s %s" % [data["name"], roman(target_level)],
+		"title": "%s %s" % [data["name"], level_mark(target_level, int(data["max_level"]), true)],
 		"description": data["description"],
 	}
 
@@ -77,4 +78,12 @@ static func recovery() -> Dictionary:
 
 
 static func roman(value: int) -> String:
-	return ["", "I", "II", "III"][clampi(value, 0, 3)]
+	if value >= 0 and value < ROMAN_LEVELS.size():
+		return ROMAN_LEVELS[value]
+	return str(value)
+
+
+static func level_mark(value: int, maximum: int, use_max_label := false) -> String:
+	if use_max_label and maximum > 0 and value >= maximum:
+		return "MAX"
+	return roman(value)

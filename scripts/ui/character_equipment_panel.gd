@@ -102,6 +102,7 @@ func _build_inventory_sheet() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.position = Vector2(30, 78)
 	scroll.size = Vector2(480, 166)
+	scroll.clip_contents = true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
 	scroll.get_v_scroll_bar().custom_minimum_size.x = 8
@@ -115,7 +116,7 @@ func _build_inventory_sheet() -> void:
 	scroll.add_child(inventory_grid)
 	empty_label = CharacterStyle.add_label(inventory_sheet, "暂无装备", 17, CharacterStyle.MUTED, Vector2(36, 78), Vector2(432, 96), HORIZONTAL_ALIGNMENT_CENTER)
 	empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	count_label = CharacterStyle.add_label(inventory_sheet, "", 14, CharacterStyle.MUTED, Vector2(22, 174), Vector2(156, 24))
+	count_label = CharacterStyle.add_label(inventory_sheet, "", 14, CharacterStyle.MUTED, Vector2(414, 36), Vector2(86, 24), HORIZONTAL_ALIGNMENT_CENTER)
 	status_label = CharacterStyle.add_label(inventory_sheet, "", 14, CharacterStyle.MUTED, Vector2(190, 174), Vector2(236, 24), HORIZONTAL_ALIGNMENT_RIGHT)
 	detail_sheet = DetailSheet.new()
 	detail_sheet.action_requested.connect(_perform_selected_action)

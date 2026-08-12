@@ -82,7 +82,7 @@ func _ready() -> void:
 	power_plate.position = Vector2(100, 350)
 	power_plate.size = Vector2(304, 76)
 	power_plate.pivot_offset = power_plate.size * 0.5
-	power_plate.tooltip_text = "当前英雄的综合战力"
+	power_plate.tooltip_text = "当前英雄未经通关率校准的养成评分"
 	power_plate.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(power_plate)
 	var power_plate_frame := UiFactory.texture_rect(POWER_PLATE)
@@ -98,7 +98,7 @@ func _ready() -> void:
 	level_label.add_theme_constant_override("outline_size", 2)
 	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var power_caption := CharacterStyle.add_label(
-		power_plate, "战力", 18, UiFactory.PRIMARY_DARK,
+		power_plate, "评分", 18, UiFactory.PRIMARY_DARK,
 		Vector2(96, 15), Vector2(58, 42), HORIZONTAL_ALIGNMENT_CENTER
 	)
 	UiFactory.apply_key_heading(power_caption, 18, UiFactory.PRIMARY_DARK)
@@ -176,14 +176,14 @@ func _animate_power_change(previous: int, target_power: int) -> void:
 	power_delta_feedback.modulate = Color.WHITE
 	if delta > 0:
 		power_delta_glyph.glyph_id = "up"
-		power_delta_label.text = "战力 +%d" % delta
+		power_delta_label.text = "评分 +%d" % delta
 		power_delta_label.add_theme_color_override("font_color", CharacterStyle.POWER_GAIN)
-		power_delta_label.accessibility_name = "战力提升 %d" % delta
+		power_delta_label.accessibility_name = "养成评分提升 %d" % delta
 	else:
 		power_delta_glyph.glyph_id = "down"
-		power_delta_label.text = "战力 -%d" % absi(delta)
+		power_delta_label.text = "评分 -%d" % absi(delta)
 		power_delta_label.add_theme_color_override("font_color", CharacterStyle.POWER_LOSS)
-		power_delta_label.accessibility_name = "战力下降 %d" % absi(delta)
+		power_delta_label.accessibility_name = "养成评分下降 %d" % absi(delta)
 	power_delta_glyph.queue_redraw()
 	power_delta_feedback.visible = true
 	_set_power_value(previous)
@@ -199,7 +199,7 @@ func _animate_power_change(previous: int, target_power: int) -> void:
 func _set_power_value(value: Variant) -> void:
 	var rounded := roundi(float(value))
 	power_label.text = "%d" % rounded
-	power_label.accessibility_name = "当前战力 %d" % rounded
+	power_label.accessibility_name = "当前养成评分 %d" % rounded
 
 
 func _cancel_power_animation() -> void:

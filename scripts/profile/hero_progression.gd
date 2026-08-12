@@ -160,7 +160,8 @@ static func _skill_modifiers(skill_id: String, training_level: int, hero_level: 
 static func _effect_text(skill_id: String, training_level: int) -> String:
 	if training_level <= 0:
 		return "未训练"
-	var effects := ["伤害与治疗 +4%"]
+	var runtime: Dictionary = HeroCatalog.skill(skill_id).get("runtime", {})
+	var effects := ["伤害与治疗 +4%" if runtime.has("healing") else "伤害 +4%"]
 	if training_level >= 2:
 		effects.append("弹速 +10%" if skill_id == "star_lance" else "作用范围 +8%")
 	if training_level >= 3:

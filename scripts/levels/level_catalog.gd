@@ -35,6 +35,10 @@ static func starter_equipment_reward() -> EquipmentRewardConfig:
 	return MANIFEST.starter_equipment_reward
 
 
+static func route_map_texture() -> Texture2D:
+	return MANIFEST.route_map_texture
+
+
 static func resolved_content_pool(level_id: String) -> Dictionary:
 	var lineage := _content_lineage(level_id)
 	var introduced_skills := PackedStringArray()
@@ -82,6 +86,8 @@ static func level_content_ids(level_id: String, category: String) -> PackedStrin
 				_append_unique(result, stage.enemy_ids())
 			if level.elite != null and level.elite.enabled:
 				_append_unique(result, PackedStringArray([level.elite.enemy_id]))
+			if level.boss != null and level.boss.enabled:
+				_append_unique(result, PackedStringArray([level.boss.boss_id]))
 		"pickups":
 			result.append("xp")
 			for entry in level.loot.bonus_entries:

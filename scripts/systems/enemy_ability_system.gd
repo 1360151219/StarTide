@@ -38,7 +38,7 @@ func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D
 func advance(delta: float, elapsed: float) -> void:
 	if run_state.finished or run_state.paused:
 		return
-	_cleanup_states()
+	AbilityRules.cleanup_states(states)
 	telegraphs.advance(delta)
 	viewport_size = get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(540, 960)
 	var warning_count := AbilityRules.phase_count(states, false)
@@ -81,7 +81,7 @@ func _state_for(enemy: Node) -> Dictionary:
 		states[key] = {
 			"enemy": enemy, "phase": "idle", "phase_left": 0.0,
 			"cooldown_until": 0.0, "visible_since": -1.0,
-				"direction": Vector2.ZERO,
+				"direction": Vector2.ZERO, "target": Vector2.INF,
 				"start": enemy.position, "remaining": 0.0, "hit_done": false,
 				"trail_elapsed": 0.0,
 			}
@@ -98,9 +98,11 @@ func _can_begin(state: Dictionary, enemy: Node, elapsed: float, warning_count: i
 		return false
 	if warning_count >= budget.max_telegraphs:
 		return false
-	if not enemy.is_elite and _elite_slot_reserved(elapsed, warning_count):
+	if not enemy.is_elite and AbilityRules.elite_slot_reserved(enemy_system, states, level, elapsed, warning_count, viewport_size):
 		return false
 	var config := AbilityCatalog.ability(ability_id)
+	if config.is_empty():
+		return false
 	if AbilityRules.warning_covers_player(enemy, player, config) and AbilityRules.player_danger_count(states, player.position) >= budget.max_player_danger_areas:
 		return false
 	if str(config["runtime_kind"]) == "bolt" and projectile_system.projectiles.size() >= budget.max_projectiles:
@@ -117,12 +119,13 @@ func _begin_warning(state: Dictionary, enemy: Node, elapsed: float) -> void:
 	state["phase"] = "warning"
 	state["phase_left"] = float(config["warning"])
 	state["direction"] = direction
+	state["target"] = player.position
 	state["start"] = enemy.position
 	state["hit_done"] = false
 	state["trail_elapsed"] = 0.0
 	last_warning_start = elapsed
-	audio.play_sfx("enemy_warning", 0.0, 1.0 if ability_id == "green_grub_roll" else 1.08)
-	audio.play_sfx("grub_roll_charge" if ability_id == "green_grub_roll" else "bat_bolt_charge", -5.0)
+	_play_configured_cue(config, "warning_cue")
+	_play_configured_cue(config, "charge_cue", -5.0)
 	if enemy.has_method("set_ability_visual"):
 		enemy.set_ability_visual(ability_id, "warning", 0.0, direction)
 
@@ -156,15 +159,21 @@ func _start_execution(state: Dictionary, enemy: Node, elapsed: float) -> void:
 			state["phase"] = "executing"
 			state["remaining"] = float(config["distance"])
 			enemy.contact_enabled = false
-			audio.play_sfx("grub_roll_move", -2.0, rng.randf_range(0.96, 1.04))
+			_play_configured_cue(config, "execute_cue", -2.0, rng.randf_range(0.96, 1.04))
 			if enemy.has_method("set_ability_visual"):
 				enemy.set_ability_visual(state["ability_id"], "executing", 0.0, state["direction"])
 		"bolt":
 			effects.add_effect(enemy.position, enemy.radius + 28.0, Color("a66be8"), 0.26, "bat_launch")
-			audio.play_sfx("bat_bolt_launch", -1.0, rng.randf_range(0.97, 1.04))
+			_play_configured_cue(config, "execute_cue", -1.0, rng.randf_range(0.97, 1.04))
 			if enemy.has_method("set_ability_visual"):
 				enemy.set_ability_visual(state["ability_id"], "executing", 1.0, state["direction"])
 			projectile_system.spawn_bolt(enemy, enemy.position, state["direction"], config, enemy.ability_damage_multiplier)
+			_enter_recovery(state, enemy, elapsed)
+		"burst":
+			_play_configured_cue(config, "execute_cue", -1.0, rng.randf_range(0.97, 1.04))
+			if AbilityRules.telegraph_covers_point(enemy.position, state["direction"], player.position, config, state["target"]):
+				state["hit_done"] = true
+				_emit_hit(enemy, config)
 			_enter_recovery(state, enemy, elapsed)
 
 
@@ -210,7 +219,7 @@ func _enter_recovery(state: Dictionary, enemy: Node, _elapsed: float) -> void:
 	enemy.contact_enabled = true
 	if str(config["runtime_kind"]) == "roll" and not bool(state["hit_done"]):
 		effects.add_effect(enemy.position, enemy.radius + 24.0, Color("ffe36b"), float(config["recovery"]), "grub_recover")
-		audio.play_sfx("grub_roll_miss", -2.0, rng.randf_range(0.97, 1.04))
+		_play_configured_cue(config, "miss_cue", -2.0, rng.randf_range(0.97, 1.04))
 
 
 func _advance_idle(enemy: Node, delta: float, elapsed: float) -> void:
@@ -218,28 +227,15 @@ func _advance_idle(enemy: Node, delta: float, elapsed: float) -> void:
 
 
 func _emit_hit(enemy: Node, config: Dictionary) -> void:
+	_play_configured_cue(config, "hit_cue", -1.0, rng.randf_range(0.97, 1.04))
 	var hit := PlayerHitData.create(float(config["damage"]) * enemy.ability_damage_multiplier, enemy, config["hit_type"], enemy.position, float(config.get("knockback", 0.0)))
 	player_hit_requested.emit(hit)
 
 
-func _elite_slot_reserved(elapsed: float, warning_count: int) -> bool:
-	if warning_count < level.enemy_ability_budget.max_telegraphs - 1:
-		return false
-	for enemy in enemy_system.snapshot():
-		if enemy.is_elite and AbilityRules.is_visible(enemy.position, player.position, viewport_size):
-			var ability_id: String = enemy.ability_id
-			if ability_id.is_empty():
-				continue
-			var state := _state_for(enemy)
-			if state["phase"] == "idle" and elapsed >= float(state["cooldown_until"]):
-				return true
-	return false
-
-
-func _cleanup_states() -> void:
-	for key in states.keys():
-		if not is_instance_valid(states[key]["enemy"]):
-			states.erase(key)
+func _play_configured_cue(config: Dictionary, field: String, volume_db := 0.0, pitch_scale := 1.0) -> void:
+	var cue_id := str(config.get(field, ""))
+	if not cue_id.is_empty():
+		audio.play_sfx(cue_id, volume_db, pitch_scale)
 
 
 func _on_enemy_removed(enemy: Node) -> void:

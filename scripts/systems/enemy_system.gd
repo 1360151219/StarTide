@@ -3,6 +3,7 @@ extends Node2D
 signal enemy_defeated(enemy: Node)
 signal enemy_spawned(enemy: Node)
 signal enemy_removed(enemy: Node)
+signal damage_resolved(source_id: String, attempted: float, applied: float)
 
 const EnemyEntity = preload("res://scripts/enemy.gd")
 const EnemyCatalog = preload("res://scripts/enemy_catalog.gd")
@@ -18,6 +19,8 @@ var audio: Node
 var spawner := EnemySpawner.new()
 var enemies: Array[Node] = []
 var next_spawn_serial := 0
+var boss_active := false
+var boss_minion_limit := 0
 
 
 func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D, director: RefCounted, random: RandomNumberGenerator, combat_effects: Node2D, audio_manager: Node) -> void:
@@ -30,6 +33,8 @@ func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D
 	audio = audio_manager
 	spawner.configure(level, stage_director, rng)
 	next_spawn_serial = 0
+	boss_active = false
+	boss_minion_limit = 0
 
 
 func spawn_initial() -> void:
@@ -38,7 +43,13 @@ func spawn_initial() -> void:
 
 
 func advance_spawning(delta: float, elapsed: float) -> void:
-	for _index in range(spawner.next_spawn_count(delta, elapsed, enemies.size())):
+	var current_count := _normal_enemy_count() if boss_active else enemies.size()
+	var limit := boss_minion_limit if boss_active else level.max_enemies
+	if current_count >= limit:
+		return
+	for _index in range(spawner.next_spawn_count(delta, elapsed, current_count)):
+		if boss_active and _normal_enemy_count() >= boss_minion_limit:
+			break
 		_spawn_next_enemy(elapsed)
 
 
@@ -93,6 +104,41 @@ func spawn_elite(config: EliteConfig, elapsed: float) -> Node:
 				remove_enemy(candidate)
 				break
 	return spawn_enemy(config.enemy_id, config, elapsed)
+
+
+func spawn_boss(config: BossConfig) -> Node:
+	var enemy := EnemyEntity.new()
+	var viewport := get_viewport()
+	var viewport_size := viewport.get_visible_rect().size if viewport != null else Vector2.ZERO
+	enemy.position = spawner.spawn_position(player.position, true, viewport_size)
+	enemy.configure_boss(config)
+	enemy.spawn_serial = next_spawn_serial
+	next_spawn_serial += 1
+	enemy.z_index = level.map.depth_index(enemy.position.y)
+	add_child(enemy)
+	enemies.append(enemy)
+	boss_active = true
+	boss_minion_limit = config.minion_limit
+	enemy_spawned.emit(enemy)
+	return enemy
+
+
+func trim_normal_enemies(limit: int) -> void:
+	var candidates: Array[Node] = []
+	for enemy in enemies:
+		if is_instance_valid(enemy) and not enemy.is_boss:
+			candidates.append(enemy)
+	candidates.sort_custom(func(a: Node, b: Node) -> bool: return a.position.distance_squared_to(player.position) > b.position.distance_squared_to(player.position))
+	while candidates.size() > limit:
+		remove_enemy(candidates.pop_front())
+
+
+func _normal_enemy_count() -> int:
+	var count := 0
+	for enemy in enemies:
+		if is_instance_valid(enemy) and not enemy.is_boss:
+			count += 1
+	return count
 
 
 func _remove_non_elite_ranged() -> bool:
@@ -150,21 +196,28 @@ func nearest_enemy(from_position: Vector2) -> Node:
 	return nearest
 
 
-func damage_area(center: Vector2, radius: float, damage: float, excluded: Node = null) -> void:
+func damage_area(center: Vector2, radius: float, damage: float, excluded: Node = null, source_id := "unknown") -> void:
 	if not is_combat_active():
 		return
 	for enemy in enemies.duplicate():
 		if not is_combat_active():
 			return
 		if is_instance_valid(enemy) and enemy != excluded and enemy.position.distance_to(center) <= radius + enemy.radius:
-			damage_enemy(enemy, damage, Color("ffb45c"), center)
+			damage_enemy(enemy, damage, Color("ffb45c"), center, source_id)
 
 
-func damage_enemy(enemy: Node, damage: float, number_color := Color("e6fbff"), source_position := Vector2.INF) -> void:
+func damage_enemy(enemy: Node, damage: float, number_color := Color("e6fbff"), source_position := Vector2.INF, source_id := "unknown") -> void:
 	if not is_combat_active() or not is_active(enemy):
 		return
+	var attempted := maxf(0.0, damage)
+	var applied := minf(attempted, enemy.health)
+	damage_resolved.emit(source_id, attempted, applied)
 	effects.add_damage_number(enemy.position - Vector2(18, enemy.radius + 4.0), damage, number_color, false, enemy.get_instance_id())
 	if enemy.take_damage(damage, source_position):
+		if enemy.is_boss:
+			enemy.trigger_recognition()
+			enemy_defeated.emit(enemy)
+			return
 		audio.play_sfx("enemy_defeat", -2.0, rng.randf_range(0.9, 1.1))
 		var defeat_kind := "grub_defeat" if enemy.kind == "green_grub" else "defeat"
 		effects.add_effect(enemy.position, enemy.radius + 24.0, enemy.color, 0.42, defeat_kind)
@@ -175,5 +228,7 @@ func damage_enemy(enemy: Node, damage: float, number_color := Color("e6fbff"), s
 func remove_enemy(enemy: Node) -> void:
 	enemies.erase(enemy)
 	if is_instance_valid(enemy):
+		if enemy.is_boss:
+			boss_active = false
 		enemy_removed.emit(enemy)
 		enemy.queue_free()

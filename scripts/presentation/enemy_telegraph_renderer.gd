@@ -24,6 +24,19 @@ func clear_warnings() -> void:
 	queue_redraw()
 
 
+func set_locked_warning(source: Vector2, config: Dictionary, state: Dictionary) -> void:
+	var next_warnings: Array[Dictionary] = [{
+		"shape": config["shape"], "source": source, "direction": state["direction"],
+		"target": state["target"], "length": config.get("distance", 0.0),
+		"width": config.get("lane_width", 0.0), "radius": config.get("radius", 0.0),
+		"inner_radius": config.get("inner_radius", 0.0), "outer_radius": config.get("outer_radius", 0.0),
+		"arc_degrees": config.get("arc_degrees", 0.0),
+		"progress": clampf(1.0 - float(state["phase_left"]) / maxf(float(config["warning"]), 0.001), 0.0, 1.0),
+		"locked": true,
+	}]
+	set_warnings(next_warnings)
+
+
 func set_states(states: Dictionary) -> void:
 	var next_warnings: Array[Dictionary] = []
 	for state in states.values():
@@ -36,9 +49,11 @@ func set_states(states: Dictionary) -> void:
 		next_warnings.append({
 			"shape": config["shape"], "source": state["enemy"].position,
 			"direction": state["direction"],
+			"target": state.get("target", Vector2.INF),
 			"length": config.get("distance", config.get("projectile_distance", config.get("length", 0.0))),
 			"width": config.get("lane_width", 0.0), "radius": config.get("radius", 0.0),
-			"half_angle": config.get("half_angle", 0.0),
+			"inner_radius": config.get("inner_radius", 0.0), "outer_radius": config.get("outer_radius", 0.0),
+			"arc_degrees": config.get("arc_degrees", 0.0),
 			"progress": progress,
 			"locked": float(state["phase_left"]) <= lock_time,
 		})
@@ -52,6 +67,12 @@ func _draw() -> void:
 				_draw_lane(warning)
 			"dashed_line":
 				_draw_dashed_line(warning)
+			"circle":
+				_draw_circle_warning(warning)
+			"sector":
+				_draw_sector(warning, false)
+			"annular_sector":
+				_draw_sector(warning, true)
 
 
 func _draw_lane(warning: Dictionary) -> void:
@@ -93,3 +114,51 @@ func _draw_dashed_line(warning: Dictionary) -> void:
 	if bool(warning.get("locked", false)):
 		draw_circle(finish, 9.0 + sin(animation_time * 18.0) * 1.8, WARNING_OUTER)
 		draw_circle(finish, 4.5, WARNING_INNER)
+
+
+func _draw_circle_warning(warning: Dictionary) -> void:
+	var center: Vector2 = warning.get("target", warning["source"])
+	var radius: float = warning["radius"]
+	var progress: float = warning.get("progress", 0.0)
+	var fill := WARNING_FILL
+	fill.a = 0.18 + progress * 0.07
+	draw_circle(center, radius, fill)
+	draw_arc(center, radius, 0.0, TAU, 64, WARNING_OUTER, 7.0, true)
+	draw_arc(center, radius, 0.0, TAU, 64, WARNING_INNER, 2.8, true)
+	var sweep_radius := radius * fposmod(animation_time * lerpf(0.42, 0.85, progress), 1.0)
+	draw_arc(center, sweep_radius, 0.0, TAU, 48, Color(WARNING_INNER, 0.76), 2.0, true)
+
+
+func _draw_sector(warning: Dictionary, annular: bool) -> void:
+	var source: Vector2 = warning["source"]
+	var direction: Vector2 = warning["direction"]
+	var outer_radius: float = warning["outer_radius"] if annular else warning["radius"]
+	var inner_radius: float = warning["inner_radius"] if annular else 0.0
+	var half_angle := deg_to_rad(float(warning["arc_degrees"]) * 0.5)
+	var center_angle := direction.angle()
+	var segments := maxi(18, ceili(float(warning["arc_degrees"]) / 6.0))
+	var points := PackedVector2Array()
+	for index in range(segments + 1):
+		var angle := center_angle - half_angle + half_angle * 2.0 * index / segments
+		points.append(source + Vector2.from_angle(angle) * outer_radius)
+	if annular:
+		for index in range(segments, -1, -1):
+			var angle := center_angle - half_angle + half_angle * 2.0 * index / segments
+			points.append(source + Vector2.from_angle(angle) * inner_radius)
+	else:
+		points.append(source)
+	var fill := WARNING_FILL
+	fill.a = 0.18 + float(warning.get("progress", 0.0)) * 0.07
+	draw_colored_polygon(points, fill)
+	_draw_sector_edge(source, center_angle, half_angle, inner_radius, outer_radius, segments)
+
+
+func _draw_sector_edge(source: Vector2, center_angle: float, half_angle: float, inner_radius: float, outer_radius: float, segments: int) -> void:
+	for color_width in [[WARNING_OUTER, 7.0], [WARNING_INNER, 2.8]]:
+		var color: Color = color_width[0]
+		var width: float = color_width[1]
+		draw_arc(source, outer_radius, center_angle - half_angle, center_angle + half_angle, segments, color, width, true)
+		if inner_radius > 0.0:
+			draw_arc(source, inner_radius, center_angle - half_angle, center_angle + half_angle, segments, color, width, true)
+		for angle in [center_angle - half_angle, center_angle + half_angle]:
+			draw_line(source + Vector2.from_angle(angle) * inner_radius, source + Vector2.from_angle(angle) * outer_radius, color, width, true)

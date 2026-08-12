@@ -9,6 +9,7 @@ uniform float scene_saturation : hint_range(0.4, 1.0) = 0.72;
 uniform float scene_exposure : hint_range(0.6, 1.1) = 0.92;
 uniform vec2 readability_center = vec2(0.0);
 uniform float readability_radius = 180.0;
+uniform float high_frequency_strength = 0.0;
 varying vec2 world_position;
 
 void vertex() {
@@ -20,6 +21,14 @@ void fragment() {
 	float luma = dot(source.rgb, vec3(0.299, 0.587, 0.114));
 	float quiet_zone = 1.0 - smoothstep(readability_radius * 0.45, readability_radius, distance(world_position, readability_center));
 	float local_saturation = mix(scene_saturation, scene_saturation * 0.72, quiet_zone);
+	vec3 nearby = (
+		texture(TEXTURE, UV + vec2(TEXTURE_PIXEL_SIZE.x * 2.0, 0.0)).rgb +
+		texture(TEXTURE, UV - vec2(TEXTURE_PIXEL_SIZE.x * 2.0, 0.0)).rgb +
+		texture(TEXTURE, UV + vec2(0.0, TEXTURE_PIXEL_SIZE.y * 2.0)).rgb +
+		texture(TEXTURE, UV - vec2(0.0, TEXTURE_PIXEL_SIZE.y * 2.0)).rgb
+	) * 0.25;
+	float local_softening = max(quiet_zone * 0.38, high_frequency_strength);
+	source.rgb = mix(source.rgb, nearby, local_softening);
 	source.rgb = mix(vec3(luma), source.rgb, local_saturation) * scene_exposure;
 	COLOR = source;
 }
@@ -39,6 +48,7 @@ func configure(map_config: MapConfig) -> void:
 	color_material.shader = color_shader
 	color_material.set_shader_parameter("scene_saturation", map.scene_saturation)
 	color_material.set_shader_parameter("scene_exposure", map.scene_exposure)
+	color_material.set_shader_parameter("high_frequency_strength", _high_frequency_strength(map.biome_id))
 	material = color_material
 	if is_instance_valid(landmarks):
 		landmarks.queue_free()
@@ -68,6 +78,17 @@ func _process(_delta: float) -> void:
 		return
 	if material is ShaderMaterial:
 		material.set_shader_parameter("readability_center", tracked_player.position)
+
+
+func _high_frequency_strength(biome_id: String) -> float:
+	match biome_id:
+		"crystal_volcano":
+			return 0.28
+		"fivecolor_cloudwood":
+			return 0.12
+		"thousand_mile_court":
+			return 0.08
+	return 0.0
 
 
 func _draw() -> void:

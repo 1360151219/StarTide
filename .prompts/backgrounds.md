@@ -1,13 +1,13 @@
 # 方案 D 战斗背景提示词
 
-用途：生成风铃草原、黄金绿洲、水晶火山的纯环境参考、地面草图和装饰簇。背景必须服务开放式 Vampire Survivors-like 战斗，不生成封闭竞技场、角色、怪物、技能或 HUD。
+用途：生成风铃草原、黄金绿洲、水晶火山、五色云林、千里云庭的纯环境参考、地面草图和装饰簇。背景必须服务开放式 Vampire Survivors-like 战斗，不生成封闭竞技场、角色、怪物、技能或 HUD。
 
 ## 已采用：远征大厅运行时地图底板
 
-模式：编辑 `docs/references/map-reference.png`，保留三生态构图与清透赛璐璐画风，移除所有运行时动态内容。
+模式：以 `docs/references/map-reference.png` 的清透赛璐璐、俯视自然地貌和连续路线关系为风格参考，重新组织五生态构图；不复制参考图中的运行时动态内容。
 
 ```text
-Edit the provided 9:16 “Sunlit Expedition Animation” route-map concept into a clean runtime environment background for a mobile 2D anime roguelite. Preserve the same top-down hand-painted geography, palette, lighting and composition: crystal volcano in the upper area, golden oasis at mid-right, windbell meadow at lower-left, connected by the winding road and river. Remove every hero, character, monster, destination pin, lock badge, compass UI, title plaque, page number, quest panel, bottom navigation, start button, text, number, logo and watermark. Reconstruct the scenery naturally behind all removed elements so the result is one continuous illustrated world map extending to all four edges. Keep generous low-detail areas at the three destination positions for runtime markers and character overlays. Maintain fresh cel-animation color grouping, soft daylight, readable terrain masses, shallow painted texture and no visible arena boundary. Environment only; no paper-cut theatre, no SaaS cards, no glassmorphism, no purple technology gradient, no baked UI, no fake text, no photorealism, no 3D plastic rendering.
+Create a clean 9:16 runtime route-map environment background for a mobile 2D anime roguelite in art direction D “Sunlit Expedition Animation”. Use a strict top-down hand-painted geography with five connected ecological masses following one readable expedition path from bottom to top: windbell meadow near (270,626), golden oasis near (420,514), crystal volcano near (340,382), five-color cloudwood near (172,264), and thousand-mile cloud court near (320,132). Connect them with a winding river, forest trail and pale cloud road without enclosing any area. Keep generous low-detail clearings around all five coordinates for runtime destination pins and hero overlays. Fresh cel-animation color grouping, soft daylight, shallow natural texture, readable terrain masses, one continuous world extending to all four edges. Environment only: no hero, character, monster, boss, destination pin, lock badge, compass UI, title plaque, page number, quest panel, bottom navigation, start button, text, number, logo, watermark, arena boundary, paper-cut theatre, SaaS card, glassmorphism, purple technology gradient, photorealism, or 3D plastic rendering.
 ```
 
 运行时输出：`assets/art/sunlit/backgrounds/expedition_route_map.png`。该图只承载环境，所有关卡状态与交互均由 Godot 节点绘制。
@@ -61,6 +61,20 @@ Avoid: paper-cut theatre, SaaS styling, sci-fi neon, purple technology gradients
 - 装饰簇：蓝绿晶体、黑曜石块、灰烬草、热气孔、远层火山影。
 - 色板：炭灰、珊瑚红、蓝绿晶；裂隙常态亮度低于敌方预警。
 - 保持空气感与天空反光，不做暗黑洞穴。
+
+### 五色云林
+
+- 地表：浅绿林地、低频云雾、自然曲折的林间通路。
+- 装饰簇：五色叶冠、桦木根系、小片苔藓、云纹浅水、远层树影。
+- 色板：叶绿、晨湖青、暖阳金、少量靛蓝与低饱和珊瑚；珊瑚色不得形成扇形、圆形或连续危险边。
+- 中心和侧向穿行路线保持低频，不绘制可见安全扇区。
+
+### 千里云庭
+
+- 地表：象牙云石、青绿浅水、开阔天光与少量金色风草。
+- 装饰簇：磨砂云门、低矮风旗、浅木栏桩、细长云影、远层浮石。
+- 色板：暖象牙、雾青、叶绿、日照金；五色只做细小环境回声，不能抢占驺吾纹带。
+- 保留长直与环形穿行空间，但不烘焙冲刺通道、尾扫缺口、落点或封闭 Boss 平台。
 
 ## 可平铺地面提示词补充
 

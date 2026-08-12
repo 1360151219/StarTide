@@ -39,7 +39,9 @@ run_and_check content_pools CONTENT_POOLS_OK --script res://tools/test_content_p
 run_and_check stages STAGES_OK --script res://tools/test_stage_director.gd
 run_and_check spawner SPAWNER_OK --script res://tools/test_enemy_spawner.gd
 run_and_check enemy_abilities ENEMY_ABILITIES_OK --script res://tools/test_enemy_abilities.gd
+run_and_check enemy_ability_catalog ENEMY_ABILITY_CATALOG_OK --script res://tools/test_enemy_ability_catalog.gd
 run_and_check enemy_budgets ENEMY_BUDGETS_OK --script res://tools/test_enemy_ability_budgets.gd
+run_and_check boss BOSS_OK --script res://tools/test_boss_system.gd
 run_and_check victory VICTORY_OK --script res://tools/test_victory_conditions.gd
 run_and_check records RECORDS_OK --script res://tools/test_run_records.gd
 run_and_check progression PROGRESSION_OK --script res://tools/test_hero_progression.gd
@@ -47,9 +49,11 @@ run_and_check power_equipment POWER_EQUIPMENT_OK --script res://tools/test_power
 run_and_check equipment_progression EQUIPMENT_PROGRESSION_OK --script res://tools/test_equipment_progression.gd
 run_and_check heroes HEROES_OK --script res://tools/test_hero_systems.gd
 run_and_check run_safety RUN_SAFETY_OK --script res://tools/test_run_safety.gd
+run_and_check run_balance_sample RUN_BALANCE_SAMPLE_OK --script res://tools/test_run_balance_sample.gd
 run_and_check hero_rig HERO_RIG_OK --script res://tools/test_hero_rig.gd
 run_and_check hero_rig_tuner HERO_RIG_TUNER_OK --script res://tools/test_hero_rig_tuner.gd
 run_and_check run_build RUN_BUILD_OK --script res://tools/test_run_build.gd
+run_and_check upgrade_pity UPGRADE_PITY_OK --script res://tools/test_upgrade_pity.gd
 run_and_check content_runtime CONTENT_RUNTIME_OK --script res://tools/test_content_runtime.gd
 run_and_check balance BALANCE_OK --script res://tools/test_balance_contracts.gd
 run_and_check start_ui START_UI_OK --script res://tools/test_start_ui.gd
@@ -65,4 +69,4 @@ if [ "$FAILED" -ne 0 ]; then
   exit 1
 fi
 
-printf 'ALL_TESTS_OK suites=27 responsive_profiles=4 content_catalogs=data_driven expedition_route=stable_shell presentation=budgeted engine_errors=false\n'
+printf 'ALL_TESTS_OK suites=31 responsive_profiles=4 content_catalogs=data_driven expedition_route=stable_shell presentation=budgeted engine_errors=false\n'
