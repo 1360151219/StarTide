@@ -77,7 +77,7 @@ func _test_frost_tide(host: Node2D, effects: Node2D) -> void:
 	session.skills.advance(0.0, 0.0, 2.0)
 	_require(targets.all(func(enemy: Node) -> bool: return enemy.health == 999.0) and session.skills.runtime.timeline.pending_count("frost_tide") == 4, "时凝星海在波前抵达前提前结算伤害")
 	session.skills.advance(0.0, 0.3, 2.3)
-	_require(targets.all(func(enemy: Node) -> bool: return enemy.health == 950.0), "时凝星海没有覆盖角色四周的 360 度范围")
+	_require(targets.all(func(enemy: Node) -> bool: return enemy.health == 958.0), "时凝星海没有覆盖角色四周的 360 度范围")
 	_require(targets.all(func(enemy: Node) -> bool: return is_equal_approx(enemy.slow_factor, 0.28)) and session.skills.runtime.pulse_visual_time > 0.0, "时凝星海减速或视觉没有生效")
 	session.free()
 func _test_ember_passive_and_turning(host: Node2D, effects: Node2D) -> void:

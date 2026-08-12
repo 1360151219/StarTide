@@ -60,7 +60,7 @@ func _test_phase_sequences() -> void:
 	boss.position = Vector2(200, 0)
 	session.player.position = Vector2.ZERO
 	controller.advance(0.0, 75.81)
-	_require(controller.active_warning_count() == 1 and controller.state["ability_id"] == "zouwu_dash" and int(controller.state["sequence_remaining"]) == 1, "第一阶段没有从单次千里踏云开始")
+	_require(controller.active_warning_count() == 1 and controller.state["ability_id"] == "zouwu_dash" and int(controller.state["sequence_remaining"]) == 1 and session.audio.played_cue_ids.has("enemy_warning") and session.audio.played_cue_ids.has("zouwu_dash_charge"), "第一阶段没有从单次千里踏云开始或 Boss 技能音效缺失")
 	boss.health = boss.max_health * 0.5
 	controller.state["phase"] = "idle"
 	controller.state["ready_at"] = 80.0

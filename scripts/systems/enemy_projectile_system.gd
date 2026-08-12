@@ -9,14 +9,12 @@ var player: Node2D
 var max_projectiles := 2
 var projectiles: Array[Node] = []
 var effects: Node2D
-var audio: Node
 
 
-func configure(player_node: Node2D, projectile_limit: int, combat_effects: Node2D, audio_manager: Node) -> void:
+func configure(player_node: Node2D, projectile_limit: int, combat_effects: Node2D) -> void:
 	player = player_node
 	max_projectiles = projectile_limit
 	effects = combat_effects
-	audio = audio_manager
 
 
 func spawn_bolt(source: Node, origin: Vector2, direction: Vector2, config: Dictionary, damage_multiplier: float) -> Node:
@@ -28,7 +26,6 @@ func spawn_bolt(source: Node, origin: Vector2, direction: Vector2, config: Dicti
 	projectile.velocity = direction.normalized() * float(config["projectile_speed"])
 	projectile.damage = float(config["damage"]) * damage_multiplier
 	projectile.hit_type = str(config["hit_type"])
-	projectile.hit_cue = str(config.get("hit_cue", ""))
 	projectile.radius = float(config["projectile_radius"])
 	projectile.max_distance = float(config["projectile_distance"])
 	add_child(projectile)
@@ -48,8 +45,6 @@ func advance(delta: float) -> void:
 			var hit := PlayerHitData.create(projectile.damage, projectile.source, projectile.hit_type, projectile.previous_position)
 			player_hit_requested.emit(hit)
 			effects.add_effect(projectile.position, projectile.radius + 22.0, Color("9b67df"), 0.3, "bat_impact")
-			if not projectile.hit_cue.is_empty():
-				audio.play_sfx(projectile.hit_cue, -2.0, 0.98)
 			_remove(projectile)
 		elif expired:
 			effects.add_effect(projectile.position, projectile.radius + 16.0, Color("9b67df"), 0.28, "bat_dissolve")

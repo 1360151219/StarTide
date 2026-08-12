@@ -14,14 +14,13 @@ var enemy_system: Node2D
 var projectile_system: Node2D
 var stage_director: RefCounted
 var rng: RandomNumberGenerator
-var audio: Node
 var effects: Node2D
 var states: Dictionary = {}
 var last_warning_start := -INF
 var telegraphs: Node2D
 var viewport_size := Vector2(540, 960)
 
-func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D, enemies: Node2D, projectiles: Node2D, director: RefCounted, random: RandomNumberGenerator, audio_manager: Node, combat_effects: Node2D) -> void:
+func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D, enemies: Node2D, projectiles: Node2D, director: RefCounted, random: RandomNumberGenerator, combat_effects: Node2D) -> void:
 	level = level_config
 	run_state = state
 	player = player_node
@@ -29,7 +28,6 @@ func configure(level_config: LevelConfig, state: RefCounted, player_node: Node2D
 	projectile_system = projectiles
 	stage_director = director
 	rng = random
-	audio = audio_manager
 	effects = combat_effects
 	telegraphs = TelegraphRenderer.new()
 	add_child(telegraphs)
@@ -124,8 +122,6 @@ func _begin_warning(state: Dictionary, enemy: Node, elapsed: float) -> void:
 	state["hit_done"] = false
 	state["trail_elapsed"] = 0.0
 	last_warning_start = elapsed
-	_play_configured_cue(config, "warning_cue")
-	_play_configured_cue(config, "charge_cue", -5.0)
 	if enemy.has_method("set_ability_visual"):
 		enemy.set_ability_visual(ability_id, "warning", 0.0, direction)
 
@@ -159,18 +155,15 @@ func _start_execution(state: Dictionary, enemy: Node, elapsed: float) -> void:
 			state["phase"] = "executing"
 			state["remaining"] = float(config["distance"])
 			enemy.contact_enabled = false
-			_play_configured_cue(config, "execute_cue", -2.0, rng.randf_range(0.96, 1.04))
 			if enemy.has_method("set_ability_visual"):
 				enemy.set_ability_visual(state["ability_id"], "executing", 0.0, state["direction"])
 		"bolt":
 			effects.add_effect(enemy.position, enemy.radius + 28.0, Color("a66be8"), 0.26, "bat_launch")
-			_play_configured_cue(config, "execute_cue", -1.0, rng.randf_range(0.97, 1.04))
 			if enemy.has_method("set_ability_visual"):
 				enemy.set_ability_visual(state["ability_id"], "executing", 1.0, state["direction"])
 			projectile_system.spawn_bolt(enemy, enemy.position, state["direction"], config, enemy.ability_damage_multiplier)
 			_enter_recovery(state, enemy, elapsed)
 		"burst":
-			_play_configured_cue(config, "execute_cue", -1.0, rng.randf_range(0.97, 1.04))
 			if AbilityRules.telegraph_covers_point(enemy.position, state["direction"], player.position, config, state["target"]):
 				state["hit_done"] = true
 				_emit_hit(enemy, config)
@@ -219,7 +212,6 @@ func _enter_recovery(state: Dictionary, enemy: Node, _elapsed: float) -> void:
 	enemy.contact_enabled = true
 	if str(config["runtime_kind"]) == "roll" and not bool(state["hit_done"]):
 		effects.add_effect(enemy.position, enemy.radius + 24.0, Color("ffe36b"), float(config["recovery"]), "grub_recover")
-		_play_configured_cue(config, "miss_cue", -2.0, rng.randf_range(0.97, 1.04))
 
 
 func _advance_idle(enemy: Node, delta: float, elapsed: float) -> void:
@@ -227,15 +219,8 @@ func _advance_idle(enemy: Node, delta: float, elapsed: float) -> void:
 
 
 func _emit_hit(enemy: Node, config: Dictionary) -> void:
-	_play_configured_cue(config, "hit_cue", -1.0, rng.randf_range(0.97, 1.04))
 	var hit := PlayerHitData.create(float(config["damage"]) * enemy.ability_damage_multiplier, enemy, config["hit_type"], enemy.position, float(config.get("knockback", 0.0)))
 	player_hit_requested.emit(hit)
-
-
-func _play_configured_cue(config: Dictionary, field: String, volume_db := 0.0, pitch_scale := 1.0) -> void:
-	var cue_id := str(config.get(field, ""))
-	if not cue_id.is_empty():
-		audio.play_sfx(cue_id, volume_db, pitch_scale)
 
 
 func _on_enemy_removed(enemy: Node) -> void:

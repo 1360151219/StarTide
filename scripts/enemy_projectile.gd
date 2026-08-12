@@ -4,7 +4,6 @@ var source: Node
 var velocity := Vector2.ZERO
 var damage := 0.0
 var hit_type := "enemy_projectile"
-var hit_cue := ""
 var radius := 11.0
 var max_distance := 520.0
 var traveled := 0.0

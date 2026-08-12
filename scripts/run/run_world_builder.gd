@@ -33,11 +33,11 @@ func build(parent: Node2D, state: RefCounted, build_state: RefCounted, level: Le
 	var enemy_projectiles := EnemyProjectileSystem.new()
 	enemy_projectiles.z_index = 3875
 	parent.add_child(enemy_projectiles)
-	enemy_projectiles.configure(player, level.enemy_ability_budget.max_projectiles, effects, audio)
+	enemy_projectiles.configure(player, level.enemy_ability_budget.max_projectiles, effects)
 	var enemy_abilities := EnemyAbilitySystem.new()
 	enemy_abilities.z_index = 0
 	parent.add_child(enemy_abilities)
-	enemy_abilities.configure(level, state, player, enemies, enemy_projectiles, stage_director, random_streams["enemy_ability"], audio, effects)
+	enemy_abilities.configure(level, state, player, enemies, enemy_projectiles, stage_director, random_streams["enemy_ability"], effects)
 	var boss_abilities := BossAbilitySystem.new()
 	boss_abilities.z_index = 1
 	parent.add_child(boss_abilities)

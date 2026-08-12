@@ -56,6 +56,7 @@ func _test_grub_roll() -> void:
 	_advance_abilities(session, 0.6, 2.51)
 	_require(session.player.health < before, "团团滚穿过玩家时没有造成伤害")
 	_require(enemy.contact_enabled and enemy.position.distance_to(Vector2(20, 0)) < 0.1, "团团滚距离或后摇切换错误：pos=%s phase=%s" % [enemy.position, _phase_of(session, enemy)])
+	_require(session.audio.played_cue_ids.size() == 1 and session.audio.played_cue_ids[0] == "hero_hurt", "普通怪物技能仍播放音效：%s" % [session.audio.played_cue_ids])
 	session.free()
 
 
@@ -87,12 +88,11 @@ func _test_bat_lock_and_projectile() -> void:
 	_advance_abilities(session, 0.31, 2.17)
 	_require(session.enemy_projectiles.projectiles.size() == 1, "暮翼光弹没有生成敌方弹体")
 	var projectile: Node = session.enemy_projectiles.projectiles[0]
-	_require(projectile.hit_cue == "bat_bolt_impact", "敌方弹体没有携带数据配置的命中 Cue")
 	_require(projectile.velocity.normalized().dot(locked_direction) > 0.999, "暮翼光弹最后 0.3 秒没有锁定方向")
 	var feedback := FeedbackDirectionContract.watch(session, projectile)
 	session.player.position = projectile.position + projectile.velocity.normalized() * 100.0
 	session.enemy_projectiles.advance(0.5)
-	_require(session.player.health < float(feedback["health"]) and session.enemy_projectiles.projectiles.is_empty() and FeedbackDirectionContract.swept_hit_stays_on_incoming_side(session.player.position, feedback) and FeedbackDirectionContract.enemy_uses_local_source_position(enemy), "高速敌弹命中、来袭侧反馈或敌人局部坐标方向错误")
+	_require(session.player.health < float(feedback["health"]) and session.enemy_projectiles.projectiles.is_empty() and FeedbackDirectionContract.swept_hit_stays_on_incoming_side(session.player.position, feedback) and FeedbackDirectionContract.enemy_uses_local_source_position(enemy) and session.audio.played_cue_ids.size() == 1 and session.audio.played_cue_ids[0] == "hero_hurt", "高速敌弹命中、来袭侧反馈、普通怪物静音或敌人局部坐标方向错误")
 	EnemyAbilityCatalog.ABILITIES.erase("test_bolt_variant")
 	session.free()
 
