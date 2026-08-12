@@ -3,25 +3,23 @@ extends RefCounted
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 
-const STAGE_TOP := Color("8dcbd1")
-const STAGE_BOTTOM := Color("ddefe7")
 const SHEET := UiFactory.SURFACE
 const SHEET_ALT := UiFactory.SURFACE_ALT
 const INK := UiFactory.INK
 const MUTED := UiFactory.MUTED_INK
-const COMMON := Color("8a9995")
+const COMMON := Color("7d8986")
 const RARE := UiFactory.RARE
 const TOP := UiFactory.ACCENT
-const COMMON_BACKGROUND := Color("f2f1e7")
-const RARE_BACKGROUND := Color("e7edf6")
-const TOP_BACKGROUND := Color("fff0c8")
-const COMMON_BORDER := Color("8a9995")
+const COMMON_BACKGROUND := Color("c9cdca")
+const RARE_BACKGROUND := Color("dff5e7")
+const TOP_BACKGROUND := UiFactory.ACCENT_LIGHT
+const COMMON_BORDER := Color("7d8986")
 const RARE_BORDER := UiFactory.RARE
 const TOP_BORDER := UiFactory.ACCENT_DARK
-const POWER := UiFactory.ACCENT_DARK
-const POWER_FLASH := UiFactory.ACCENT
+const POWER := UiFactory.ACCENT
+const POWER_FLASH := UiFactory.ACCENT_LIGHT
 const POWER_GAIN := UiFactory.HEALING
-const POWER_LOSS := UiFactory.DANGER
+const POWER_LOSS := Color("8b6448")
 const LOCKED := UiFactory.DISABLED
 
 const STAT_NAMES := {
@@ -114,9 +112,13 @@ static func apply_segment(button: Button, selected: bool) -> void:
 
 
 static func apply_ribbon_tab(button: Button, selected: bool) -> void:
-	var background := UiFactory.PRIMARY_DARK if selected else UiFactory.SURFACE_ALT
-	var border := UiFactory.PRIMARY_LIGHT if selected else Color(UiFactory.PRIMARY, 0.74)
+	var background := UiFactory.SURFACE if selected else UiFactory.SURFACE_ALT
+	var border := UiFactory.CANVAS_EDGE if selected else Color(UiFactory.PRIMARY, 0.74)
 	var normal := continuous_style(background, border, 6.0)
+	normal.content_margin_left = 4.0
+	normal.content_margin_right = 4.0
+	normal.content_margin_top = 4.0
+	normal.content_margin_bottom = 4.0
 	normal.border_width_bottom = 3 if selected else 1
 	normal.corner_radius_top_left = 2
 	normal.corner_radius_top_right = 10
@@ -132,7 +134,7 @@ static func apply_ribbon_tab(button: Button, selected: bool) -> void:
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", pressed)
 	button.add_theme_stylebox_override("focus", focus)
-	var text_color := UiFactory.HUD_TEXT if selected else UiFactory.INK
+	var text_color := UiFactory.INK
 	button.add_theme_color_override("font_color", text_color)
 	button.add_theme_color_override("font_hover_color", text_color)
 	button.add_theme_color_override("font_pressed_color", text_color)
@@ -141,32 +143,29 @@ static func apply_ribbon_tab(button: Button, selected: bool) -> void:
 
 
 static func apply_training_row(panel: Panel) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(UiFactory.SURFACE_ALT, 0.34)
-	style.border_color = Color(UiFactory.PRIMARY, 0.38)
-	style.border_width_bottom = 1
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override(
+		"panel", continuous_style(UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.42), 6.0)
+	)
 
 
 static func apply_power_label(label: Label) -> void:
-	label.add_theme_font_size_override("font_size", 30)
+	label.add_theme_font_size_override("font_size", 36)
 	label.add_theme_color_override("font_color", POWER)
-	label.add_theme_color_override("font_outline_color", UiFactory.SURFACE)
-	label.add_theme_constant_override("outline_size", 1)
-	label.add_theme_color_override("font_shadow_color", Color(UiFactory.ACCENT, 0.24))
+	label.add_theme_color_override("font_outline_color", UiFactory.ACCENT_DARK)
+	label.add_theme_constant_override("outline_size", 2)
+	label.add_theme_color_override("font_shadow_color", Color(UiFactory.INK, 0.22))
 	label.add_theme_constant_override("shadow_offset_x", 0)
 	label.add_theme_constant_override("shadow_offset_y", 2)
-	label.add_theme_constant_override("shadow_outline_size", 3)
+	label.add_theme_constant_override("shadow_outline_size", 4)
 
 
 static func apply_item_card(button: Button, rarity_id: String, selected: bool) -> void:
-	var normal := quality_card(rarity_id, 6.0, selected)
-	var hover := quality_card(rarity_id, 6.0, selected)
-	hover.bg_color = normal.bg_color.lightened(0.025)
-	var pressed := quality_card(rarity_id, 6.0, selected)
-	pressed.bg_color = normal.bg_color.darkened(0.04)
+	var normal := StyleBoxEmpty.new()
+	var hover := StyleBoxEmpty.new()
+	var pressed := StyleBoxEmpty.new()
 	var focus := surface(Color.TRANSPARENT, 6.0, UiFactory.ACCENT, false)
-	focus.set_border_width_all(3)
+	focus.set_border_width_all(2)
+	focus.set_expand_margin_all(1.0)
 	button.add_theme_stylebox_override("normal", normal)
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", pressed)
@@ -175,8 +174,7 @@ static func apply_item_card(button: Button, rarity_id: String, selected: bool) -
 	button.add_theme_color_override("font_hover_color", INK)
 	button.add_theme_color_override("font_pressed_color", INK)
 	button.add_theme_color_override("font_disabled_color", Color(MUTED, 0.58))
-	SunlitCardStyle.decorate(button, rarity_border(rarity_id), 6.0, false, selected, UiFactory.ACCENT, "canvas", rarity_level(rarity_id))
-	apply_quality_structure(button, rarity_id, 6.0)
+	button.modulate = Color.WHITE if not button.disabled else Color(0.68, 0.72, 0.7, 0.72)
 
 
 static func apply_quality_structure(target: Control, rarity_id: String, radius := 6.0) -> void:
@@ -209,7 +207,7 @@ static func apply_quality_structure(target: Control, rarity_id: String, radius :
 
 
 static func apply_empty_slot_card(button: Button) -> void:
-	var normal := continuous_style(Color(UiFactory.SURFACE_ALT, 0.76), Color(UiFactory.PRIMARY, 0.62), 6.0)
+	var normal := continuous_style(UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.62), 6.0)
 	var hover := continuous_style(UiFactory.SURFACE_ALT, UiFactory.PRIMARY_LIGHT, 6.0)
 	var pressed := continuous_style(UiFactory.SURFACE_ALT.darkened(0.04), UiFactory.PRIMARY, 6.0)
 	pressed.bg_color = normal.bg_color.darkened(0.04)

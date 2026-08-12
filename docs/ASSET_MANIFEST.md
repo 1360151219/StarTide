@@ -29,7 +29,7 @@ assets/
 │   ├── pickups/           # 拾取物
 │   ├── skills/            # 六项技能图标
 │   ├── sunlit/backgrounds/# 当前远征地图环境底板
-│   └── ui/home/           # 当前独立 UI 位图
+│   └── ui/                # 首页与角色中心正式 UI 位图
 ├── audio/                 # 4 条音乐与 39 个 Cue
 ├── fonts/                 # 三套运行时字体及许可
 └── generated/
@@ -111,7 +111,7 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 | 风铃护符 | `assets/generated/equipment/windbell_charm.png` |
 | 时砂护符 | `assets/generated/equipment/timeglass_charm.png` |
 
-不同品质复用同一主体图；`common`、`rare`、`top` 由边框层数、徽章、挂扣和揭示节奏表达。
+不同品质复用同一主体图；运行时方格统一为 `1:1` 正方形：`common` 使用灰色单压线，`rare` 使用鲜绿双压线与左上缺口，`top` 使用明亮金色三段边框与左上冠形徽记，均不带底部节点或挂件。已装备归属头像由运行时叠加，不复制进装备主体或品质框素材。
 
 ### 5.3 拾取物与物品图集
 
@@ -152,6 +152,19 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 | `assets/art/ui/home/nav_icon_expedition.png` | 首页远征入口图标 | 无文字、徽章或按钮底框 |
 | `assets/art/ui/home/nav_icon_compendium.png` | 首页图鉴入口图标 | 无文字、徽章或按钮底框 |
 | `assets/art/ui/home/settings_medallion.png` | 首页及共享紧凑设置入口 | 60×60 运行时显示；点击状态由 Godot 控制 |
+| `assets/art/ui/character/character_camp_backdrop.png` | 角色中心日光营地环境底板 | 仅承载环境；全屏背景层切换，不烘焙角色、文字、装备或交互状态 |
+| `assets/art/ui/character/hero_stage_frame.png` | 角色中心桦木帆布英雄台 | 透明中央由运行时叠加 HeroRig、装备槽与战力；不烘焙内容数据 |
+| `assets/art/ui/character/character_title_plaque.png` | 角色中心空白标题签 | 运行时叠加页面标题；不烘焙文字 |
+| `assets/art/ui/character/hero_stage_canvas.png` | 英雄台帆布内衬 | 位于桦木框与运行时角色之间；不包含角色、装备或数值 |
+| `assets/art/ui/character/power_plate_frame.png` | 英雄台等级与战力空白底框 | 左侧等级区与右侧战力区由运行时叠加字体和数字；不烘焙文案或数值 |
+| `assets/art/ui/character/inventory_tray_frame.png` | 五列装备背包托盘 | 运行时叠加筛选、品质格、数量与详情抽屉 |
+| `assets/art/ui/character/quality_cell_common.png` | 普通品质正方形格 | 灰色单层压线，无品质文字、装备主体和底部节点 |
+| `assets/art/ui/character/quality_cell_rare.png` | 稀有品质正方形格 | 鲜绿双层压线与左上缺口，无装备主体和底部节点 |
+| `assets/art/ui/character/quality_cell_top.png` | 顶级品质正方形格 | 明亮金色三段边框与左上日轮，无装备主体和底部节点 |
+| `assets/art/ui/character/filter_icon_all.png` | 装备背包全部筛选图标 | 四格轮廓，不烘焙按钮底框或文字 |
+| `assets/art/ui/character/filter_icon_weapon.png` | 装备背包武器筛选图标 | 交叉武器轮廓，不烘焙按钮底框或文字 |
+| `assets/art/ui/character/filter_icon_armor.png` | 装备背包护甲筛选图标 | 护甲轮廓，不烘焙按钮底框或文字 |
+| `assets/art/ui/character/filter_icon_charm.png` | 装备背包饰品筛选图标 | 新月护符轮廓，不烘焙按钮底框或文字 |
 | `assets/generated/ui/victory_crest.png` | 胜利与高价值奖励徽章 | 不作为普通装饰重复使用 |
 
 程序组件 `SunlitFrame`、`SunlitCardStyle`、`SunlitGlyph` 和 `SunlitLockBadge` 负责边框、状态、触控与响应式，不生成整页 UI 位图。

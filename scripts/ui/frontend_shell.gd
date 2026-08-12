@@ -4,6 +4,7 @@ const SafeArea = preload("res://scripts/ui/safe_area.gd")
 const BottomBar = preload("res://scripts/ui/bottom_bar.gd")
 const CharacterPage = preload("res://scripts/ui/character_page.gd")
 const ExpeditionConfirmPanel = preload("res://scripts/ui/expedition_confirm_panel.gd")
+const CHARACTER_BACKGROUND := preload("res://assets/art/ui/character/character_camp_backdrop.png")
 
 var current_page := BottomBar.PAGE_START
 var bottom_bar: Panel
@@ -99,6 +100,7 @@ func _show_page(page_id: String) -> void:
 	var showing_character := page_id == BottomBar.PAGE_CHARACTER
 	var showing_compendium := page_id == BottomBar.PAGE_COMPENDIUM
 	audio_settings.visible = true
+	screen_background.texture = CHARACTER_BACKGROUND if showing_character else HOME_BACKGROUND
 	lobby_view.visible = showing_start
 	if is_instance_valid(character_page):
 		character_page.visible = showing_character

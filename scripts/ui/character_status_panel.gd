@@ -18,17 +18,15 @@ var level_label: Label
 var progress_label: Label
 var progress_bar: Control
 var metric_values: Dictionary = {}
-var breakdown_values: Dictionary = {}
 var record_label: Label
 
 
 func _ready() -> void:
-	size = Vector2(504, 574)
+	size = Vector2(504, 506)
 	CharacterStyle.apply_panel(self, false, 22.0)
 	_build_hero_summary()
 	_build_metrics()
-	_build_power_breakdown()
-	record_label = CharacterStyle.add_label(self, "", 14, CharacterStyle.MUTED, Vector2(20, 516), Vector2(464, 40), HORIZONTAL_ALIGNMENT_CENTER)
+	record_label = CharacterStyle.add_label(self, "", 14, CharacterStyle.MUTED, Vector2(20, 418), Vector2(464, 56), HORIZONTAL_ALIGNMENT_CENTER)
 	record_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 
@@ -54,6 +52,7 @@ func _build_hero_summary() -> void:
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	plate.add_child(portrait)
 	name_label = CharacterStyle.add_label(plate, "", 23, UiFactory.INK, Vector2(166, 16), Vector2(286, 32))
+	UiFactory.apply_key_heading(name_label, 23)
 	power_label = CharacterStyle.add_label(plate, "", 25, UiFactory.ACCENT_DARK, Vector2(166, 50), Vector2(286, 36))
 	level_label = CharacterStyle.add_label(plate, "", 14, UiFactory.PRIMARY_DARK, Vector2(166, 90), Vector2(286, 24))
 	progress_bar = CompactProgressBar.new()
@@ -68,9 +67,10 @@ func _build_metrics() -> void:
 	var sheet := Panel.new()
 	sheet.position = Vector2(14, 194)
 	sheet.size = Vector2(476, 204)
-	CharacterStyle.apply_continuous_panel(sheet, Color(UiFactory.SURFACE_ALT, 0.76), Color(UiFactory.PRIMARY, 0.48), 6.0)
+	CharacterStyle.apply_continuous_panel(sheet, UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.48), 6.0)
 	add_child(sheet)
-	CharacterStyle.add_label(sheet, "核心属性", 18, CharacterStyle.INK, Vector2(16, 10), Vector2(180, 28))
+	var heading := CharacterStyle.add_label(sheet, "核心属性", 18, CharacterStyle.INK, Vector2(16, 10), Vector2(180, 28))
+	UiFactory.apply_key_heading(heading, 18)
 	var metrics := [
 		["health", "最大生命"], ["damage", "技能伤害"],
 		["speed", "移动速度"], ["points", "可用技能点"],
@@ -83,27 +83,6 @@ func _build_metrics() -> void:
 		metric_values[metrics[index][0]] = CharacterStyle.add_label(
 			sheet, "0", 20, CharacterStyle.INK,
 			Vector2(254, y), Vector2(202, 36), HORIZONTAL_ALIGNMENT_RIGHT
-		)
-
-
-func _build_power_breakdown() -> void:
-	var sheet := Panel.new()
-	sheet.position = Vector2(14, 410)
-	sheet.size = Vector2(476, 94)
-	CharacterStyle.apply_continuous_panel(sheet, Color(UiFactory.SURFACE, 0.72), Color(UiFactory.PRIMARY, 0.48), 6.0)
-	add_child(sheet)
-	CharacterStyle.add_label(sheet, "战力构成", 16, CharacterStyle.INK, Vector2(16, 8), Vector2(180, 24))
-	var breakdowns := [
-		["base", "基础"], ["level", "等级"], ["training", "技能"], ["equipment", "装备"],
-	]
-	for index in range(breakdowns.size()):
-		var x := 8.0 + float(index) * 115.0
-		if index > 0:
-			_add_divider(sheet, Vector2(x, 38), Vector2(1, 44))
-		CharacterStyle.add_label(sheet, str(breakdowns[index][1]), 14, CharacterStyle.MUTED, Vector2(x + 4, 36), Vector2(106, 22), HORIZONTAL_ALIGNMENT_CENTER)
-		breakdown_values[breakdowns[index][0]] = CharacterStyle.add_label(
-			sheet, "0", 18, CharacterStyle.INK,
-			Vector2(x + 4, 58), Vector2(106, 26), HORIZONTAL_ALIGNMENT_CENTER
 		)
 
 
@@ -127,10 +106,10 @@ func _refresh(snapshot: Dictionary) -> void:
 	portrait.texture = HERO_TEXTURES.get(hero_id)
 	name_label.text = str(hero["name"])
 	power_label.text = "战力  %d" % int(power.get("total", snapshot.get("combat_power", 0)))
-	level_label.text = "英雄等级  LV.%d" % level
+	level_label.text = "LV.%d" % level
 	progress_bar.max_value = maxf(1.0, maximum)
 	progress_bar.value = current
-	progress_label.text = "成长经验  %d / %d" % [current, maximum]
+	progress_label.text = "经验  %d / %d" % [current, maximum]
 	var health := float(resolved.get("max_health", hero["max_health"]))
 	var speed := float(resolved.get("speed", hero["speed"]))
 	var damage := maxf(0.0, float(resolved.get("damage_multiplier", progression.get("damage_multiplier", 1.0))) - 1.0)
@@ -138,6 +117,4 @@ func _refresh(snapshot: Dictionary) -> void:
 	metric_values["speed"].text = "%.0f" % speed
 	metric_values["damage"].text = "+%.0f%%" % (damage * 100.0)
 	metric_values["points"].text = "%d" % int(progression.get("available_skill_points", 0))
-	for key in breakdown_values:
-		breakdown_values[key].text = "%d" % int(power.get(key, 0))
 	record_label.text = records.summary(hero_id) if is_instance_valid(records) and records.has_method("summary") else "等待首次远征"

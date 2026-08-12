@@ -40,7 +40,7 @@ func _draw() -> void:
 		"magnet": _draw_magnet(color)
 		"bomb": _draw_bomb(color)
 		"up": _draw_vertical_arrow(UiFactory.HEALING, true)
-		"down": _draw_vertical_arrow(UiFactory.DANGER, false)
+		"down": _draw_vertical_arrow(UiFactory.CANVAS_EDGE, false)
 		_: _draw_expedition(color)
 
 

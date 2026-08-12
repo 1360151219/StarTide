@@ -35,51 +35,99 @@ func _on_process_frame() -> void:
 	var equipment = page.equipment_panel
 	_require(page.current_section == "equipment", "角色中心没有默认展示装备舞台")
 	_require(
-		page.get_node("HeroSwitcher").size.x == 504.0
+		page.get_node("HeroSwitcher").size == Vector2(220, 56)
+		and page.title_plaque.texture.resource_path == "res://assets/art/ui/character/character_title_plaque.png"
 		and equipment.hero_stage.power_label.text.is_valid_int(),
-		"角色页右上角仍保留重复战力，或角色下方战力不是独立主数值"
+		"角色标题签、英雄切换或角色下方战力结构不正确"
 	)
 	_require(
-		equipment.hero_stage.power_label.get_theme_font_size("font_size") == 30
+		screen.screen_background.visible
+		and screen.screen_background.texture.resource_path == "res://assets/art/ui/character/character_camp_backdrop.png",
+		"角色页仍泄漏首页地图，或没有使用独立营地背景"
+	)
+	_require(
+		equipment.hero_stage.power_label.get_theme_font_size("font_size") == 36
 		and equipment.hero_stage.power_label.get_theme_color("font_color").is_equal_approx(CharacterStyle.POWER),
 		"角色下方战力没有使用醒目的专属字体样式"
 	)
 	_require(
+		equipment.hero_stage.power_plate.size == Vector2(304, 76)
+		and equipment.hero_stage.power_plate.get_node("PowerPlateFrame").texture.resource_path == "res://assets/art/ui/character/power_plate_frame.png"
+		and equipment.hero_stage.level_label.get_theme_font_size("font_size") == 22
+		and equipment.hero_stage.level_label.get_theme_font("font").resource_path == "res://assets/fonts/SmileySans-Oblique.otf",
+		"等级与战力没有进入新的远征战力牌"
+	)
+	_require(
 		page.hero_buttons["star_warden"].get_node_or_null("SunlitFrame") != null
 		and page.section_buttons["equipment"].get_node_or_null("SunlitFrame") != null
-		and equipment.get_node_or_null("SunlitFrame") != null,
-		"角色中心没有复用日光远征装饰组件"
+		and page.hero_buttons["star_warden"].icon is AtlasTexture
+		and page.hero_buttons["star_warden"].icon.atlas.resource_path == "res://assets/art/characters/star_tide_warden.png"
+		and page.section_buttons["status"].icon.resource_path == "res://assets/art/ui/home/nav_icon_character.png"
+		and equipment.hero_stage.get_node("StageFrame").texture.resource_path == "res://assets/art/ui/character/hero_stage_frame.png"
+		and equipment.hero_stage.get_node("StageCanvas").texture.resource_path == "res://assets/art/ui/character/hero_stage_canvas.png",
+		"角色中心没有复用英雄头像、首页图标与日光远征舞台构件"
 	)
-	_require(equipment.hero_stage.hero_rig.display_height >= 180.0, "装备舞台英雄仍是缩略头像")
-	_require(equipment.slot_buttons.size() == 3, "装备槽没有按目录完整生成")
+	_require(equipment.hero_stage.hero_rig.display_height >= 240.0, "装备舞台英雄仍是缩略头像")
+	_require(
+		equipment.slot_buttons.size() == 3
+		and equipment.hero_stage.locked_slot_cards.size() == 3
+		and equipment.slot_buttons["weapon"].size == Vector2(64, 64),
+		"装备舞台没有形成左三右三的六槽结构"
+	)
 	_require(not equipment.slot_buttons["weapon"].empty_mark is Label, "空装备槽仍使用文字占位符")
-	_require(equipment.inventory_grid.columns == 4 and equipment.inventory_buttons.size() == 3, "新手装备没有进入四列背包")
-	_require(equipment.filter_buttons.size() == 4, "装备背包缺少槽位筛选")
+	_require(
+		equipment.inventory_grid.columns == 5
+		and equipment.inventory_grid.custom_minimum_size.x == 472.0
+		and equipment.inventory_buttons.size() == 3,
+		"新手装备没有进入五列正方形背包"
+	)
+	_require(
+		equipment.filter_buttons.size() == 4
+		and equipment.filter_buttons["weapon"].icon.resource_path == "res://assets/art/ui/character/filter_icon_weapon.png"
+		and equipment.inventory_sheet.get_node("TrayFrame").texture.resource_path == "res://assets/art/ui/character/inventory_tray_frame.png",
+		"装备背包缺少正式筛选图标或帆布托盘"
+	)
+	_require(
+		equipment.size == Vector2(504, 682)
+		and equipment.inventory_sheet.size == Vector2(504, 252)
+		and equipment.count_label.position.y + equipment.count_label.size.y <= 198.0
+		and equipment.status_label.position.x + equipment.status_label.size.x <= 426.0
+		and equipment.detail_sheet.size == Vector2(496, 244),
+		"装备托盘没有扩展到导航上方，或底部文案仍越过内容安全区"
+	)
 	var rare: Dictionary = records.grant_equipment("windstring_bow")
 	records.grant_equipment("crystal_vest")
 	records.grant_equipment("timeglass_charm")
 	var top: Dictionary = records.grant_equipment("apprentice_starwand", "top")
 	page.refresh()
 	_require(equipment.inventory_buttons.size() == 7, "三种品质装备没有完整进入背包网格")
-	_require(equipment.inventory_grid.get_combined_minimum_size().y <= equipment.inventory_grid.get_parent().size.y + 0.1, "四列两行装备卡不能完整显示")
+	_require(
+		equipment.inventory_buttons[0].size == Vector2(88, 88)
+		and equipment.inventory_grid.get_combined_minimum_size().y >= 184.0,
+		"装备背包没有保持一行五格与纵向滚动"
+	)
 	var common_card: Button = _card_by_id(equipment, "starter-weapon")
 	var rare_card: Button = _card_by_id(equipment, str(rare["instance_id"]))
 	var top_card: Button = _card_by_id(equipment, str(top["instance_id"]))
 	_require(common_card != null and top_card != null, "普通或顶级装备没有进入背包")
 	_require(rare_card != null, "稀有装备没有进入背包")
 	_require(
-		common_card.get_node_or_null("SunlitFrame") != null
-		and rare_card.get_node_or_null("SunlitFrame") != null
-		and top_card.get_node_or_null("SunlitFrame") != null,
-		"装备品质卡没有复用日光远征装饰组件"
+		common_card.background_view.texture.resource_path == "res://assets/art/ui/character/quality_cell_common.png"
+		and rare_card.background_view.texture.resource_path == "res://assets/art/ui/character/quality_cell_rare.png"
+		and top_card.background_view.texture.resource_path == "res://assets/art/ui/character/quality_cell_top.png",
+		"装备品质卡没有使用三档独立正式方格"
 	)
-	_require(common_card.get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.COMMON_BACKGROUND), "普通装备没有使用灰色背景")
-	_require(rare_card.get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.RARE_BACKGROUND), "稀有装备没有使用绿色背景")
-	_require(top_card.get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.TOP_BACKGROUND), "顶级装备没有使用紫色背景")
-	_require(rare_card.get_theme_stylebox("normal").border_color.is_equal_approx(CharacterStyle.RARE_BORDER), "稀有装备边框没有与品质背景统一")
-	_require(rare_card.rarity_label.get_theme_color("font_color").is_equal_approx(CharacterStyle.RARE), "稀有装备没有保留品质识别色")
+	_require(CharacterStyle.COMMON_BACKGROUND == Color("c9cdca"), "普通装备没有使用主动灰帆布语义")
+	_require(CharacterStyle.RARE_BACKGROUND == Color("dff5e7") and CharacterStyle.RARE == Color("42b873"), "稀有装备没有使用鲜绿品质语义")
+	_require(CharacterStyle.TOP_BACKGROUND == Color("fff0b2"), "顶级装备没有使用日照金语义")
+	_require(CharacterStyle.COMMON != CharacterStyle.LOCKED and CharacterStyle.POWER_LOSS != Color("e45b5b"), "普通品质或战力下降仍复用了禁用/危险语义色")
+	_require(common_card.icon_view.size.x == 56.0, "装备图标主体占比不符合五列方格规范")
 	rare_card.pressed.emit()
-	_require(rare_card.get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.RARE_BACKGROUND) and rare_card.get_theme_stylebox("normal").border_color.is_equal_approx(CharacterStyle.RARE_BORDER), "选中态覆盖了装备品质颜色")
+	_require(
+		rare_card.background_view.texture.resource_path == "res://assets/art/ui/character/quality_cell_rare.png"
+		and rare_card.selection_frame.visible,
+		"选中态覆盖了装备品质结构"
+	)
 	_require(equipment.detail_sheet.visible and equipment.detail_sheet.action_button.text == "装备", "装备详情没有明确操作")
 	_require(equipment.detail_sheet.get_theme_stylebox("panel").bg_color.is_equal_approx(CharacterStyle.RARE_BACKGROUND), "装备详情没有延续品质背景")
 	_require(equipment.detail_sheet.upgrade_button.disabled and equipment.detail_sheet.lock_button.text == "锁定", "装备详情没有提供等级升级与材料保护入口")
@@ -94,14 +142,21 @@ func _on_process_frame() -> void:
 		and equipment.hero_stage.power_tween != null,
 		"战力提升后没有播放数值增长提示动画"
 	)
-	_require(equipment.slot_buttons["weapon"].get_theme_stylebox("normal").bg_color.is_equal_approx(CharacterStyle.RARE_BACKGROUND), "已装备槽位没有复用品质背景")
+	_require(equipment.slot_buttons["weapon"].background_view.texture.resource_path == "res://assets/art/ui/character/quality_cell_rare.png", "已装备槽位没有复用品质方格")
 	page.select_hero("ember_ranger")
 	var occupied_card: Button = _card_by_id(equipment, str(rare["instance_id"]))
-	_require(occupied_card != null and occupied_card.owner_label.text.contains("星潮守望者"), "跨英雄占用装备被隐藏")
+	_require(
+		occupied_card != null
+		and occupied_card.owner_backing.visible
+		and occupied_card.owner_avatar.texture is AtlasTexture
+		and occupied_card.owner_avatar.texture.atlas.resource_path == "res://assets/art/characters/star_tide_warden.png",
+		"跨英雄占用装备没有显示右上归属头像"
+	)
 	occupied_card.pressed.emit()
 	_require(equipment.detail_sheet.action_button.disabled, "其他英雄使用中的装备仍可直接穿戴")
 	page.show_section("status")
-	_require(page.status_panel.metric_values.size() == 4 and page.status_panel.breakdown_values.size() == 4, "状态页没有使用分层属性卡")
+	_require(page.status_panel.metric_values.size() == 4 and page.status_panel.size.y == 506.0, "状态页没有保留核心属性并移除重复战力拆分")
+	_require(page.status_panel.name_label.get_theme_font("font").resource_path == "res://assets/fonts/SmileySans-Oblique.otf", "角色页重要标题没有使用 Smiley Sans")
 	page.show_section("skills")
 	_require(page.skill_panel.skill_cards.size() == 3 and page.skill_panel.skill_buttons.size() == 3, "技能培养卡不完整")
 	_require(not page.skill_panel.skill_locks[1] is Label, "未发现技能仍使用空心菱形占位符")
@@ -116,15 +171,17 @@ func _on_process_frame() -> void:
 			page.skill_panel.skill_locks[locked_index].size.x >= 60.0
 			and page.skill_panel.skill_locks[locked_index].position.x < page.skill_panel.skill_names[locked_index].position.x
 			and page.skill_panel.skill_names[locked_index].visible
-			and page.skill_panel.skill_names[locked_index].text == "未发现技艺"
-			and page.skill_panel.skill_effects[locked_index].text == "远征中获得后开放培养"
+			and page.skill_panel.skill_names[locked_index].text == "未发现"
+			and not page.skill_panel.skill_effects[locked_index].visible
 			and not page.skill_panel.skill_buttons[locked_index].visible,
-			"锁定技能没有使用左侧锁徽章与连续说明行"
+			"锁定技能没有使用左侧锁徽章与精简文案"
 		)
-	_require(page.skill_panel.status_label.text.contains("远征中发现"), "技能解锁说明没有收敛为单条全局提示")
+	_require(page.skill_panel.status_label.text == "远征发现后可培养", "技能解锁说明没有收敛为单条全局提示")
+	screen.show_page("start")
+	_require(screen.screen_background.texture.resource_path == "res://assets/art/sunlit/backgrounds/expedition_route_map.png", "离开角色页后没有恢复首页地图")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(storage_path))
 	if not failed:
-		print("CHARACTER_UI_OK hero_stage=188 slots=3 inventory_grid=4 filters=4 detail_confirm=true rarity_backgrounds=3 ownership=true")
+		print("CHARACTER_UI_OK title_asset=true power_plate=true hero_stage=250 slots=6 inventory_grid=5 tray_height=252 quality_assets=3 ownership_avatar=true")
 	quit(1 if failed else 0)
 
 

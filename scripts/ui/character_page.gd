@@ -6,14 +6,21 @@ signal profile_changed
 const HeroCatalog = preload("res://scripts/hero_catalog.gd")
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const CharacterStyle = preload("res://scripts/ui/character_ui_style.gd")
+const CharacterAssets = preload("res://scripts/ui/character_asset_catalog.gd")
 const StatusPanel = preload("res://scripts/ui/character_status_panel.gd")
 const EquipmentPanel = preload("res://scripts/ui/character_equipment_panel.gd")
 const SkillPanel = preload("res://scripts/ui/character_skill_panel.gd")
+const TITLE_PLAQUE := preload("res://assets/art/ui/character/character_title_plaque.png")
+const SECTION_ICONS := {
+	"status": preload("res://assets/art/ui/home/nav_icon_character.png"),
+	"equipment": preload("res://assets/art/ui/home/nav_icon_expedition.png"),
+	"skills": preload("res://assets/art/ui/home/nav_icon_compendium.png"),
+}
 const SECTION_IDS := ["status", "equipment", "skills"]
 const SECTION_NAMES := {"status": "状态", "equipment": "装备", "skills": "技能"}
-const HERO_SWITCHER_Y := 88.0
-const SECTION_TABS_Y := 142.0
-const PANEL_Y := 198.0
+const HERO_SWITCHER_Y := 82.0
+const SECTION_TABS_Y := 82.0
+const PANEL_Y := 150.0
 
 var records: RefCounted
 var audio: Node
@@ -29,6 +36,8 @@ var equipment_panel: Panel
 var skill_panel: Panel
 var hero_rig: Node
 var section_tween: Tween
+var title_plaque: TextureRect
+var title_label: Label
 
 
 func _ready() -> void:
@@ -99,26 +108,46 @@ func set_active(active: bool) -> void:
 
 
 func _build_hero_switcher() -> void:
+	title_plaque = TextureRect.new()
+	title_plaque.name = "TitlePlaque"
+	title_plaque.position = Vector2(18, 6)
+	title_plaque.size = Vector2(250, 77)
+	title_plaque.texture = TITLE_PLAQUE
+	title_plaque.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_plaque.stretch_mode = TextureRect.STRETCH_SCALE
+	title_plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(title_plaque)
+	title_label = UiFactory.surface_label("角色中心", 26, UiFactory.INK)
+	title_label.position = Vector2(72, 18)
+	title_label.size = Vector2(174, 46)
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	UiFactory.apply_inner_page_title(title_label, 26)
+	title_plaque.add_child(title_label)
 	var plate := Panel.new()
 	plate.name = "HeroSwitcher"
-	plate.position = Vector2(18, HERO_SWITCHER_Y)
-	plate.size = Vector2(504, 46)
-	CharacterStyle.apply_continuous_panel(plate, Color(UiFactory.SURFACE_ALT, 0.72), Color(UiFactory.PRIMARY, 0.5), 6.0)
+	plate.position = Vector2(50, HERO_SWITCHER_Y)
+	plate.size = Vector2(220, 56)
+	plate.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(plate)
 	var row := HBoxContainer.new()
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	row.offset_left = 5
-	row.offset_top = 3
-	row.offset_right = -5
-	row.offset_bottom = -3
-	row.add_theme_constant_override("separation", 4)
+	row.offset_left = 2
+	row.offset_top = 1
+	row.offset_right = -2
+	row.offset_bottom = -1
+	row.add_theme_constant_override("separation", 8)
 	plate.add_child(row)
 	for hero_id in HeroCatalog.ids():
 		var button := Button.new()
-		button.text = HeroCatalog.hero(hero_id)["name"]
-		button.custom_minimum_size = Vector2(0, 40)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 14)
+		button.text = ""
+		button.icon = CharacterAssets.hero_avatar_texture(hero_id)
+		button.expand_icon = true
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+		button.add_theme_constant_override("icon_max_width", 44)
+		button.custom_minimum_size = Vector2(104, 54)
+		button.tooltip_text = str(HeroCatalog.hero(hero_id)["name"])
+		button.accessibility_name = "切换至%s" % HeroCatalog.hero(hero_id)["name"]
 		button.pressed.connect(_select_hero_from_ui.bind(hero_id))
 		row.add_child(button)
 		hero_buttons[hero_id] = button
@@ -126,16 +155,21 @@ func _build_hero_switcher() -> void:
 
 func _build_sections() -> void:
 	var row := HBoxContainer.new()
-	row.position = Vector2(18, SECTION_TABS_Y)
-	row.size = Vector2(504, 48)
-	row.add_theme_constant_override("separation", 4)
+	row.position = Vector2(296, SECTION_TABS_Y)
+	row.size = Vector2(168, 56)
+	row.add_theme_constant_override("separation", 6)
 	add_child(row)
 	for section_id in SECTION_IDS:
 		var button := Button.new()
-		button.text = SECTION_NAMES[section_id]
-		button.custom_minimum_size = Vector2(0, 48)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 16)
+		button.text = ""
+		button.icon = SECTION_ICONS[section_id]
+		button.expand_icon = true
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+		button.add_theme_constant_override("icon_max_width", 32)
+		button.custom_minimum_size = Vector2(52, 54)
+		button.tooltip_text = SECTION_NAMES[section_id]
+		button.accessibility_name = "%s页" % SECTION_NAMES[section_id]
 		button.pressed.connect(_show_section_from_ui.bind(section_id))
 		row.add_child(button)
 		section_buttons[section_id] = button

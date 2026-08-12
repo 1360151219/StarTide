@@ -19,7 +19,7 @@ const DANGER := Color("e45b5b")
 const DANGER_DARK := Color("9f343b")
 const HEALING := Color("58b985")
 const BLOCK := Color("6e91b3")
-const RARE := Color("6c86c8")
+const RARE := Color("42b873")
 const DISABLED := Color("8a9995")
 const HUD_SURFACE := Color(0.075, 0.22, 0.25, 0.95)
 const HUD_SURFACE_ALT := Color(0.10, 0.31, 0.34, 0.94)
@@ -61,6 +61,15 @@ static func label(text: String, font_size: int, color: Color, outlined := true) 
 
 static func surface_label(text: String, font_size: int, color := INK) -> Label:
 	return label(text, font_size, color, false)
+
+
+static func texture_rect(texture: Texture2D, mode := TextureRect.STRETCH_SCALE) -> TextureRect:
+	var view := TextureRect.new()
+	view.texture = texture
+	view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	view.stretch_mode = mode
+	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return view
 
 
 static func apply_key_heading(node: Label, font_size := 22, color := INK) -> void:

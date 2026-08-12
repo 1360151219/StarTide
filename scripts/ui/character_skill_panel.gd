@@ -29,7 +29,7 @@ func _ready() -> void:
 	_build_header()
 	for index in range(3):
 		_build_skill_card(index)
-	status_label = CharacterStyle.add_label(self, "远征中发现技能后，即可永久培养", 14, CharacterStyle.MUTED, Vector2(18, 446), Vector2(306, 50))
+	status_label = CharacterStyle.add_label(self, "远征发现后可培养", 14, CharacterStyle.MUTED, Vector2(18, 446), Vector2(306, 50))
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	reset_button = Button.new()
@@ -57,7 +57,8 @@ func _build_header() -> void:
 	header.size = Vector2(476, 72)
 	CharacterStyle.apply_continuous_panel(header, UiFactory.SURFACE_ALT, Color(UiFactory.PRIMARY, 0.62), 8.0)
 	add_child(header)
-	CharacterStyle.add_label(header, "技能培养", 20, UiFactory.INK, Vector2(16, 10), Vector2(180, 28))
+	var heading := CharacterStyle.add_label(header, "技能培养", 20, UiFactory.INK, Vector2(16, 10), Vector2(180, 28))
+	UiFactory.apply_key_heading(heading, 20)
 	points_label = CharacterStyle.add_label(header, "", 22, UiFactory.ACCENT_DARK, Vector2(330, 8), Vector2(128, 32), HORIZONTAL_ALIGNMENT_RIGHT)
 	points_label.tooltip_text = "可用技能点"
 	invested_label = CharacterStyle.add_label(header, "", 14, UiFactory.MUTED_INK, Vector2(16, 40), Vector2(442, 22), HORIZONTAL_ALIGNMENT_RIGHT)
@@ -145,12 +146,13 @@ func _set_discovered_state(index: int, discovered: bool) -> void:
 	skill_icons[index].visible = discovered
 	skill_locks[index].visible = not discovered
 	skill_names[index].visible = true
+	skill_names[index].position.y = 10 if discovered else 35
 	skill_levels[index].visible = discovered
-	skill_effects[index].visible = true
+	skill_effects[index].visible = discovered
 	skill_buttons[index].visible = discovered
 	if not discovered:
-		skill_names[index].text = "未发现技艺"
-		skill_effects[index].text = "远征中获得后开放培养"
+		skill_names[index].text = "未发现"
+		skill_effects[index].text = ""
 	skill_cards[index].modulate = Color.WHITE if discovered else Color(0.82, 0.87, 0.84)
 
 
