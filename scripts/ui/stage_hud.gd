@@ -4,6 +4,7 @@ const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
 const BattleRouteProgress = preload("res://scripts/ui/battle_route_progress.gd")
+const CompactProgressBar = preload("res://scripts/ui/compact_progress_bar.gd")
 const BATTLE_PROGRESS_FRAME := preload("res://assets/art/ui/battle/battle_progress_frame.png")
 
 var stage_label: Label
@@ -13,7 +14,7 @@ var status_panel: Panel
 var route_progress: Control
 var elite_panel: Panel
 var elite_name: Label
-var elite_health: ProgressBar
+var elite_health: Control
 var boss_phase_ticks: Array[ColorRect] = []
 var previous_boss_phase := -1
 var banner: Panel
@@ -21,6 +22,9 @@ var banner_title: Label
 var banner_subtitle: Label
 var banner_time := 0.0
 var elite_active := false
+var elite_marker_visible := false
+var elite_marker_position := Vector2.ZERO
+var elite_marker_direction := Vector2.UP
 
 
 func _ready() -> void:
@@ -84,6 +88,7 @@ func refresh(_stage: StageConfig, passive_text: String, passive_color: Color, ma
 	item_label.text = "磁吸状态  %ds" % magnet_seconds
 	passive_label.visible = not item_label.visible
 	elite_active = is_instance_valid(elite)
+	_update_elite_marker(elite)
 	if is_instance_valid(elite):
 		elite_panel.visible = banner_time <= 0.0
 		status_panel.visible = false
@@ -103,6 +108,40 @@ func refresh(_stage: StageConfig, passive_text: String, passive_color: Color, ma
 		for tick in boss_phase_ticks:
 			tick.visible = false
 		previous_boss_phase = -1
+
+
+func _update_elite_marker(elite: Node) -> void:
+	elite_marker_visible = false
+	if is_instance_valid(elite):
+		var target: Vector2 = get_global_transform_with_canvas().affine_inverse() * elite.get_global_transform_with_canvas().origin
+		var visible_battle := Rect2(Vector2(0, 152), size - Vector2(0, 152))
+		elite_marker_visible = not visible_battle.has_point(target)
+		var center := size * 0.5
+		var offset := target - center
+		elite_marker_direction = offset.normalized()
+		var bounds := Rect2(Vector2(40, 180), size - Vector2(80, 330))
+		var reach := 1.0
+		if not is_zero_approx(offset.x):
+			reach = minf(reach, ((bounds.end.x if offset.x > 0 else bounds.position.x) - center.x) / offset.x)
+		if not is_zero_approx(offset.y):
+			reach = minf(reach, ((bounds.end.y if offset.y > 0 else bounds.position.y) - center.y) / offset.y)
+		elite_marker_position = center + offset * reach
+	queue_redraw()
+
+
+func _draw() -> void:
+	if not elite_marker_visible:
+		return
+	var point := elite_marker_position
+	var direction := elite_marker_direction
+	var tangent := direction.orthogonal()
+	draw_circle(point, 18.0, Color(UiFactory.SURFACE, 0.94))
+	draw_arc(point, 18.0, 0.0, TAU, 24, UiFactory.DANGER, 2.0, true)
+	var crown := PackedVector2Array([point + Vector2(-10, 6), point + Vector2(-10, -5), point + Vector2(-4, 0), point + Vector2(0, -9), point + Vector2(4, 0), point + Vector2(10, -5), point + Vector2(10, 6), point + Vector2(-10, 6)])
+	draw_polyline(crown, UiFactory.INK, 2.0, true)
+	var arrow := PackedVector2Array([point + direction * 24.0 - tangent * 7.0, point + direction * 32.0, point + direction * 24.0 + tangent * 7.0])
+	draw_polyline(arrow, UiFactory.INK, 5.0, true)
+	draw_polyline(arrow, UiFactory.DANGER, 2.5, true)
 
 
 func show_banner(title: String, subtitle: String, duration: float) -> void:
@@ -153,12 +192,10 @@ func _build_elite_panel() -> void:
 	elite_name.clip_text = true
 	elite_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	elite_panel.add_child(elite_name)
-	elite_health = ProgressBar.new()
+	elite_health = CompactProgressBar.new()
 	elite_health.position = Vector2(16, 26)
+	elite_health.configure_colors(UiFactory.DANGER, Color(0.35, 0.5, 0.52, 0.24), 4.0)
 	elite_health.size = Vector2(316, 8)
-	elite_health.show_percentage = false
-	elite_health.add_theme_stylebox_override("background", UiFactory.flat_bar_style(Color(0.35, 0.5, 0.52, 0.24), 4.0))
-	elite_health.add_theme_stylebox_override("fill", UiFactory.flat_bar_style(UiFactory.DANGER, 4.0))
 	elite_panel.add_child(elite_health)
 	for ratio in [0.33, 0.66]:
 		var tick := ColorRect.new()

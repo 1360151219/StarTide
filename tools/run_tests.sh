@@ -48,6 +48,10 @@ run_and_check progression PROGRESSION_OK --script res://tools/test_hero_progress
 run_and_check power_equipment POWER_EQUIPMENT_OK --script res://tools/test_power_equipment.gd
 run_and_check equipment_progression EQUIPMENT_PROGRESSION_OK --script res://tools/test_equipment_progression.gd
 run_and_check heroes HEROES_OK --script res://tools/test_hero_systems.gd
+run_and_check combat_experience COMBAT_EXPERIENCE_OK --script res://tools/test_combat_experience.gd
+run_and_check frost_slash_visual FROST_SLASH_VISUAL_OK --script res://tools/test_frost_slash_visual.gd
+run_and_check skill_motion SKILL_MOTION_OK --script res://tools/test_skill_motion.gd
+run_and_check skill_materials SKILL_MATERIALS_OK --script res://tools/test_skill_materials.gd
 run_and_check run_safety RUN_SAFETY_OK --script res://tools/test_run_safety.gd
 run_and_check run_balance_sample RUN_BALANCE_SAMPLE_OK --script res://tools/test_run_balance_sample.gd
 run_and_check hero_rig HERO_RIG_OK --script res://tools/test_hero_rig.gd
@@ -69,4 +73,4 @@ if [ "$FAILED" -ne 0 ]; then
   exit 1
 fi
 
-printf 'ALL_TESTS_OK suites=31 responsive_profiles=4 content_catalogs=data_driven expedition_route=stable_shell presentation=budgeted engine_errors=false\n'
+printf 'ALL_TESTS_OK suites=35 responsive_profiles=4 content_catalogs=data_driven expedition_route=stable_shell presentation=budgeted engine_errors=false\n'

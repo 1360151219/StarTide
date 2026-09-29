@@ -85,8 +85,17 @@ func _on_process_frame() -> void:
 	elif frame_count == 232:
 		game.pause_overlay.resume_requested.emit()
 		game.session.add_experience(40)
+	elif frame_count == 238 and game.upgrade_overlay.visible:
+		game.upgrade_overlay.reveal_tween.kill()
+		for button in game.upgrade_overlay.buttons:
+			button.position = button.get_meta("rest_position", button.position)
+			button.modulate = Color.WHITE
 	elif frame_count == 244:
 		_capture("upgrade_ember.png")
+	elif frame_count == 248:
+		_show_branch_preview(game)
+	elif frame_count == 250:
+		_capture("upgrade_branch.png")
 	elif frame_count == 252:
 		_prepare_ember_ultimate(game)
 	elif frame_count == 264:
@@ -167,6 +176,16 @@ func _prepare_ember_ultimate(game: Node) -> void:
 	session.skills.advance(0.1, 0.1, session.state.elapsed)
 	session.pause()
 	game.refresh_presentation()
+
+
+func _show_branch_preview(game: Node) -> void:
+	var branch_choice := {
+		"choice_key": "skill:ember_volley:branch:ember_volley_flock", "kind": "skill_branch",
+		"content_id": "ember_volley", "target_level": 2, "branch_id": "ember_volley_flock",
+		"title": "烬羽连矢 · 群羽纷飞", "description": "增加箭矢数量与扇面，清理成群敌人。",
+	}
+	var presenter = game.upgrade_overlay.UpgradeChoicePresenter
+	game.upgrade_overlay.choice_cards[0].present(branch_choice, presenter.view_model(branch_choice))
 
 
 func _settle_character_page(game: Node) -> void:

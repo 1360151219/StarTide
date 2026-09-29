@@ -41,11 +41,16 @@ func _draw_pickup_bomb(center: Vector2, radius: float, progress: float, alpha: f
 	draw_arc(center, ring, 0.0, TAU, 64, Color(1.0, 0.82, 0.36, alpha), 3.5)
 
 
-func _draw_grub_trail(center: Vector2, radius: float, _progress: float, alpha: float, data: Dictionary) -> void:
+func _draw_grub_trail(center: Vector2, radius: float, progress: float, alpha: float, data: Dictionary) -> void:
 	var direction: Vector2 = data.get("direction", Vector2.RIGHT)
 	for index in range(4):
-		var offset := -direction * index * radius * 0.5 + direction.orthogonal() * sin(index * 2.1) * 5.0
-		draw_circle(center + offset, maxf(1.0, radius * (0.28 - index * 0.035)), Color(0.28, 0.42, 0.24, alpha * (0.5 - index * 0.08)))
+		var side := -1.0 if index % 2 == 0 else 1.0
+		var drift := 1.0 - pow(1.0 - progress, 2.0)
+		var offset := -direction * radius * (0.25 + index * 0.25 + drift * 0.3) + direction.orthogonal() * side * (3.0 + drift * 9.0)
+		var point := center + offset
+		var size := (4.0 - index * 0.5) * alpha
+		draw_line(point - direction * size, point + direction * size, Color(0.2, 0.35, 0.18, alpha * 0.55), 3.5, true)
+		draw_line(point - direction * size, point, Color(0.8, 0.85, 0.57, alpha * 0.7), 1.6, true)
 
 
 func _draw_grub_recover(center: Vector2, radius: float, progress: float, alpha: float) -> void:
@@ -54,19 +59,24 @@ func _draw_grub_recover(center: Vector2, radius: float, progress: float, alpha: 
 		_draw_small_star(center + Vector2(0, -radius) + Vector2.from_angle(angle) * radius * 0.55, 5.0, Color(1.0, 0.88, 0.34, alpha), Color(0.16, 0.32, 0.22, alpha))
 
 
-func _draw_bat_launch(center: Vector2, radius: float, progress: float, alpha: float) -> void:
-	for index in range(8):
-		var direction := Vector2.from_angle(index * TAU / 8.0 + progress)
-		draw_line(center + direction * radius * 0.2, center + direction * radius * (0.4 + progress), Color(0.37, 0.16, 0.5, alpha), 5.0, true)
-		draw_line(center + direction * radius * 0.2, center + direction * radius * (0.4 + progress), Color(1.0, 0.58, 0.28, alpha), 2.0, true)
+func _draw_bat_launch(center: Vector2, radius: float, progress: float, alpha: float, data: Dictionary) -> void:
+	var direction := Vector2(data.get("direction", Vector2.RIGHT)).normalized()
+	for side in [-1.0, 1.0]:
+		var point := center + direction * radius * (0.3 + progress * 0.6)
+		var wing := PackedVector2Array([point - direction * radius * 0.45 + direction.orthogonal() * side * radius * 0.4 * alpha, point, point + direction * 5.0])
+		draw_polyline(wing, Color(0.22, 0.08, 0.3, alpha), 5.0, true)
+		draw_polyline(wing, Color(1.0, 0.68, 0.4, alpha), 2.0, true)
 
 
 func _draw_bat_impact(center: Vector2, radius: float, progress: float, alpha: float, dissolve: bool) -> void:
 	for index in range(7):
 		var angle := index * TAU / 7.0 + progress * (1.2 if dissolve else -0.6)
-		var point := center + Vector2.from_angle(angle) * radius * (0.2 + progress)
-		draw_circle(point, maxf(1.0, 4.0 * alpha), Color(0.55, 0.34, 0.84, alpha * (0.65 if dissolve else 1.0)))
-	draw_arc(center, radius * (0.35 + progress), 0.0, TAU, 28, Color(1.0, 0.56, 0.28, alpha * 0.72), 2.0)
+		var direction := Vector2.from_angle(angle)
+		var point := center + direction * radius * (0.2 + (1.0 - pow(1.0 - progress, 2.0)) * 0.7)
+		var chip := PackedVector2Array([point + direction * 5.0 * alpha, point + direction.orthogonal() * 3.0 * alpha, point - direction * 4.0 * alpha])
+		draw_colored_polygon(chip, Color(0.55, 0.34, 0.84, alpha * (0.65 if dissolve else 1.0)))
+	if not dissolve:
+		draw_arc(center, radius * (0.75 + progress * 0.25), -PI * 0.8, PI * 0.8, 28, Color(1.0, 0.56, 0.28, alpha * alpha * 0.72), 2.0)
 
 
 func _draw_elite_burst(center: Vector2, radius: float, progress: float, alpha: float, defeated: bool) -> void:

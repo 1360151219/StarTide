@@ -33,7 +33,8 @@ static func _hero_entries() -> Array:
 		result.append({
 			"id": hero_id,
 			"name": hero["name"],
-			"subtitle": "%s · 生命 %d · 移速 %d" % [hero["title"], hero["max_health"], hero["speed"]],
+			"subtitle": hero["title"],
+			"summary": "生命 %d   移速 %d" % [hero["max_health"], hero["speed"]],
 			"description": "%s\n固有 · %s：%s" % [hero["description"].replace("\n", "；"), hero["passive_name"], hero["passive_description"]],
 			"texture": HERO_TEXTURES[hero_id],
 			"accent": Color("70e8ff") if hero_id == "star_warden" else Color("ff9a62"),
@@ -75,8 +76,11 @@ static func _skill_entries() -> Array:
 		result.append({
 			"id": skill_id,
 			"name": skill["name"],
-			"subtitle": "%s专属 · 终极：%s" % [HeroCatalog.hero(hero_id)["name"], skill["ultimate_name"]],
-			"description": "I · %s\n终极 · %s" % [skill["descriptions"][1], skill["descriptions"][int(skill["max_level"])]],
+			"subtitle": "",
+			"owner_hero_id": hero_id,
+			"owner_name": HeroCatalog.hero(hero_id)["name"],
+			"summary": "终极 · %s" % skill["ultimate_name"],
+			"description": "基础效果\n%s\n\n终极效果\n%s" % [skill["descriptions"][1], skill["descriptions"][int(skill["max_level"])]],
 			"branches": branch_entries,
 			"texture": skill["icon"],
 			"accent": Color("70e8ff") if hero_id == "star_warden" else Color("ff9a62"),
@@ -92,8 +96,8 @@ static func _relic_entries() -> Array:
 		result.append({
 			"id": relic_id,
 			"name": relic["name"],
-			"subtitle": "局内遗物 · 最高 III 级",
-			"description": "%s\n每局最多装备 4 种不同遗物。" % relic["description"],
+			"subtitle": "局内遗物",
+			"description": "最高 III 级\n%s\n每局最多装备 4 种不同遗物。" % relic["description"],
 			"texture": RelicCatalog.icon(relic_id),
 			"accent": Color("f6d782"),
 		})

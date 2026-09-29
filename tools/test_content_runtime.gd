@@ -21,7 +21,7 @@ func _initialize() -> void:
 func _test_runtime_pools_and_discovery() -> void:
 	var records := RunRecords.new("")
 	var session := _create_session("level_01", records, 810)
-	_require(Array(session.skill_pool_ids) == ["star_lance"], "第一关没有只开放所选英雄签名技能")
+	_require(Array(session.skill_pool_ids) == ["star_lance", "sun_orbit"], "第一关没有开放签名技能与寒冰斩的两技能构筑")
 	_require(session.relic_pool_ids.size() == 2, "第一关遗物引入池数量错误")
 	_require(records.is_content_discovered("skills", "star_lance"), "签名技能没有在出征时发现")
 	_require(not records.is_content_discovered("enemies", "bat") and not records.is_content_discovered("enemies", "brute"), "第一关提前发现后续怪物")

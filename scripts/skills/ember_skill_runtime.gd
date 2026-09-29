@@ -4,6 +4,7 @@ signal skill_released(skill_id: String)
 
 const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 const CombatTimeline = preload("res://scripts/combat/combat_timeline.gd")
+const MeteorVisual = preload("res://scripts/skills/meteor_rain_visual.gd")
 const METEOR_FALL_TIME := 0.34
 const PHOENIX_IMPACT_TIME := 0.18
 
@@ -20,6 +21,8 @@ var volley_timer := 0.25
 var meteor_timer := 1.0
 var phoenix_timer := 1.0
 var timeline := CombatTimeline.new()
+var phoenix_visual: Dictionary = {}
+var next_visual_id := 0
 
 
 func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Node2D, combat_effects: Node2D, audio_manager: Node, random: RandomNumberGenerator, skill_levels: Dictionary, permanent_modifiers: Dictionary, build: RefCounted) -> void:
@@ -35,6 +38,7 @@ func configure(player_node: Node2D, enemy_system: Node2D, projectile_system: Nod
 
 
 func advance(skill_delta: float, real_delta: float, _elapsed: float) -> void:
+	_advance_visual(real_delta)
 	timeline.advance(real_delta)
 	_update_ember_volley(skill_delta)
 	_update_meteor_rain(skill_delta)
@@ -42,6 +46,8 @@ func advance(skill_delta: float, real_delta: float, _elapsed: float) -> void:
 
 
 func after_upgrade(skill_id: String) -> void:
+	if skill_id == "ember_volley":
+		volley_timer = minf(volley_timer, 0.3)
 	if skill_id == "meteor_rain":
 		meteor_timer = minf(meteor_timer, 0.3)
 	elif skill_id == "phoenix_heart":
@@ -66,26 +72,28 @@ func _update_ember_volley(delta: float) -> void:
 	var skill_level: int = levels.get("ember_volley", 0)
 	if skill_level <= 0:
 		return
-	volley_timer -= delta
+	volley_timer = maxf(0.0, volley_timer - delta)
 	if volley_timer > 0.0:
 		return
 	var data: Dictionary = SkillCatalog.skill("ember_volley")["runtime"]
-	volley_timer = data["cooldown"][skill_level] * _multiplier("ember_volley", "cooldown_multiplier")
 	var target: Node = enemies.nearest_enemy(player.position)
 	if target == null:
 		return
+	volley_timer = data["cooldown"][skill_level] * _multiplier("ember_volley", "cooldown_multiplier")
 	var base_angle: float = player.position.direction_to(target.position).angle()
 	var count := int(_stat("ember_volley", "count", data["count"][skill_level]))
 	var spread_step := float(_stat("ember_volley", "spread", data["spread"][skill_level]))
+	var branch_id := str(build_state.skill_branches.get("ember_volley", ""))
 	for index in range(count):
 		var spread: float = (index - (count - 1) * 0.5) * spread_step
 		projectiles.spawn_projectile({
-			"position": player.position, "angle": base_angle + spread,
+			"position": player.position, "angle": base_angle + spread, "player": player,
 			"speed": data["speed"][skill_level] * _multiplier("ember_volley", "projectile_speed_multiplier"),
 			"damage": data["damage"][skill_level] * _multiplier("ember_volley", "damage_multiplier"), "radius": data["radius"][skill_level],
 			"pierce": int(_stat("ember_volley", "pierce", data["pierce"][skill_level])),
 			"blast_radius": data["blast_radius"][skill_level] * _multiplier("ember_volley", "range_multiplier") * _branch_multiplier("ember_volley", "blast_radius_multiplier"),
-			"visual_kind": "ember_arrow", "source_id": "skill:ember_volley",
+			"visual_kind": "ember_arrow", "source_id": "skill:ember_volley", "skill_level": skill_level,
+			"branch_id": branch_id, "volley_index": index, "volley_count": count,
 		})
 	skill_released.emit("ember_volley")
 	audio.play_sfx("skill_ember_volley", -1.0, rng.randf_range(0.95, 1.05))
@@ -95,13 +103,17 @@ func _update_meteor_rain(delta: float) -> void:
 	var skill_level: int = levels.get("meteor_rain", 0)
 	if skill_level <= 0:
 		return
-	meteor_timer -= delta
+	meteor_timer = maxf(0.0, meteor_timer - delta)
 	if meteor_timer > 0.0:
+		return
+	if enemies.nearest_enemy(player.position) == null:
 		return
 	var data: Dictionary = SkillCatalog.skill("meteor_rain")["runtime"]
 	meteor_timer = data["cooldown"][skill_level] * _multiplier("meteor_rain", "cooldown_multiplier")
 	skill_released.emit("meteor_rain")
-	audio.play_sfx("skill_meteor_rain", 1.0, rng.randf_range(0.96, 1.03))
+	var branch_id := str(build_state.skill_branches.get("meteor_rain", ""))
+	var cast_pitch := 0.97 if branch_id == "meteor_rain_focus" else 1.04 if branch_id == "meteor_rain_scatter" else 1.0
+	audio.play_sfx("skill_meteor_rain", 1.0, cast_pitch * rng.randf_range(0.98, 1.02))
 	var candidates: Array[Node] = []
 	for enemy in enemies.snapshot():
 		if is_instance_valid(enemy):
@@ -116,12 +128,14 @@ func _update_meteor_rain(delta: float) -> void:
 		var target_position: Vector2 = candidates[index].position
 		var radius: float = data["radius"][skill_level] * _multiplier("meteor_rain", "range_multiplier") * _branch_multiplier("meteor_rain", "radius_multiplier")
 		var fall_time := METEOR_FALL_TIME + index * 0.055
-		effects.add_effect(target_position, radius, Color("ffb43f"), fall_time, "meteor_warning")
+		var visual_data := {"level": skill_level, "branch_id": branch_id, "fall_time": fall_time, "player": player}
+		effects.add_effect(target_position, radius, Color("ffb43f"), fall_time, "meteor_warning", visual_data)
 		timeline.schedule(
 			fall_time,
 			_resolve_meteor_impact.bind(
 				target_position, radius,
-				data["damage"][skill_level] * _multiplier("meteor_rain", "damage_multiplier")
+				data["damage"][skill_level] * _multiplier("meteor_rain", "damage_multiplier"),
+				skill_level, branch_id
 			),
 			"meteor_rain"
 		)
@@ -137,35 +151,50 @@ func _update_phoenix_heart(delta: float) -> void:
 	var data: Dictionary = SkillCatalog.skill("phoenix_heart")["runtime"]
 	phoenix_timer = data["cooldown"][skill_level] * _multiplier("phoenix_heart", "cooldown_multiplier")
 	skill_released.emit("phoenix_heart")
-	audio.play_sfx("skill_phoenix_heart", 0.0, rng.randf_range(0.97, 1.03))
+	var branch_id := str(build_state.skill_branches.get("phoenix_heart", ""))
+	var cast_pitch := 0.97 if branch_id == "phoenix_heart_inferno" else 1.04 if branch_id == "phoenix_heart_rebirth" else 1.0
+	audio.play_sfx("skill_phoenix_heart", 0.0, cast_pitch * rng.randf_range(0.98, 1.02))
 	var radius: float = data["radius"][skill_level] * _multiplier("phoenix_heart", "range_multiplier") * _branch_multiplier("phoenix_heart", "radius_multiplier")
 	var center := player.position
-	effects.add_effect(center, radius, Color("ff9b3d"), 0.48, "phoenix")
+	var visual_duration := 0.46 if skill_level == 5 else 0.42
+	phoenix_visual = {
+		"origin": center, "radius": radius, "level": skill_level, "branch_id": branch_id,
+		"visual_id": next_visual_id, "duration": visual_duration, "time_left": visual_duration,
+	}
+	next_visual_id += 1
 	timeline.schedule(
 		PHOENIX_IMPACT_TIME,
 		_resolve_phoenix_impact.bind(
 			center, radius,
 			data["damage"][skill_level] * _multiplier("phoenix_heart", "damage_multiplier"),
-			data["healing"][skill_level] * _multiplier("phoenix_heart", "healing_multiplier")
+			data["healing"][skill_level] * _multiplier("phoenix_heart", "healing_multiplier"),
+			skill_level, branch_id
 		),
 		"phoenix_heart"
 	)
 
 
-func _resolve_meteor_impact(center: Vector2, radius: float, damage: float) -> void:
+func _resolve_meteor_impact(center: Vector2, radius: float, damage: float, level: int, branch_id: String) -> void:
 	enemies.damage_area(center, radius, damage, null, "skill:meteor_rain")
-	effects.add_effect(center, radius, Color("ff7a35"), 0.46, "meteor_impact")
+	effects.add_effect(center, radius, Color("ff7a35"), MeteorVisual.IMPACT_DURATION, "meteor_impact", {"level": level, "branch_id": branch_id, "player": player})
 	audio.play_sfx("meteor_impact", -1.0, rng.randf_range(0.96, 1.04))
 
 
-func _resolve_phoenix_impact(center: Vector2, radius: float, damage: float, healing: float) -> void:
+func _resolve_phoenix_impact(center: Vector2, radius: float, damage: float, healing: float, level: int, branch_id: String) -> void:
 	if not is_instance_valid(player):
 		return
 	player.heal(healing, "skill:phoenix_heart")
-	effects.add_heal_number(player.position - Vector2(18.0, 36.0), healing)
 	enemies.damage_area(center, radius, damage, null, "skill:phoenix_heart")
-	effects.add_effect(center, radius, Color("ff9b3d"), 0.42, "phoenix_impact")
+	effects.add_effect(center, radius, Color("ff9b3d"), 0.24, "phoenix_impact", {"level": level, "branch_id": branch_id})
 	audio.play_sfx("phoenix_impact", -1.0, rng.randf_range(0.97, 1.03))
+
+
+func _advance_visual(delta: float) -> void:
+	if phoenix_visual.is_empty():
+		return
+	phoenix_visual["time_left"] = float(phoenix_visual["time_left"]) - delta
+	if float(phoenix_visual["time_left"]) <= 0.0:
+		phoenix_visual.clear()
 
 
 func _shuffle(values: Array) -> void:

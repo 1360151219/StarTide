@@ -23,6 +23,11 @@ func _init(random: RandomNumberGenerator) -> void:
 
 func build_structured_choices(build_state: RefCounted, skill_pool_ids, relic_pool_ids, health_ratio := 1.0) -> Array:
 	var required_choice_keys := _ultimate_pity_choice_keys(build_state)
+	if build_state.skill_levels.size() == 1 and build_state.relic_levels.is_empty() and build_state.skill_levels.values()[0] == 1:
+		for choice in planner.legal_candidates(build_state, skill_pool_ids, relic_pool_ids, health_ratio):
+			if choice["kind"] == SKILL_UNLOCK:
+				required_choice_keys.append(choice["choice_key"])
+				break
 	var choices: Array = planner.pick_group(build_state, skill_pool_ids, relic_pool_ids, health_ratio, "", required_choice_keys)
 	if not choices.is_empty():
 		build_state.record_upgrade_offer(choices)

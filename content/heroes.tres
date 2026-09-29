@@ -7,7 +7,7 @@
 script = ExtResource("2_entry")
 content_id = "star_warden"
 data = {
-"description": "均衡的远程法师\n星枪、日轮与霜潮控场",
+"description": "均衡的远程法师\n星枪、冰斩与霜潮控场",
 "max_health": 100.0,
 "name": "星潮守望者",
 "passive_description": "抵挡下一次伤害，24 秒重新充能",

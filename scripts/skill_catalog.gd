@@ -56,7 +56,7 @@ static func validation_errors() -> PackedStringArray:
 		var data: Dictionary = SKILLS[skill_id]
 		var max_level := int(data.get("max_level", 0))
 		var branch_level := int(data.get("branch_level", 0))
-		if max_level <= 0 or branch_level <= 1 or branch_level >= max_level:
+		if max_level <= 0 or branch_level != 0 and (branch_level <= 1 or branch_level >= max_level):
 			errors.append("%s 技能等级配置无效" % skill_id)
 		var descriptions = data.get("descriptions", [])
 		if not descriptions is Array or descriptions.size() != max_level + 1:
@@ -70,9 +70,11 @@ static func validation_errors() -> PackedStringArray:
 				if not values is Array or values.size() != max_level + 1:
 					errors.append("%s 运行时字段 %s 没有覆盖 0 到 %d 级" % [skill_id, field, max_level])
 		var branches = data.get("branches", {})
-		if not branches is Dictionary or branches.size() != 2:
+		if not branches is Dictionary or branch_level == 0 and not branches.is_empty():
+			errors.append("%s 无分支技能配置无效" % skill_id)
+		elif branch_level > 0 and branches.size() != 2:
 			errors.append("%s 必须配置两个技能分支" % skill_id)
-		elif branches is Dictionary:
+		elif branch_level > 0:
 			for branch_id in branches:
 				var branch_data: Dictionary = branches[branch_id]
 				var overrides = branch_data.get("level_overrides", {})

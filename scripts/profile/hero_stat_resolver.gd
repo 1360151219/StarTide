@@ -15,6 +15,16 @@ const STAT_CAPS := {
 	"projectile_speed_percent": 0.30,
 	"pickup_radius_percent": 0.75,
 }
+const STAT_FLOORS := {
+	"damage_percent": -0.15,
+	"max_health_percent": -0.20,
+	"max_health_flat": 0.0,
+	"cooldown_reduction": -0.12,
+	"move_speed_percent": -0.15,
+	"range_percent": -0.15,
+	"projectile_speed_percent": -0.15,
+	"pickup_radius_percent": -0.25,
+}
 
 
 static func resolve(hero_id: String, progression: Dictionary, equipment_inventory: RefCounted) -> Dictionary:
@@ -102,7 +112,7 @@ static func _equipment_stats(hero_id: String, equipment_inventory: RefCounted) -
 		for stat_id in item["stats"]:
 			result[stat_id] = float(result.get(stat_id, 0.0)) + float(item["stats"][stat_id])
 	for stat_id in STAT_CAPS:
-		result[stat_id] = minf(float(result.get(stat_id, 0.0)), float(STAT_CAPS[stat_id]))
+		result[stat_id] = clampf(float(result.get(stat_id, 0.0)), float(STAT_FLOORS[stat_id]), float(STAT_CAPS[stat_id]))
 	return result
 
 

@@ -1,33 +1,40 @@
 extends Button
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
 const UpgradeChoiceCardStyle = preload("res://scripts/ui/upgrade_choice_card_style.gd")
-
-const INK := UiFactory.INK
-const MUTED_INK := UiFactory.MUTED_INK
-const TEAL := UiFactory.PRIMARY_DARK
+const ICON_MEDALLION := preload("res://assets/art/ui/upgrade/upgrade_icon_medallion.png")
+const TYPE_RIBBON := preload("res://assets/art/ui/upgrade/upgrade_type_ribbon.png")
+const METRIC_ICONS := {
+	"level": preload("res://assets/art/ui/upgrade/metrics/metric_level.png"),
+	"confirm": preload("res://assets/art/ui/upgrade/metrics/metric_trait.png"),
+	"expedition": preload("res://assets/art/ui/upgrade/metrics/metric_target.png"),
+	"heal": preload("res://assets/art/ui/upgrade/metrics/metric_heal.png"),
+	"haste": preload("res://assets/art/ui/upgrade/metrics/metric_speed.png"),
+	"enemy": preload("res://assets/art/ui/upgrade/metrics/metric_damage.png"),
+	"clock": preload("res://assets/art/ui/upgrade/metrics/metric_time.png"),
+	"magnet": preload("res://assets/art/ui/upgrade/metrics/metric_range.png"),
+	"bomb": preload("res://assets/art/ui/upgrade/metrics/metric_range.png"),
+	"count": preload("res://assets/art/ui/upgrade/metrics/metric_count.png"),
+}
 
 var views: Dictionary = {}
 var visible_metric_count := 0
 var shape_id := "skill"
 var rarity_level := 1
-var quality_seams: Array[Panel] = []
 
 
 func _ready() -> void:
-	size = Vector2(480, 176)
+	size = Vector2(452, 168)
 	clip_contents = true
 	alignment = HORIZONTAL_ALIGNMENT_LEFT
 	focus_mode = Control.FOCUS_ALL
 	add_theme_constant_override("outline_size", 0)
-	_build_quality_seams()
 	_build_content()
-	UpgradeChoiceCardStyle.apply_button(self, shape_id, rarity_level, false)
+	UpgradeChoiceCardStyle.apply_button(self, rarity_level, false)
 
 
 func configure(index: int) -> void:
-	position = Vector2(30, 174 + index * 192)
+	position = Vector2(44, 252 + index * 174)
 	set_meta("rest_position", position)
 
 
@@ -35,22 +42,30 @@ func present(choice: Dictionary, view_model: Dictionary) -> void:
 	set_meta("choice_id", str(choice.get("choice_key", "")))
 	accessibility_name = str(choice.get("title", "未知强化"))
 	accessibility_description = str(choice.get("description", ""))
-	tooltip_text = str(choice.get("description", ""))
+	tooltip_text = accessibility_description
 	shape_id = str(view_model.get("shape", "skill"))
 	rarity_level = clampi(int(view_model.get("rarity_level", 1)), 1, 3)
 	views["icon"].texture = view_model["icon"]
+	views["icon"].modulate = Color.WHITE
+	var is_branch := bool(view_model.get("branch", false))
+	var label_over_icon := is_branch or shape_id == "relic"
+	views["type_ribbon"].position.x = 16.0 if label_over_icon else 132.0
+	views["type"].position.x = 28.0 if label_over_icon else 144.0
+	views["icon"].position.y = 43.0 if shape_id == "relic" else 47.0
+	views["icon_ring"].position.y = 36.0 if shape_id == "relic" else 40.0
 	views["type"].text = str(view_model["type"])
+	views["type_ribbon"].modulate = UpgradeChoiceCardStyle.type_modulate(shape_id)
 	views["name"].text = str(view_model["name"])
+	views["description"].text = str(view_model["description"])
 	var metrics: Array = view_model["metrics"]
-	visible_metric_count = metrics.size()
+	visible_metric_count = mini(metrics.size(), 3)
 	for index in range(views["metric_panels"].size()):
-		var shown := index < metrics.size()
+		var shown := index < visible_metric_count
 		views["metric_panels"][index].visible = shown
 		if not shown:
 			continue
 		var metric: Dictionary = metrics[index]
-		views["metric_symbols"][index].set("glyph_id", str(metric["symbol"]))
-		views["metric_symbols"][index].queue_redraw()
+		views["metric_symbols"][index].texture = METRIC_ICONS.get(str(metric["symbol"]), METRIC_ICONS["confirm"])
 		views["metric_labels"][index].text = str(metric["label"])
 		views["metric_values"][index].text = str(metric["value"])
 	_layout_metric_panels(visible_metric_count)
@@ -58,134 +73,104 @@ func present(choice: Dictionary, view_model: Dictionary) -> void:
 	views["special_panel"].visible = not special.is_empty()
 	views["special"].text = special
 	var highlighted := bool(view_model["highlighted"])
-	UpgradeChoiceCardStyle.apply_content(views, quality_seams, shape_id, rarity_level, highlighted)
-	UpgradeChoiceCardStyle.apply_button(self, shape_id, rarity_level, highlighted)
+	UpgradeChoiceCardStyle.apply_content(views, rarity_level, highlighted)
+	views["special_panel"].visible = not special.is_empty()
+	UpgradeChoiceCardStyle.apply_button(self, rarity_level, highlighted)
 
 
 func metric_count() -> int:
 	return visible_metric_count
 
 
-func _build_quality_seams() -> void:
-	for index in range(2):
-		var seam := Panel.new()
-		var inset := 8.0 + index * 4.0
-		seam.position = Vector2(inset, inset)
-		seam.size = size - Vector2(inset * 2.0, inset * 2.0)
-		seam.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color.TRANSPARENT
-		style.border_color = Color(UiFactory.RARE, 0.42 - index * 0.08)
-		style.set_border_width_all(1)
-		style.corner_radius_top_left = 3
-		style.corner_radius_top_right = 8
-		style.corner_radius_bottom_left = 8
-		style.corner_radius_bottom_right = 3
-		seam.add_theme_stylebox_override("panel", style)
-		seam.visible = false
-		add_child(seam)
-		quality_seams.append(seam)
-
-
 func _build_content() -> void:
-	var icon_back := Panel.new()
-	icon_back.position = Vector2(18, 34)
-	icon_back.size = Vector2(108, 108)
-	icon_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_back.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	add_child(icon_back)
-	var icon := TextureRect.new()
-	icon.position = Vector2(12, 10)
-	icon.size = Vector2(84, 84)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_back.add_child(icon)
-	var type_panel := Panel.new()
-	type_panel.position = Vector2(144, 16)
-	type_panel.size = Vector2(126, 28)
-	type_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	type_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	add_child(type_panel)
-	var type_label := _surface_label("", 14, TEAL)
-	type_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	type_label.offset_left = 12.0
-	type_label.offset_right = -12.0
+	var icon := _texture_layer(null, Vector2(23, 47), Vector2(90, 90), TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+	var icon_ring := _texture_layer(ICON_MEDALLION, Vector2(16, 40), Vector2(104, 104))
+	var type_ribbon := _texture_layer(TYPE_RIBBON, Vector2(132, 10), Vector2(128, 30), TextureRect.STRETCH_SCALE)
+	var type_label := _surface_label("", 14, UiFactory.HUD_TEXT)
+	type_label.position = Vector2(144, 11)
+	type_label.size = Vector2(94, 27)
 	type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	type_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	type_label.clip_text = true
-	type_panel.add_child(type_label)
-	var name_label := _surface_label("", 23, INK)
-	name_label.position = Vector2(144, 48)
-	name_label.size = Vector2(310, 38)
+	add_child(type_label)
+	var special_panel := Panel.new()
+	special_panel.position = Vector2(338, 8)
+	special_panel.size = Vector2(100, 28)
+	special_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	special_panel.add_theme_stylebox_override("panel", _special_style())
+	add_child(special_panel)
+	var special := _surface_label("", 14, UiFactory.PRIMARY_DARK)
+	special.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	special.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	special.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	special_panel.add_child(special)
+	var name_label := _surface_label("", 23, UiFactory.INK)
+	UiFactory.apply_key_heading(name_label, 23, UiFactory.INK)
+	name_label.position = Vector2(136, 39)
+	name_label.size = Vector2(302, 31)
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
 	add_child(name_label)
+	var description := _surface_label("", 14, UiFactory.MUTED_INK)
+	description.position = Vector2(136, 70)
+	description.size = Vector2(302, 35)
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.max_lines_visible = 2
+	description.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	add_child(description)
 	var title_rule := ColorRect.new()
-	title_rule.position = Vector2(144, 87)
-	title_rule.size = Vector2(300, 2)
+	title_rule.position = Vector2(136, 106)
+	title_rule.size = Vector2(302, 1)
 	title_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(title_rule)
-	var metric_band := Panel.new()
-	metric_band.position = Vector2(144, 96)
-	metric_band.size = Vector2(300, 60)
+	var metric_band := Control.new()
+	metric_band.position = Vector2(136, 109)
+	metric_band.size = Vector2(302, 52)
 	metric_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	metric_band.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(metric_band)
 	var metric_views := _build_metric_panels(metric_band)
-	var special_panel := _build_special_panel()
 	views = {
-		"icon": icon,
-		"icon_back": icon_back,
-		"type": type_label,
-		"type_panel": type_panel,
-		"name": name_label,
-		"title_rule": title_rule,
-		"metric_panels": metric_views["panels"],
-		"metric_symbols": metric_views["symbols"],
-		"metric_labels": metric_views["labels"],
-		"metric_values": metric_views["values"],
-		"metric_band": metric_band,
-		"special_panel": special_panel,
-		"special": special_panel.get_child(0),
+		"icon": icon, "icon_ring": icon_ring, "type": type_label, "type_ribbon": type_ribbon,
+		"name": name_label, "description": description, "title_rule": title_rule,
+		"metric_panels": metric_views["panels"], "metric_symbols": metric_views["symbols"],
+		"metric_labels": metric_views["labels"], "metric_values": metric_views["values"],
+		"special_panel": special_panel, "special": special,
 	}
 
 
 func _build_metric_panels(parent: Control) -> Dictionary:
-	var panels: Array[Panel] = []
-	var symbols: Array[Control] = []
+	var panels: Array[Control] = []
+	var symbols: Array[TextureRect] = []
 	var labels: Array[Label] = []
 	var values: Array[Label] = []
 	for index in range(3):
-		var panel := Panel.new()
-		panel.position = Vector2(4 + index * 98, 3)
-		panel.size = Vector2(94, 54)
+		var panel := Control.new()
+		panel.position = Vector2(index * 102, 0)
+		panel.size = Vector2(98, 52)
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 		parent.add_child(panel)
 		panels.append(panel)
-		var symbol := SunlitGlyph.new()
-		symbol.glyph_id = "confirm"
-		symbol.position = Vector2(5, 16)
-		symbol.size = Vector2(24, 24)
-		panel.add_child(symbol)
+		var label_row := HBoxContainer.new()
+		label_row.position = Vector2.ZERO
+		label_row.size = Vector2(98, 24)
+		label_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		label_row.add_theme_constant_override("separation", 4)
+		label_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(label_row)
+		var symbol := UiFactory.texture_rect(METRIC_ICONS["confirm"], TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+		symbol.custom_minimum_size = Vector2(22, 22)
+		symbol.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		label_row.add_child(symbol)
 		symbols.append(symbol)
-		var caption := _surface_label("", 14, MUTED_INK)
-		caption.anchor_right = 1.0
-		caption.offset_left = 32.0
-		caption.offset_top = 3.0
-		caption.offset_right = -4.0
-		caption.offset_bottom = 25.0
-		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var caption := _surface_label("", 13, UiFactory.MUTED_INK)
+		caption.custom_minimum_size = Vector2(56, 24)
+		caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		caption.clip_text = true
-		panel.add_child(caption)
+		label_row.add_child(caption)
 		labels.append(caption)
-		var value := _surface_label("", 17, INK)
-		value.anchor_right = 1.0
-		value.offset_left = 32.0
-		value.offset_top = 24.0
-		value.offset_right = -4.0
-		value.offset_bottom = 52.0
+		var value := _surface_label("", 16, UiFactory.INK)
+		value.position = Vector2(0, 24)
+		value.size = Vector2(98, 27)
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		value.clip_text = true
@@ -197,31 +182,38 @@ func _build_metric_panels(parent: Control) -> Dictionary:
 func _layout_metric_panels(count: int) -> void:
 	if count <= 0:
 		return
-	var gap := 4.0
-	var available_width := 292.0
-	var panel_width := 164.0 if count == 1 else (available_width - gap * (count - 1)) / count
-	var start_x := 4.0 + (available_width - panel_width) * 0.5 if count == 1 else 4.0
+	var gap := 6.0
+	var width := (302.0 - gap * (count - 1)) / count
 	for index in range(count):
-		views["metric_panels"][index].position.x = start_x + index * (panel_width + gap)
-		views["metric_panels"][index].size.x = panel_width
+		var panel: Control = views["metric_panels"][index]
+		panel.position.x = index * (width + gap)
+		panel.size.x = width
+		panel.get_child(0).size.x = width
+		views["metric_values"][index].size.x = width
 
 
-func _build_special_panel() -> Panel:
-	var panel := Panel.new()
-	panel.position = Vector2(344, 13)
-	panel.size = Vector2(112, 30)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(panel)
-	var label := _surface_label("", 14, Color(0.54, 0.28, 0.05, 1.0))
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	panel.add_child(label)
-	return panel
+func _texture_layer(texture: Texture2D, at: Vector2, extent: Vector2, stretch_mode := TextureRect.STRETCH_KEEP_ASPECT_CENTERED) -> TextureRect:
+	var layer := UiFactory.texture_rect(texture, stretch_mode)
+	layer.position = at
+	layer.size = extent
+	layer.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	add_child(layer)
+	return layer
+
+
+func _special_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(UiFactory.ACCENT_LIGHT, 0.76)
+	style.border_color = Color(UiFactory.ACCENT_DARK, 0.58)
+	style.set_border_width_all(1)
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 7
+	style.corner_radius_bottom_left = 7
+	style.corner_radius_bottom_right = 3
+	return style
 
 
 func _surface_label(text: String, font_size: int, color: Color) -> Label:
-	var node := UiFactory.label(text, font_size, color)
-	node.add_theme_constant_override("outline_size", 0)
+	var node := UiFactory.surface_label(text, font_size, color)
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return node

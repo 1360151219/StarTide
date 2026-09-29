@@ -105,7 +105,7 @@ func _test_compact_ui(game: Node) -> void:
 		"build_snapshot": {
 			"skill_slots": ["star_lance", "sun_orbit", "frost_tide"],
 			"skill_levels": {"star_lance": 5, "sun_orbit": 5, "frost_tide": 5},
-			"skill_branches": {"star_lance": "star_lance_fan", "sun_orbit": "sun_orbit_swarm", "frost_tide": "frost_tide_field"},
+			"skill_branches": {"star_lance": "star_lance_fan", "frost_tide": "frost_tide_field"},
 			"relic_levels": {"star_core": 3, "energy_prism": 3, "time_gear": 3, "echo_lens": 3},
 		},
 	})

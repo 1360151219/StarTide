@@ -5,21 +5,27 @@ signal category_requested(category: String)
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
 const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
-const SunlitGlyph = preload("res://scripts/ui/sunlit_glyph.gd")
-const CATEGORY_GLYPHS := {
-	"heroes": "character", "enemies": "enemy", "pickups": "magnet",
-	"skills": "level", "relics": "equipment",
+const PAGE_FRAME = preload("res://assets/art/ui/compendium/page_frame.png")
+const CATEGORY_RAIL = preload("res://assets/art/ui/compendium/category_rail.png")
+const CATEGORY_SELECTED = preload("res://assets/art/ui/compendium/category_selected.png")
+const CATEGORY_ICONS := {
+	"heroes": preload("res://assets/art/ui/compendium/category_heroes.png"),
+	"enemies": preload("res://assets/art/ui/compendium/category_enemies.png"),
+	"pickups": preload("res://assets/art/ui/compendium/category_pickups.png"),
+	"skills": preload("res://assets/art/ui/compendium/category_skills.png"),
+	"relics": preload("res://assets/art/ui/compendium/category_relics.png"),
 }
 
 var list: GridContainer
 var tab_buttons: Dictionary = {}
 var scroll: ScrollContainer
 var progress_label: Label
-var paper_sheet: Panel
-var top_wash: Panel
+var paper_sheet: TextureRect
 var close_button: Button
+var selected_plate: TextureRect
 var navigation_mode := false
 var navigation_reserve := 142.0
+var selection_tween: Tween
 
 
 func build(categories: Array) -> void:
@@ -60,52 +66,58 @@ func set_progress(discovered: int, total: int) -> void:
 
 
 func set_tab_label(category: String, title: String, discovered: int, total: int) -> void:
-	if tab_buttons.has(category):
-		tab_buttons[category].text = "%s %d/%d" % [title, discovered, total]
-		tab_buttons[category].tooltip_text = "%s：已收集 %d / %d" % [title, discovered, total]
-		tab_buttons[category].accessibility_name = tab_buttons[category].tooltip_text
+	if not tab_buttons.has(category):
+		return
+	var button: Button = tab_buttons[category]
+	button.set_meta("title", title)
+	button.get_node("TabContent/Title").text = title
+	button.tooltip_text = "%s：已收集 %d / %d" % [title, discovered, total]
+	button.accessibility_name = button.tooltip_text
+	button.set_meta("discovered", discovered)
+	button.set_meta("total", total)
 
 
 func set_selected_tab(category: String) -> void:
+	var selected_index := 0
+	var index := 0
 	for category_id in tab_buttons:
-		_apply_tab_style(tab_buttons[category_id], category_id == category)
+		var selected: bool = category_id == category
+		_apply_tab_colors(tab_buttons[category_id], selected)
+		if selected:
+			selected_index = index
+		index += 1
+	_move_selected_plate(selected_index)
 
 
 func _build_paper_sheet() -> void:
-	paper_sheet = Panel.new()
-	paper_sheet.position = Vector2(10, 16)
-	SunlitCardStyle.apply_panel(paper_sheet, UiFactory.SURFACE, UiFactory.PRIMARY, 14.0)
+	paper_sheet = TextureRect.new()
+	paper_sheet.name = "CompendiumPageFrame"
+	paper_sheet.position = Vector2(8, 6)
+	paper_sheet.texture = PAGE_FRAME
+	paper_sheet.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	paper_sheet.stretch_mode = TextureRect.STRETCH_SCALE
+	paper_sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(paper_sheet)
-	top_wash = Panel.new()
-	top_wash.position = Vector2(20, 94)
-	top_wash.size = Vector2(500, 86)
-	var wash_style := StyleBoxFlat.new()
-	wash_style.bg_color = Color(UiFactory.SURFACE_ALT, 0.82)
-	wash_style.border_color = Color(UiFactory.PRIMARY, 0.48)
-	wash_style.border_width_top = 1
-	wash_style.border_width_bottom = 2
-	top_wash.add_theme_stylebox_override("panel", wash_style)
-	add_child(top_wash)
 
 
 func _build_header() -> void:
 	var kicker := _plain_label("远征收藏册", 15, UiFactory.PRIMARY_DARK)
-	kicker.position = Vector2(30, 30)
-	kicker.size = Vector2(250, 24)
+	kicker.position = Vector2(52, 34)
+	kicker.size = Vector2(220, 24)
 	add_child(kicker)
 	var title := _plain_label("远征图鉴", 34, UiFactory.INK)
-	title.position = Vector2(28, 52)
-	title.size = Vector2(300, 46)
+	title.position = Vector2(50, 58)
+	title.size = Vector2(300, 48)
 	UiFactory.apply_inner_page_title(title)
 	add_child(title)
-	progress_label = _plain_label("", 14, UiFactory.MUTED_INK)
-	progress_label.position = Vector2(252, 62)
-	progress_label.size = Vector2(176, 28)
+	progress_label = _plain_label("", 15, UiFactory.MUTED_INK)
+	progress_label.position = Vector2(292, 68)
+	progress_label.size = Vector2(188, 28)
 	progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(progress_label)
 	close_button = Button.new()
-	close_button.position = Vector2(430, 38)
-	close_button.size = Vector2(80, 52)
+	close_button.position = Vector2(442, 32)
+	close_button.size = Vector2(64, 52)
 	close_button.text = "收起"
 	close_button.add_theme_font_size_override("font_size", 14)
 	SunlitCardStyle.apply_button(close_button, false, UiFactory.PRIMARY)
@@ -114,41 +126,77 @@ func _build_header() -> void:
 
 
 func _build_tabs(categories: Array) -> void:
-	var gap := 4.0
-	var tab_width := (500.0 - gap * (categories.size() - 1)) / categories.size()
+	var rail := TextureRect.new()
+	rail.name = "CategoryRail"
+	rail.position = Vector2(14, 130)
+	rail.size = Vector2(512, 74)
+	rail.texture = CATEGORY_RAIL
+	rail.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rail.stretch_mode = TextureRect.STRETCH_SCALE
+	rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(rail)
+	selected_plate = TextureRect.new()
+	selected_plate.name = "CategorySelected"
+	selected_plate.position = Vector2(14, 126)
+	selected_plate.size = Vector2(102.4, 84)
+	var selected_texture := AtlasTexture.new()
+	selected_texture.atlas = CATEGORY_SELECTED
+	selected_texture.region = Rect2(28, 0, 152, 168)
+	selected_plate.texture = selected_texture
+	selected_plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	selected_plate.stretch_mode = TextureRect.STRETCH_SCALE
+	selected_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(selected_plate)
 	for index in range(categories.size()):
 		var category: Dictionary = categories[index]
 		var tab := Button.new()
-		tab.position = Vector2(20 + index * (tab_width + gap), 106)
-		tab.size = Vector2(tab_width, 60)
-		tab.text = category["name"]
-		tab.add_theme_font_size_override("font_size", 14)
+		tab.position = Vector2(14 + index * 102.4, 130)
+		tab.size = Vector2(102.4, 72)
+		tab.set_meta("title", category["name"])
+		tab.flat = true
 		tab.pressed.connect(category_requested.emit.bind(category["id"]))
 		add_child(tab)
+		_add_tab_content(tab, category["name"], CATEGORY_ICONS[category["id"]])
 		tab_buttons[category["id"]] = tab
-		var glyph := SunlitGlyph.new()
-		glyph.name = "CategoryGlyph"
-		glyph.position = Vector2(6, 4)
-		glyph.size = Vector2(18, 18)
-		glyph.glyph_id = CATEGORY_GLYPHS.get(category["id"], "compendium")
-		tab.add_child(glyph)
+
+
+func _add_tab_content(button: Button, title: String, texture: Texture2D) -> void:
+	var content := HBoxContainer.new()
+	content.name = "TabContent"
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 0)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(content)
+	var icon := TextureRect.new()
+	icon.name = "Icon"
+	icon.custom_minimum_size = Vector2(28, 28)
+	icon.texture = texture
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(icon)
+	var label := _plain_label(title, 15, Color("fff2c4"))
+	label.name = "Title"
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	content.add_child(label)
 
 
 func _build_collection_grid() -> void:
 	scroll = ScrollContainer.new()
 	scroll.anchor_right = 1.0
 	scroll.anchor_bottom = 1.0
-	scroll.offset_left = 20.0
-	scroll.offset_top = 180.0
-	scroll.offset_right = -20.0
-	scroll.offset_bottom = -36.0
+	scroll.offset_left = 39.0
+	scroll.offset_top = 224.0
+	scroll.offset_right = -39.0
+	scroll.offset_bottom = -28.0
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 	list = GridContainer.new()
 	list.columns = 3
-	list.custom_minimum_size = Vector2(500, 0)
-	list.add_theme_constant_override("h_separation", 6)
-	list.add_theme_constant_override("v_separation", 6)
+	list.custom_minimum_size = Vector2(462, 0)
+	list.add_theme_constant_override("h_separation", 0)
+	list.add_theme_constant_override("v_separation", 0)
 	scroll.add_child(list)
 
 
@@ -157,42 +205,25 @@ func _layout() -> void:
 		return
 	var reserved_height := navigation_reserve if navigation_mode else 0.0
 	var content_bottom := maxf(260.0, size.y - reserved_height)
-	paper_sheet.size = Vector2(520, maxf(236.0, content_bottom - 24.0))
-	scroll.offset_bottom = -(reserved_height + 36.0)
+	paper_sheet.size = Vector2(524, maxf(246.0, content_bottom - 10.0))
+	scroll.offset_bottom = -(reserved_height + 28.0)
 
 
-func _apply_tab_style(button: Button, selected: bool) -> void:
-	var background := UiFactory.PRIMARY_DARK if selected else Color(UiFactory.SURFACE, 0.78)
-	var border := UiFactory.PRIMARY_LIGHT if selected else Color(UiFactory.PRIMARY, 0.62)
-	var normal := SunlitCardStyle.panel_style(background, border, 5.0, selected, false)
-	normal.shadow_color = Color.TRANSPARENT
-	normal.shadow_size = 0
-	normal.border_width_bottom = 3 if selected else 1
-	normal.corner_radius_top_left = 2
-	normal.corner_radius_top_right = 9
-	normal.corner_radius_bottom_left = 9
-	normal.corner_radius_bottom_right = 2
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = normal.bg_color.lightened(0.04)
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = normal.bg_color.darkened(0.06)
-	var focus := normal.duplicate() as StyleBoxFlat
-	focus.bg_color = Color.TRANSPARENT
-	focus.border_color = UiFactory.ACCENT
-	focus.set_border_width_all(2)
-	button.add_theme_stylebox_override("normal", normal)
-	button.add_theme_stylebox_override("hover", hover)
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_stylebox_override("focus", focus)
-	var text_color := UiFactory.HUD_TEXT if selected else UiFactory.INK
-	button.add_theme_color_override("font_color", text_color)
-	button.add_theme_color_override("font_hover_color", text_color)
-	button.add_theme_color_override("font_pressed_color", text_color)
-	button.add_theme_constant_override("outline_size", 0)
-	SunlitCardStyle.decorate(button, Color(border, 0.42), 5.0, true, selected, UiFactory.PRIMARY_LIGHT, "ribbon")
-	var glyph := button.get_node_or_null("CategoryGlyph") as Control
-	if glyph != null:
-		glyph.call("set_selected", selected)
+func _move_selected_plate(index: int) -> void:
+	var target_x := 14.0 + index * 102.4
+	if selection_tween != null and selection_tween.is_valid():
+		selection_tween.kill()
+	if not is_inside_tree() or not visible:
+		selected_plate.position.x = target_x
+		return
+	selection_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	selection_tween.tween_property(selected_plate, "position:x", target_x, 0.12)
+
+
+func _apply_tab_colors(button: Button, selected: bool) -> void:
+	var color := UiFactory.HUD_TEXT if selected else Color("fff2c4")
+	button.get_node("TabContent/Icon").modulate = color
+	button.get_node("TabContent/Title").add_theme_color_override("font_color", color)
 
 
 func _plain_label(text: String, font_size: int, color: Color) -> Label:

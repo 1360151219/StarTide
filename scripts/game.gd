@@ -100,6 +100,7 @@ func refresh_presentation() -> void:
 
 func _show_upgrade(player_level: int, choices: Array, upgrade_system: RefCounted, build_state: RefCounted) -> void:
 	hud.cancel_input()
+	hud.set_upgrade_obscured(true)
 	upgrade_overlay.show_choices(player_level, choices, upgrade_system, build_state)
 	audio_manager.set_music_ducked(true)
 	audio_manager.play_sfx("upgrade", -1.0)
@@ -113,6 +114,7 @@ func _on_upgrade_selected(choice_id: String) -> void:
 		return
 	audio_manager.play_sfx("ui_confirm", 0.0)
 	if not upgrade_overlay.visible:
+		hud.set_upgrade_obscured(false)
 		audio_manager.set_music_ducked(false)
 
 
@@ -123,6 +125,7 @@ func _on_upgrade_reroll() -> void:
 
 func _show_result(presentation: Dictionary) -> void:
 	hud.cancel_input()
+	hud.set_upgrade_obscured(false)
 	hud.visible = false
 	pause_overlay.visible = false
 	upgrade_overlay.visible = false

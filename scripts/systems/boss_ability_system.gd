@@ -22,7 +22,6 @@ var last_skill_id := ""
 var forced_triple_used := false
 var skill_history := PackedStringArray()
 
-
 func configure(level_config: LevelConfig, state_ref: RefCounted, player_node: Node2D, enemies: Node2D, audio_manager: Node, combat_effects: Node2D, random: RandomNumberGenerator) -> void:
 	level = level_config
 	run_state = state_ref
@@ -35,7 +34,6 @@ func configure(level_config: LevelConfig, state_ref: RefCounted, player_node: No
 	add_child(telegraphs)
 	_reset_state()
 
-
 func activate(boss_node: Node, elapsed: float) -> void:
 	boss = boss_node
 	skill_cursor = 0
@@ -45,7 +43,6 @@ func activate(boss_node: Node, elapsed: float) -> void:
 	_reset_state()
 	state["phase"] = "idle"
 	state["ready_at"] = elapsed + 0.8
-
 
 func advance(delta: float, elapsed: float) -> void:
 	if run_state.finished or run_state.paused or not is_instance_valid(boss):
@@ -68,7 +65,6 @@ func advance(delta: float, elapsed: float) -> void:
 				_begin_next_skill(elapsed)
 	AbilityRules.clamp_to_bounds(boss, level.map.world_bounds)
 	_refresh_telegraph()
-
 
 func clear_all() -> void:
 	if is_instance_valid(boss):
@@ -174,7 +170,11 @@ func _start_execution(config: Dictionary, elapsed: float) -> void:
 			state["remaining_distance"] = float(config["distance"])
 			boss.contact_enabled = false
 			boss.set_ability_visual(state["ability_id"], "executing", 0.0, state["direction"])
+			effects.add_follow_effect(boss, boss.radius, Color.WHITE, float(config["distance"]) / float(config["speed"]), "zouwu_dash_trail", {"direction": state["direction"]})
 		"boss_tail_sweep", "boss_marks":
+			var is_tail := str(config["runtime_kind"]) == "boss_tail_sweep"
+			var effect_center: Vector2 = boss.position if is_tail else state["target"]
+			effects.add_effect(effect_center, float(config["outer_radius"] if is_tail else config["radius"]), Color.WHITE, 0.34, "zouwu_tail_sweep" if is_tail else "zouwu_mark_impact", {"direction": state["direction"], "arc_degrees": config.get("arc_degrees", 0.0), "inner_radius": config.get("inner_radius", 0.0)})
 			_apply_area_hit(config)
 			state["sequence_remaining"] = int(state["sequence_remaining"]) - 1
 			if int(state["sequence_remaining"]) > 0:

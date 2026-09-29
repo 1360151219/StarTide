@@ -163,7 +163,7 @@ func _make_card(category: String, entry: Dictionary, discovered: bool) -> Panel:
 		category,
 		entry,
 		discovered,
-		_card_subtitle(category, entry, discovered),
+		_card_subtitle(entry, discovered),
 		_entry_description(entry, discovered)
 	)
 	card.activated.connect(_open_detail)
@@ -173,18 +173,21 @@ func _make_card(category: String, entry: Dictionary, discovered: bool) -> Panel:
 func _open_detail(category: String, entry: Dictionary, discovered: bool) -> void:
 	var accent: Color = entry["accent"] if discovered else Color("82948b")
 	var hint := "已收入星潮图鉴" if discovered else _unlock_hint(category, str(entry["id"]))
-	detail_view.present(entry, discovered, accent, _entry_description(entry, discovered), hint)
+	scroll.visible = false
+	detail_view.present(entry, discovered, accent, _entry_description(entry, discovered), hint, category)
 
 
 func _close_detail() -> void:
 	if is_instance_valid(detail_layer):
 		detail_view.hide_detail()
+	if is_instance_valid(scroll):
+		scroll.visible = true
 	pressed_card = null
 
 
 func _entry_description(entry: Dictionary, discovered: bool) -> String:
 	if not discovered:
-		return "先在对应远征中找到它，完整名称、效果与故事就会记录在这里。\n\n%s" % _unlock_hint(current_category, str(entry["id"]))
+		return "先在对应远征中找到它，完整名称、效果与故事就会记录在这里。"
 	var text := str(entry["description"])
 	for branch in entry.get("branches", []):
 		if records == null or records.is_content_discovered("skill_branches", branch["id"]):
@@ -194,10 +197,10 @@ func _entry_description(entry: Dictionary, discovered: bool) -> String:
 	return text
 
 
-func _card_subtitle(category: String, entry: Dictionary, discovered: bool) -> String:
+func _card_subtitle(entry: Dictionary, discovered: bool) -> String:
 	if discovered:
 		return str(entry["subtitle"])
-	return _unlock_hint(category, str(entry["id"]))
+	return "尚未发现"
 
 
 func _unlock_hint(category: String, content_id: String) -> String:

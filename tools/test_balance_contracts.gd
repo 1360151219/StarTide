@@ -45,6 +45,8 @@ func _test_skill_growth_caps() -> void:
 		var skill := HeroCatalog.skill(skill_id)
 		var max_level := int(skill["max_level"])
 		var base_output := _effective_skill_output(skill_id, 1)
+		if skill["branches"].is_empty():
+			_require(_effective_skill_output(skill_id, max_level) / base_output <= 6.5001, "%s 终极输出超过一级的 6.5 倍" % skill_id)
 		for branch_id in skill["branches"]:
 			var overrides: Dictionary = skill["branches"][branch_id]["level_overrides"][max_level]
 			var ultimate_output := _effective_skill_output(skill_id, max_level, overrides)
@@ -64,7 +66,7 @@ func _effective_skill_output(skill_id: String, skill_level: int, overrides := {}
 			var reference_targets := 2 if pierce < 0 else pierce + 1
 			return damage * int(overrides.get("count", data["count"][skill_level])) * reference_targets / (float(data["cooldown"][skill_level]) * float(overrides.get("cooldown_multiplier", 1.0)))
 		"sun_orbit":
-			return damage * int(overrides.get("count", data["count"][skill_level])) / (float(data["hit_interval"][skill_level]) * float(overrides.get("hit_interval_multiplier", 1.0)))
+			return damage * (1.0 + float(data["return_damage_multiplier"][skill_level])) / float(data["cooldown"][skill_level])
 		"meteor_rain":
 			return damage * int(overrides.get("count", data["count"][skill_level])) / (float(data["cooldown"][skill_level]) * float(overrides.get("cooldown_multiplier", 1.0)))
 		_:

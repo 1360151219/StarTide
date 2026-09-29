@@ -1,10 +1,13 @@
 extends "res://scripts/presentation/combat_effect_draw_combat.gd"
 
+const ImpactVisual = preload("res://scripts/skills/skill_impact_visual.gd")
+const MeteorVisual = preload("res://scripts/skills/meteor_rain_visual.gd")
 const MAX_EFFECTS := 64
 const MAX_DAMAGE_NUMBERS := 18
 const DAMAGE_MERGE_WINDOW := 0.12
 
 var effects: Array[Dictionary] = []
+var player: Node2D
 var next_serial := 0
 
 
@@ -78,13 +81,22 @@ func advance(delta: float) -> void:
 	for index in range(effects.size() - 1, -1, -1):
 		effects[index]["time"] = float(effects[index]["time"]) - delta
 		if float(effects[index]["time"]) <= 0.0:
-			effects.remove_at(index)
+			_remove_effect(index)
+		elif effects[index].has("visual"):
+			effects[index]["visual"].refresh(effects[index])
 	queue_redraw()
 
 
 func clear_all() -> void:
+	for effect in effects:
+		if effect.has("visual"): effect["visual"].free()
 	effects.clear()
 	queue_redraw()
+
+
+func _remove_effect(index: int) -> void:
+	if effects[index].has("visual"): effects[index]["visual"].free()
+	effects.remove_at(index)
 
 
 func _append_with_budget(effect: Dictionary) -> void:
@@ -102,8 +114,18 @@ func _append_with_budget(effect: Dictionary) -> void:
 				removable_serial = serial
 		if removable_index < 0 or int(effect["priority"]) <= removable_priority:
 			return
-		effects.remove_at(removable_index)
+		_remove_effect(removable_index)
 	effects.append(effect)
+	if effect["kind"] in ["meteor_warning", "meteor", "meteor_impact"]:
+		var visual := MeteorVisual.new()
+		add_child(visual)
+		visual.configure(effect)
+		effect["visual"] = visual
+	elif effect["kind"] in ImpactVisual.KINDS:
+		var visual := ImpactVisual.new()
+		add_child(visual)
+		visual.configure(effect, player)
+		effect["visual"] = visual
 	queue_redraw()
 
 
@@ -142,11 +164,11 @@ func _trim_damage_numbers() -> void:
 
 func _priority_for(kind: String) -> int:
 	match kind:
-		"meteor_warning", "meteor_impact", "phoenix", "phoenix_impact", "pickup_bomb", "elite_appear", "elite_defeat", "boss_appear":
+		"meteor_warning", "meteor_impact", "phoenix_impact", "pickup_bomb", "elite_appear", "elite_defeat", "boss_appear", "zouwu_dash_trail", "zouwu_tail_sweep", "zouwu_mark_impact":
 			return 88
-		"pickup_heal", "pickup_magnet", "pickup_haste", "bat_impact", "grub_recover":
+		"pickup_heal", "pickup_magnet", "pickup_haste", "bat_impact", "grub_recover", "cloud_hart_sweep", "bellfeather_impact":
 			return 74
-		"frost_hit", "bat_launch", "grub_roll_trail", "star_hit", "sun_hit", "ember":
+		"frost_hit", "frost_tide_hit", "bat_launch", "grub_roll_trail", "star_hit", "star_shield", "ember_volley_hit", "ember_volley_blast":
 			return 58
 		"defeat", "grub_defeat", "pickup_xp", "bat_dissolve":
 			return 42
@@ -163,16 +185,6 @@ func _draw() -> void:
 		match effect["kind"]:
 			"damage_text", "heal_text":
 				_draw_floating_text(effect, center, progress, alpha)
-			"meteor_warning":
-				_draw_meteor_warning(center, radius, progress, alpha)
-			"meteor", "meteor_impact":
-				_draw_meteor_impact(center, radius, progress, alpha, color)
-			"phoenix":
-				_draw_phoenix(center, radius, progress, alpha, color)
-			"phoenix_impact":
-				_draw_phoenix_impact(center, radius, progress, alpha)
-			"frost_hit":
-				_draw_frost_hit(center, radius, progress, alpha)
 			"pickup_xp":
 				_draw_pickup_xp(center, radius, progress, alpha)
 			"pickup_heal":
@@ -188,19 +200,25 @@ func _draw() -> void:
 			"grub_recover":
 				_draw_grub_recover(center, radius, progress, alpha)
 			"bat_launch":
-				_draw_bat_launch(center, radius, progress, alpha)
+				_draw_bat_launch(center, radius, progress, alpha, effect["data"])
 			"bat_impact", "bat_dissolve":
 				_draw_bat_impact(center, radius, progress, alpha, effect["kind"] == "bat_dissolve")
 			"elite_appear", "elite_defeat":
 				_draw_elite_burst(center, radius, progress, alpha, effect["kind"] == "elite_defeat")
 			"boss_appear":
 				_draw_boss_appear(center, radius, progress, alpha)
-			"ember":
-				_draw_ember_bloom(center, radius, progress, alpha, color)
-			"star_hit":
-				_draw_star_hit(center, radius, progress, alpha, color)
-			"sun_hit":
-				_draw_sun_hit(center, radius, progress, alpha, color)
+			"cloud_hart_sweep":
+				_draw_cloud_hart_sweep(center, radius, progress, alpha, effect["data"])
+			"bellfeather_impact":
+				_draw_bellfeather_impact(center, radius, progress, alpha)
+			"zouwu_dash_trail":
+				_draw_zouwu_dash_trail(center, radius, progress, alpha, effect["data"])
+			"zouwu_tail_sweep":
+				_draw_zouwu_tail_sweep(center, radius, progress, alpha, effect["data"])
+			"zouwu_mark_impact":
+				_draw_zouwu_mark_impact(center, radius, progress, alpha)
+			"star_shield":
+				_draw_star_shield(center, radius, progress, alpha)
 			"defeat":
 				_draw_defeat(center, radius, progress, alpha, color)
 			"grub_defeat":

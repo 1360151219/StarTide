@@ -23,7 +23,7 @@ func configure(player_node: Node2D, combat_effects: Node2D, audio_manager: Node)
 func advance(_direction: Vector2, delta: float, elapsed: float) -> float:
 	if not ready and elapsed >= recharge_at:
 		ready = true
-		effects.add_effect(player.position, 58.0, Color("70e8ff"), 0.36, "star_hit")
+		effects.add_effect(player.position, 58.0, Color("70e8ff"), 0.36, "star_shield")
 	player.passive_active = ready
 	return delta
 
@@ -45,7 +45,7 @@ func _absorb(damage: float, source: Node, elapsed: float, knockback_source: bool
 	damage_blocked += damage
 	player.passive_active = false
 	audio.play_sfx("skill_frost_tide", -2.0, 1.08)
-	effects.add_effect(player.position, 74.0, Color("70e8ff"), 0.42, "star_hit")
+	effects.add_effect(player.position, 74.0, Color("70e8ff"), 0.42, "star_shield")
 	if knockback_source and is_instance_valid(source):
 		var knockback_direction: Vector2 = player.position.direction_to(source.position)
 		source.position += knockback_direction * 45.0

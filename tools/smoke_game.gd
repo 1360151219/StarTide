@@ -42,7 +42,7 @@ func _on_process_frame() -> void:
 
 
 func _test_start_screen(game: Node) -> void:
-	_require(CueCatalog.ids().size() == 56, "声音 Cue 没有完整初始化")
+	_require(CueCatalog.ids().size() == 60, "声音 Cue 没有完整初始化")
 	var original_music: float = game.audio_manager.music_volume
 	var original_sfx: float = game.audio_manager.sfx_volume
 	game.audio_manager.set_music_volume(0.37, false)
@@ -123,8 +123,32 @@ func _finish_pause_and_upgrade(game: Node) -> void:
 	_require(not game.audio_manager.music_ducked, "继续游戏后背景音乐没有恢复")
 	game.session.add_experience(40)
 	_require(game.upgrade_overlay.visible and game.upgrade_overlay.buttons.size() == 3, "升级三选一没有出现")
+	_require(not game.hud.top_panel.visible and not game.hud.stage_hud.visible and not game.hud.skill_dock.visible, "升级三选一没有压低不可操作的战斗 HUD")
 	for card in game.upgrade_overlay.choice_cards:
 		_require(not card.visible or card.metric_count() in [1, 2, 3], "升级卡没有使用图形化属性指标")
+		_require(not card.visible or not str(card.views["description"].text).is_empty(), "升级卡没有显示触屏可读的效果说明")
+		if card.visible:
+			var icon_rect: Rect2 = card.views["icon"].get_rect()
+			var ring_rect: Rect2 = card.views["icon_ring"].get_rect()
+			_require(icon_rect.intersection(ring_rect).size.x >= 88.0, "升级技能图标没有贴合主体边框")
+			_require(card.views["metric_values"][0].horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER, "升级指标名称和值没有上下对齐")
+	var branch_choice := {
+		"choice_key": "skill:ember_volley:branch:ember_volley_flock", "kind": "skill_branch",
+		"content_id": "ember_volley", "target_level": 2, "branch_id": "ember_volley_flock",
+		"title": "烬羽连矢 · 群羽纷飞", "description": "增加箭矢数量与扇面，清理成群敌人。",
+	}
+	var branch_card = game.upgrade_overlay.choice_cards[0]
+	branch_card.present(branch_choice, game.upgrade_overlay.UpgradeChoicePresenter.view_model(branch_choice))
+	_require(not branch_card.views["special_panel"].visible, "流派分支仍显示选择分支冗余提示")
+	_require(is_equal_approx(branch_card.views["type_ribbon"].position.x, branch_card.views["icon_ring"].position.x), "流派分支标签没有与技能图标左对齐")
+	var relic_choice := {
+		"choice_key": "relic:flow_feather:level:1", "kind": "relic_upgrade",
+		"content_id": "flow_feather", "target_level": 1, "branch_id": "",
+		"title": "流光羽 I", "description": "移动速度 +8%。",
+	}
+	branch_card.present(relic_choice, game.upgrade_overlay.UpgradeChoicePresenter.view_model(relic_choice))
+	_require(is_equal_approx(branch_card.views["type_ribbon"].position.x, branch_card.views["icon_ring"].position.x), "星遗物标签没有与图标左对齐")
+	_require(is_equal_approx(branch_card.views["icon_ring"].position.y, 36.0), "星遗物图标没有上移收紧留白")
 	_require(game.audio_manager.music_ducked, "升级选择时背景音乐没有降噪")
 	_require(not game.upgrade_overlay.reroll_button.disabled and game.session.build_state.rerolls_remaining == 1, "本局免费重抽没有显示")
 	game.upgrade_overlay.reroll_button.pressed.emit()
@@ -136,6 +160,7 @@ func _finish_pause_and_upgrade(game: Node) -> void:
 
 func _verify_upgrade_completed(game: Node) -> void:
 	_require(not game.upgrade_overlay.visible and not game.session.state.paused, "选择升级后没有恢复游戏")
+	_require(game.hud.top_panel.visible and game.hud.stage_hud.visible and game.hud.skill_dock.visible, "升级结束后战斗 HUD 没有恢复")
 	_require(not game.audio_manager.music_ducked, "选择升级后背景音乐没有恢复")
 
 

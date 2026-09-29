@@ -83,6 +83,9 @@ func configure(hero_id: String, level_config: LevelConfig, run_records: RefCount
 	enemy_projectiles.player_hit_requested.connect(_apply_player_hit)
 	pickups.experience_collected.connect(add_experience)
 	pickups.heal_requested.connect(func(amount: float) -> void: player.heal(amount, "pickup:heart"))
+	player.healing_resolved.connect(func(_source: String, _requested: float, applied: float, _overheal: float) -> void:
+		if applied > 0.0:
+			effects.add_heal_number(player.position - Vector2(18.0, 36.0), applied))
 	pickups.pickup_collected.connect(func(pickup_id: String) -> void: records.discover_content("pickups", pickup_id))
 	records.discover_content("skills", str(build_state.skill_slots[0]))
 	enemies.spawn_initial()

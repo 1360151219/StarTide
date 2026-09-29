@@ -79,11 +79,13 @@ static func resolved_stats(equipment_id: String, rarity_id: String, equipment_le
 	var data: Dictionary = equipment(equipment_id)
 	var safe_rarity := rarity_id if RARITIES.has(rarity_id) else default_rarity(equipment_id)
 	var level := clampi(equipment_level, 1, max_level(safe_rarity))
-	var result: Dictionary = data["base_stats"].duplicate(true)
+	var result := {}
+	var quality_multiplier := rarity_multiplier(safe_rarity)
+	for stat_id in data["base_stats"]:
+		var base_value := float(data["base_stats"][stat_id])
+		result[stat_id] = base_value * quality_multiplier if base_value > 0.0 else base_value
 	for stat_id in data["stats_per_enhance"]:
 		result[stat_id] = float(result.get(stat_id, 0.0)) + float(data["stats_per_enhance"][stat_id]) * (level - 1)
-	for stat_id in result:
-		result[stat_id] = float(result[stat_id]) * rarity_multiplier(safe_rarity)
 	return result
 
 
@@ -114,5 +116,5 @@ static func _validate_stats(errors: PackedStringArray, equipment_id: String, sta
 		errors.append("%s 属性必须是字典" % equipment_id)
 		return
 	for stat_id in stats:
-		if not STAT_IDS.has(str(stat_id)) or float(stats[stat_id]) < 0.0:
+		if not STAT_IDS.has(str(stat_id)) or (stat_id == "max_health_flat" and float(stats[stat_id]) < 0.0):
 			errors.append("%s 属性无效：%s" % [equipment_id, stat_id])

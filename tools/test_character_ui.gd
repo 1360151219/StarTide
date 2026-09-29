@@ -30,6 +30,7 @@ func _on_process_frame() -> void:
 	frame_count += 1
 	if frame_count < 4:
 		return
+	process_frame.disconnect(_on_process_frame)
 	screen.show_page("character")
 	var page = screen.character_page
 	var equipment = page.equipment_panel
@@ -102,6 +103,7 @@ func _on_process_frame() -> void:
 	records.grant_equipment("timeglass_charm")
 	var top: Dictionary = records.grant_equipment("apprentice_starwand", "top")
 	page.refresh()
+	await process_frame
 	_require(equipment.inventory_buttons.size() == 7, "三种品质装备没有完整进入背包网格")
 	_require(
 		equipment.inventory_buttons[0].size == Vector2(88, 88)
@@ -111,8 +113,24 @@ func _on_process_frame() -> void:
 	var common_card: Button = _card_by_id(equipment, "starter-weapon")
 	var rare_card: Button = _card_by_id(equipment, str(rare["instance_id"]))
 	var top_card: Button = _card_by_id(equipment, str(top["instance_id"]))
+	var input_card: Button = equipment.inventory_buttons.back()
 	_require(common_card != null and top_card != null, "普通或顶级装备没有进入背包")
 	_require(rare_card != null, "稀有装备没有进入背包")
+	var inventory_scroll := equipment.inventory_grid.get_parent() as ScrollContainer
+	_require(
+		inventory_scroll != null and inventory_scroll.scroll_deadzone == 6 and inventory_scroll.follow_focus and common_card.mouse_filter == Control.MOUSE_FILTER_PASS,
+		"装备卡片没有同时保留点击并向背包滚动容器传递触摸事件"
+	)
+	var selection_before_scroll: String = equipment.selected_instance_id
+	_touch_card(input_card, true)
+	var pan := InputEventPanGesture.new()
+	pan.position = input_card.get_screen_transform() * (input_card.size * 0.5)
+	pan.delta = Vector2(0, 4)
+	root.push_input(pan, true)
+	_require(inventory_scroll.scroll_vertical > 0 and equipment.selected_instance_id == selection_before_scroll, "从装备卡片开始滚动时没有移动背包，或错误触发了卡片点击")
+	inventory_scroll.scroll_vertical = 0
+	_touch_card(input_card)
+	_require(equipment.selected_instance_id == str(input_card.get_meta("instance_id", "")), "装备卡片允许传递滚动事件后，触摸点击不再打开装备详情")
 	_require(
 		common_card.background_view.texture.resource_path == "res://assets/art/ui/character/quality_cell_common.png"
 		and rare_card.background_view.texture.resource_path == "res://assets/art/ui/character/quality_cell_rare.png"
@@ -130,7 +148,7 @@ func _on_process_frame() -> void:
 		and rare_card.selection_frame.visible,
 		"选中态覆盖了装备品质结构"
 	)
-	_require(equipment.detail_sheet.visible and equipment.detail_sheet.action_button.text == "装备", "装备详情没有明确操作")
+	_require(equipment.detail_sheet.visible and equipment.detail_sheet.action_button.text == "装备" and equipment.detail_sheet.stats_label.text.contains("代价：技能间隔 +4%"), "装备详情没有明确操作或风弦短弓代价")
 	_require(equipment.detail_sheet.get_theme_stylebox("panel").bg_color.is_equal_approx(CharacterStyle.RARE_BACKGROUND), "装备详情没有延续品质背景")
 	_require(equipment.detail_sheet.upgrade_button.disabled and equipment.detail_sheet.lock_button.text == "锁定", "装备详情没有提供等级升级与材料保护入口")
 	_require(str(records.equipment_loadout_snapshot("star_warden")["weapon"]).is_empty(), "选择装备就错误修改了装配")
@@ -210,6 +228,18 @@ func _card_by_id(equipment: Panel, instance_id: String) -> Button:
 		if str(card.get_meta("instance_id", "")) == instance_id:
 			return card
 	return null
+
+
+func _touch_card(card: Button, cancel_for_scroll := false) -> void:
+	var touch := InputEventScreenTouch.new()
+	touch.index = 9
+	touch.pressed = true
+	touch.position = card.get_screen_transform() * (card.size * 0.5)
+	root.push_input(touch, true)
+	if cancel_for_scroll:
+		card.notification(Control.NOTIFICATION_SCROLL_BEGIN)
+	touch.pressed = false
+	root.push_input(touch, true)
 
 
 func _require(condition: bool, message: String) -> void:

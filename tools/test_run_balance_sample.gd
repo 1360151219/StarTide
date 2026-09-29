@@ -63,6 +63,9 @@ func _initialize() -> void:
 	var incompatible := stored[0].duplicate(true)
 	incompatible["build_id"] = "other-build"
 	_require(store.append(incompatible) == ERR_INVALID_DATA, "不同构筑版本错误写入同一数据集")
+	incompatible = stored[0].duplicate(true)
+	incompatible["content_balance_version"] = 2
+	_require(store.append(incompatible) == ERR_INVALID_DATA, "战斗体验优化前的内容版本混入当前数据集")
 
 	host.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(storage_path))
@@ -72,13 +75,13 @@ func _initialize() -> void:
 
 
 func _validate_sample(sample: Dictionary, contact_source_id: String, target_health: float) -> void:
-	_require(int(sample.get("schema_version", 0)) == 2 and not str(sample.get("build_id", "")).is_empty() and int(sample.get("content_balance_version", 0)) == 1 and not str(sample.get("sample_id", "")).is_empty(), "聚合样本身份或版本错误")
+	_require(int(sample.get("schema_version", 0)) == 2 and not str(sample.get("build_id", "")).is_empty() and int(sample.get("content_balance_version", 0)) == 3 and not str(sample.get("sample_id", "")).is_empty(), "聚合样本身份或版本错误")
 	_require(sample.get("hero_id", "") == "star_warden" and sample.get("level_id", "") == "level_01", "样本英雄或关卡维度错误")
 	_require(sample.get("context", {}).get("mode", "") == "player", "真人局样本上下文错误")
 	var opening: Dictionary = sample.get("opening_permanent", {})
 	_require(
 		int(opening.get("score", 0)) == 1000
-		and int(opening.get("score_formula_version", 0)) == 1
+		and int(opening.get("score_formula_version", 0)) == 2
 		and opening.get("score_purpose", "") == "progression_score"
 		and not bool(opening.get("score_calibrated", true)),
 		"开局永久快照没有锁定养成评分语义"

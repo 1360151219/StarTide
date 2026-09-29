@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dlce3sngf2xr7"
-path="res://.godot/imported/sun_orbit.png-191ad8a4096c10e18e38237ce5a54c30.ctex"
+uid="uid://p3qul6abvvuq"
+path="res://.godot/imported/metric_range.png-edb691f866d8b04f3d0560d5ee10e04d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/skills/sun_orbit.png"
-dest_files=["res://.godot/imported/sun_orbit.png-191ad8a4096c10e18e38237ce5a54c30.ctex"]
+source_file="res://assets/art/ui/upgrade/metrics/metric_range.png"
+dest_files=["res://.godot/imported/metric_range.png-edb691f866d8b04f3d0560d5ee10e04d.ctex"]
 
 [params]
 

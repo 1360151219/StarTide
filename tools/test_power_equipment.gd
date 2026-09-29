@@ -18,10 +18,11 @@ func _initialize() -> void:
 	_test_missing_starter_repair()
 	_test_first_clear_reward()
 	_test_thousand_mile_windseal()
+	_test_windstring_tradeoff()
 	for path in cleanup_paths:
 		DirAccess.remove_absolute(path)
 	if not failed:
-		print("POWER_EQUIPMENT_OK schema=6 power_v1=frozen score_semantics=uncalibrated slots=3 commands=true migration=true active_hero=true")
+		print("POWER_EQUIPMENT_OK schema=6 power_v2=signed_equipment score_semantics=uncalibrated slots=3 commands=true migration=true active_hero=true")
 	quit(1 if failed else 0)
 
 
@@ -51,10 +52,10 @@ func _test_power_commands_and_persistence() -> void:
 	var initial := records.get_permanent_snapshot("star_warden")
 	_require(initial["hero_xp"] == 0 and initial["power"]["total"] == 1000, "初始等级或战力错误")
 	_require(
-		initial["power"]["formula_version"] == 1
+		initial["power"]["formula_version"] == 2
 		and initial["power"]["purpose"] == "progression_score"
 		and not initial["power"]["calibrated"],
-		"战力 v1 没有冻结为未校准养成评分"
+		"养成评分 v2 没有标记为未校准"
 	)
 	_require(
 		is_equal_approx(float(initial["resolved_stats"]["attack_power"]), 100.0)
@@ -168,6 +169,25 @@ func _test_thousand_mile_windseal() -> void:
 	_require(is_equal_approx(float(level_two["move_speed_percent"]) - float(level_one["move_speed_percent"]), 0.004) and is_equal_approx(float(level_two["cooldown_reduction"]) - float(level_one["cooldown_reduction"]), 0.003), "千里风印每级成长不是移动速度 0.4% 与冷却缩减 0.3%")
 	var reward := LevelCatalog.by_id("level_05").reward.first_clear_equipment_reward.entries[0]
 	_require(reward.definition_id == "thousand_mile_windseal" and reward.rarity_id == "top", "第五关首通没有固定发放顶级千里风印")
+
+
+func _test_windstring_tradeoff() -> void:
+	var path := _new_test_path("windstring_tradeoff")
+	var records := RunRecords.new(path)
+	var granted := records.grant_equipment("windstring_bow", "rare", 5)
+	var equipped := records.equip_item("star_warden", str(granted.get("instance_id", "")))
+	var snapshot: Dictionary = equipped.get("snapshot", {})
+	var lance: Dictionary = snapshot.get("skill_modifiers", {}).get("star_lance", {})
+	_require(
+		bool(granted.get("success", false))
+		and bool(equipped.get("success", false))
+		and is_equal_approx(float(snapshot.get("damage_multiplier", 0.0)), 1.14)
+		and is_equal_approx(float(snapshot.get("resolved_stats", {}).get("cooldown_multiplier", 0.0)), 1.048)
+		and is_equal_approx(float(lance.get("projectile_speed_multiplier", 0.0)), 1.14)
+		and int(snapshot.get("power", {}).get("formula_version", 0)) == 2,
+		"风弦短弓没有同时提高伤害和弹速并降低施法频率"
+	)
+	_require(int(snapshot.get("power", {}).get("equipment", 0)) == 226, "风弦短弓的技能间隔代价没有负向计入养成评分")
 
 
 func _new_test_path(label: String) -> String:

@@ -158,12 +158,16 @@ func _start_execution(state: Dictionary, enemy: Node, elapsed: float) -> void:
 			if enemy.has_method("set_ability_visual"):
 				enemy.set_ability_visual(state["ability_id"], "executing", 0.0, state["direction"])
 		"bolt":
-			effects.add_effect(enemy.position, enemy.radius + 28.0, Color("a66be8"), 0.26, "bat_launch")
+			effects.add_effect(enemy.position, enemy.radius + 28.0, Color("a66be8"), 0.26, "bat_launch", {"direction": state["direction"]})
 			if enemy.has_method("set_ability_visual"):
 				enemy.set_ability_visual(state["ability_id"], "executing", 1.0, state["direction"])
 			projectile_system.spawn_bolt(enemy, enemy.position, state["direction"], config, enemy.ability_damage_multiplier)
 			_enter_recovery(state, enemy, elapsed)
 		"burst":
+			if str(config["shape"]) == "sector":
+				effects.add_effect(enemy.position, float(config["radius"]), Color("8fe1cf"), 0.3, "cloud_hart_sweep", {"direction": state["direction"], "arc_degrees": config["arc_degrees"]})
+			else:
+				effects.add_effect(state["target"], float(config["radius"]), Color("f2be58"), 0.3, "bellfeather_impact")
 			if AbilityRules.telegraph_covers_point(enemy.position, state["direction"], player.position, config, state["target"]):
 				state["hit_done"] = true
 				_emit_hit(enemy, config)

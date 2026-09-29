@@ -9,7 +9,6 @@ const UpgradeSystem = preload("res://scripts/systems/upgrade_system.gd")
 
 var failed := false
 
-
 func _initialize() -> void:
 	_test_catalogs()
 	_test_branch_balance()
@@ -18,16 +17,15 @@ func _initialize() -> void:
 	_test_exhausted_pool_fallbacks()
 	_test_reroll_determinism()
 	if not failed:
-		print("RUN_BUILD_OK catalogs=data_driven skill_levels=5 skill_slots=3 relic_slots=4 reference_output=3.7-6.5 phoenix_hps=1.8 structured=true validation=strict reroll=deterministic")
+		print("RUN_BUILD_OK catalogs=data_driven skill_levels=5 skill_slots=3 relic_slots=4 reference_output=2.4-6.5 phoenix_hps=1.8 structured=true validation=strict reroll=deterministic")
 	quit(1 if failed else 0)
-
 
 func _test_catalogs() -> void:
 	_require(not SkillCatalog.ids().is_empty() and SkillCatalog.validation_errors().is_empty(), "技能目录配置无效")
 	for skill_id in SkillCatalog.ids():
 		var skill := SkillCatalog.skill(skill_id)
 		_require(int(skill["max_level"]) == 5, "%s 局内等级上限不是 V" % skill_id)
-		_require(skill["branches"].size() == 2, "%s 未配置双分支" % skill_id)
+		_require(skill["branches"].size() == (0 if int(skill["branch_level"]) == 0 else 2), "%s 分支配置与分支等级不一致" % skill_id)
 		_require(skill["icon"] != null, "%s 缺少图标" % skill_id)
 		_require(HeroCatalog.ids().has(str(skill["owner_hero_id"])), "%s 引用了未知英雄" % skill_id)
 		_require(HeroCatalog.skill(skill_id) == skill, "HeroCatalog.skill 兼容入口未委托到 SkillCatalog")
@@ -40,7 +38,6 @@ func _test_catalogs() -> void:
 		var icon := RelicCatalog.icon(relic_id)
 		_require(icon != null and icon.atlas == RelicCatalog.ITEM_ATLAS, "%s 未使用统一遗物图集" % relic_id)
 
-
 func _test_branch_balance() -> void:
 	for skill_id in SkillCatalog.ids():
 		var skill := SkillCatalog.skill(skill_id)
@@ -52,7 +49,11 @@ func _test_branch_balance() -> void:
 		for field in runtime:
 			if str(field) != "damage":
 				_require(runtime[field][3] == runtime[field][2], "%s 的 III 级额外改变了 %s" % [skill_id, field])
-		for branch_id in SkillCatalog.branch_ids(skill_id):
+		var branch_ids := SkillCatalog.branch_ids(skill_id)
+		if branch_ids.is_empty():
+			var ratio := _effective_output(skill_id, max_level, {}) / base_output
+			_require(ratio >= 2.4 and ratio <= 6.5 + 0.0001, "%s 的 I→V 参考输出为 %.3f 倍" % [skill_id, ratio])
+		for branch_id in branch_ids:
 			var branch := SkillCatalog.branch(skill_id, branch_id)
 			var overrides: Dictionary = branch["level_overrides"][max_level]
 			var ratio := _effective_output(skill_id, max_level, overrides) / base_output
@@ -64,12 +65,12 @@ func _test_branch_balance() -> void:
 				var healing_per_second := healing / cooldown
 				_require(healing_per_second <= 1.8 + 0.0001, "%s 训练 V 后治疗达到 %.3f HP/s" % [branch_id, healing_per_second])
 
-
 func _test_build_state() -> void:
 	var build := RunBuildState.new("star_warden")
 	_require(build.skill_slots.size() == 3, "主动技能槽数量不是 3")
 	_require(build.skill_slots[0] == "star_lance" and build.skill_levels["star_lance"] == 1, "签名技能没有以 I 级进入首槽")
 	_require(build.add_skill("sun_orbit") and build.add_skill("frost_tide"), "合法英雄技能无法填入空槽")
+	_require(build.can_upgrade_skill("sun_orbit") and build.upgrade_skill("sun_orbit") and build.skill_levels["sun_orbit"] == 2 and not build.skill_branches.has("sun_orbit"), "无分支技能无法直接升到 II 级")
 	_require(not build.add_skill("ember_volley") and not build.has_free_skill_slot(), "错误英雄技能或第四技能进入了构筑")
 	_require(build.add_or_upgrade_relic("energy_prism"), "遗物无法加入构筑")
 	_require(build.add_or_upgrade_relic("energy_prism"), "遗物无法升级")
@@ -88,7 +89,6 @@ func _test_build_state() -> void:
 	var differentiated_summary := BuildSummary.text(build)
 	_require(differentiated_summary.contains("星芒枪 III"), "技能 III 被错误显示为满级")
 	_require(differentiated_summary.contains("聚能棱晶 MAX"), "遗物满级没有显示为 MAX")
-
 
 func _test_structured_choices() -> void:
 	var initial_skill_pool := ["star_lance"]
@@ -123,6 +123,10 @@ func _test_structured_choices() -> void:
 	_require(not _has_content(legal, "star_lance"), "满级技能仍进入候选")
 	var locked: Array = upgrades.legal_structured_candidates(RunBuildState.new("star_warden"), ["star_lance"], relic_pool, 1.0)
 	_require(not _has_content(locked, "sun_orbit") and not _has_content(locked, "frost_tide"), "未进入技能池的技能仍可出现")
+	var branchless := RunBuildState.new("star_warden")
+	_require(branchless.add_skill("sun_orbit"), "无分支技能测试无法解锁寒冰斩")
+	var branchless_candidates: Array = upgrades.legal_structured_candidates(branchless, ["sun_orbit"], [], 1.0)
+	_require(_count_kind(branchless_candidates, UpgradeSystem.SKILL_UPGRADE) == 1 and _count_kind(branchless_candidates, UpgradeSystem.SKILL_BRANCH) == 0, "寒冰斩 II 级仍被错误转成分支选择")
 
 	var relic_full := RunBuildState.new("star_warden")
 	for relic_id in ["star_core", "flow_feather", "energy_prism", "time_gear"]:
@@ -130,8 +134,7 @@ func _test_structured_choices() -> void:
 	var full_candidates: Array = upgrades.legal_structured_candidates(relic_full, skill_pool, relic_pool, 1.0)
 	for choice in full_candidates:
 		if choice["kind"] == UpgradeSystem.RELIC_UPGRADE and not relic_full.relic_levels.has(choice["content_id"]):
-			_require(false, "遗物槽满后仍出现新遗物：" + str(choice["content_id"]))
-
+				_require(false, "遗物槽满后仍出现新遗物：" + str(choice["content_id"]))
 
 func _test_reroll_determinism() -> void:
 	var first_build := RunBuildState.new("star_warden")
@@ -150,7 +153,6 @@ func _test_reroll_determinism() -> void:
 	var second_choices := second_upgrades.build_structured_choices(second_build, SkillCatalog.skills_for_hero("star_warden"), RelicCatalog.ids(), 1.0)
 	var second_reroll := second_upgrades.reroll_structured_choices(second_build, SkillCatalog.skills_for_hero("star_warden"), RelicCatalog.ids(), 1.0)
 	_require(_group_key(second_choices) == first_key and _group_key(second_reroll["choices"]) == reroll_key, "相同随机种子的候选或重抽不确定")
-
 
 func _test_exhausted_pool_fallbacks() -> void:
 	var branch_build := RunBuildState.new("star_warden")
@@ -219,9 +221,7 @@ func _effective_output(skill_id: String, level: int, overrides: Dictionary) -> f
 	var runtime: Dictionary = SkillCatalog.skill(skill_id)["runtime"]
 	var damage := float(runtime["damage"][level]) * float(overrides.get("damage_multiplier", 1.0))
 	if skill_id == "sun_orbit":
-		var orbit_count := int(overrides.get("count", runtime["count"][level]))
-		var hit_interval := float(runtime["hit_interval"][level]) * float(overrides.get("hit_interval_multiplier", 1.0))
-		return damage * orbit_count / hit_interval
+		return damage * (1.0 + float(runtime["return_damage_multiplier"][level])) / float(runtime["cooldown"][level])
 	var cooldown := float(runtime["cooldown"][level]) * float(overrides.get("cooldown_multiplier", 1.0))
 	if ["star_lance", "ember_volley"].has(skill_id):
 		var projectile_count := int(overrides.get("count", runtime["count"][level]))

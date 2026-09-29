@@ -56,7 +56,7 @@ static func _equipment_power(hero_id: String, stats: Dictionary) -> int:
 	var interval_multiplier := 1.0 - float(stats.get("cooldown_reduction", 0.0))
 	var score := float(stats.get("damage_percent", 0.0)) * 100.0 * Config.EQUIPMENT_DAMAGE_WEIGHT
 	score += health_percent * Config.EQUIPMENT_HEALTH_WEIGHT
-	score += Config.frequency_gain_percent(interval_multiplier) * Config.EQUIPMENT_FREQUENCY_WEIGHT
+	score += Config.frequency_change_percent(interval_multiplier) * Config.EQUIPMENT_FREQUENCY_WEIGHT
 	score += float(stats.get("move_speed_percent", 0.0)) * 100.0 * Config.EQUIPMENT_MOVE_SPEED_WEIGHT
 	score += float(stats.get("range_percent", 0.0)) * 100.0 * Config.EQUIPMENT_RANGE_WEIGHT
 	score += float(stats.get("projectile_speed_percent", 0.0)) * 100.0 * Config.EQUIPMENT_PROJECTILE_SPEED_WEIGHT

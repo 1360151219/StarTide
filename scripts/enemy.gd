@@ -206,10 +206,11 @@ func _draw() -> void:
 func _draw_elite_aura() -> void:
 	var aura_color := Color("78bfc2") if is_boss else Color("f6c968")
 	draw_circle(Vector2.ZERO, radius + 18.0, Color(aura_color, 0.07))
-	draw_arc(Vector2.ZERO, radius + 13.0, animation_time * 0.8, animation_time * 0.8 + PI * 1.45, 42, Color(aura_color, 0.78), 3.0)
-	for index in range(6):
-		var angle := animation_time * 0.65 + index * TAU / 6.0
-		draw_circle(Vector2.from_angle(angle) * (radius + 18.0), 3.0, Color("e8fff2") if is_boss else Color("fff1a8"))
+	var colors := [Color("69c8c1"), Color("f1c45b"), Color("e98272"), Color("75b779"), Color("667bbb")] if is_boss else [aura_color, aura_color, aura_color, aura_color]
+	for index in range(colors.size()):
+		var start_angle := animation_time * 0.28 + index * TAU / colors.size() + 0.08
+		draw_arc(Vector2.ZERO, radius + 13.0, start_angle, start_angle + TAU / colors.size() - 0.16, 12, Color(0.06, 0.24, 0.28, 0.64), 5.0, true)
+		draw_arc(Vector2.ZERO, radius + 13.0, start_angle, start_angle + TAU / colors.size() - 0.16, 12, Color(colors[index], 0.84), 2.0, true)
 
 
 func _draw_body(metrics: Dictionary, shown_color: Color) -> void:

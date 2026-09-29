@@ -33,15 +33,27 @@ guaranteed = true
 script = ExtResource("13_weighted")
 content_id = "star_core"
 
+[sub_resource type="Resource" id="SkillSunOrbit"]
+script = ExtResource("13_weighted")
+content_id = "sun_orbit"
+weight = 1.15
+guaranteed = true
+
+[sub_resource type="Resource" id="SkillMeteorRain"]
+script = ExtResource("13_weighted")
+content_id = "meteor_rain"
+weight = 1.15
+guaranteed = true
+
 [sub_resource type="Resource" id="RelicFlowFeather"]
 script = ExtResource("13_weighted")
 content_id = "flow_feather"
 
 [sub_resource type="Resource" id="ContentPool"]
 script = ExtResource("12_pool")
-introduced_skill_ids = PackedStringArray("star_lance", "ember_volley")
+introduced_skill_ids = PackedStringArray("star_lance", "ember_volley", "sun_orbit", "meteor_rain")
 introduced_relic_ids = PackedStringArray("star_core", "flow_feather")
-skill_entries = Array[ExtResource("13_weighted")]([SubResource("SkillStarLance"), SubResource("SkillEmberVolley")])
+skill_entries = Array[ExtResource("13_weighted")]([SubResource("SkillStarLance"), SubResource("SkillEmberVolley"), SubResource("SkillSunOrbit"), SubResource("SkillMeteorRain")])
 relic_entries = Array[ExtResource("13_weighted")]([SubResource("RelicStarCore"), SubResource("RelicFlowFeather")])
 skill_pool_limit = 2
 relic_pool_limit = 2

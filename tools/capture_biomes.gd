@@ -1,11 +1,14 @@
 extends SceneTree
 
 const CaptureSetup = preload("res://tools/support/capture_setup.gd")
+const SkillCatalog = preload("res://scripts/skill_catalog.gd")
 
 var frame_count := 0
+var show_frost_tide := false
 
 
 func _initialize() -> void:
+	show_frost_tide = OS.get_cmdline_user_args().has("--frost-tide")
 	change_scene_to_file("res://main.tscn")
 	process_frame.connect(_on_process_frame)
 
@@ -86,6 +89,10 @@ func _prepare_scene(game: Node) -> void:
 		enemy.side_blend = 1.0 if index % 2 == 0 else 0.0
 		enemy.horizontal_facing = -1 if index % 2 == 0 else 1
 		enemy.turn_progress = 1.0
+	if show_frost_tide:
+		var radius: float = SkillCatalog.skill("frost_tide")["runtime"]["radius"][4] * 1.27
+		session.skills.runtime.pulse_visual = {"origin": session.player.position, "radius": radius, "level": 4, "branch_id": "frost_tide_field", "visual_id": frame_count, "time_left": 0.18, "duration": 0.54}
+		session.skills.visuals.refresh()
 	session.pause()
 	game.refresh_presentation()
 

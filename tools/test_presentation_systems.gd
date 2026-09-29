@@ -33,7 +33,7 @@ func _test_audio_catalog_and_buses() -> void:
 	for profile_id in music_profiles:
 		music_streams[CueCatalog.music(profile_id)] = true
 	_require(music_streams.size() == music_profiles.size(), "生态或 Boss 错误复用同一条音乐")
-	for cue_id in ["enemy_warning", "grub_roll_charge", "grub_roll_move", "grub_roll_miss", "bat_bolt_charge", "bat_bolt_launch", "bat_bolt_impact", "cloud_hart_charge", "cloud_hart_sweep", "cloud_hart_impact", "bellfeather_charge", "bellfeather_mark", "bellfeather_impact", "zouwu_appear", "zouwu_dash_charge", "zouwu_dash", "zouwu_dash_hit", "zouwu_tail_charge", "zouwu_tail_sweep", "zouwu_tail_hit", "zouwu_mark_charge", "zouwu_mark", "zouwu_mark_hit", "zouwu_recognition", "pickup_xp", "pickup_heal", "pickup_magnet", "pickup_haste", "pickup_bomb", "elite_appear", "elite_defeat", "result_victory", "result_failure"]:
+	for cue_id in ["enemy_warning", "grub_roll_charge", "grub_roll_move", "grub_roll_miss", "bat_bolt_charge", "bat_bolt_launch", "bat_bolt_impact", "cloud_hart_charge", "cloud_hart_sweep", "cloud_hart_impact", "bellfeather_charge", "bellfeather_mark", "bellfeather_impact", "zouwu_appear", "zouwu_dash_charge", "zouwu_dash", "zouwu_dash_hit", "zouwu_tail_charge", "zouwu_tail_sweep", "zouwu_tail_hit", "zouwu_mark_charge", "zouwu_mark", "zouwu_mark_hit", "zouwu_recognition", "pickup_xp", "pickup_heal", "pickup_magnet", "pickup_haste", "pickup_bomb", "elite_appear", "elite_defeat", "result_victory", "result_failure", "skill_frost_slash_return", "skill_frost_tide_ultimate", "frost_tide_hit", "ember_volley_hit"]:
 		_require(not CueCatalog.cue(cue_id).is_empty(), "缺少关键声音 Cue：%s" % cue_id)
 	_require(int(CueCatalog.cue("enemy_warning")["priority"]) > int(CueCatalog.cue("impact")["priority"]), "危险声音优先级没有高于普通命中")
 	var manager := AudioManager.new()
@@ -72,6 +72,12 @@ func _test_effect_budgets() -> void:
 	for effect in effects.effects:
 		number_count += int(effect["kind"] in ["damage_text", "heal_text"])
 	_require(number_count == 18, "浮动数字没有遵守 18 个上限")
+	effects.clear_all()
+	for kind in ["cloud_hart_sweep", "bellfeather_impact", "zouwu_dash_trail", "zouwu_tail_sweep", "zouwu_mark_impact"]:
+		effects.add_effect(Vector2.ZERO, 80.0, Color.WHITE, 0.3, kind)
+	_require(effects.effects.size() == 5, "敌人或 Boss 技能执行峰值没有进入统一短效系统")
+	for effect in effects.effects:
+		_require(int(effect["priority"]) >= 74, "敌人或 Boss 技能执行峰值优先级过低")
 	effects.free()
 
 
@@ -135,7 +141,22 @@ func _test_visual_language_contract() -> void:
 		"res://scripts/ui/expedition_route_pin.gd",
 		"res://scripts/ui/battle_route_progress.gd",
 		"res://scripts/presentation/world_landmarks.gd",
+		"res://scripts/presentation/combat_effect_draw_abilities.gd",
+		"res://scripts/skills/frost_tide_visual.gd",
+		"res://scripts/skills/frost_tide_reveal.gdshader",
 		"res://assets/art/sunlit/backgrounds/expedition_route_map.png",
+		"res://assets/art/skills/frost_tide_wave.png",
+		"res://assets/art/skills/frost_tide_field_wave.png",
+		"res://assets/art/skills/frost_tide_shatter_wave.png",
+		"res://assets/art/skills/frost_tide_star_crown.png",
+		"res://assets/art/skills/frost_tide_shards.png",
+		"res://scripts/skills/ember_skill_visuals.gd",
+		"res://scripts/skills/phoenix_heart_visual.gd",
+		"res://scripts/skills/phoenix_wing_reveal.gdshader",
+		"res://assets/art/skills/ember_volley_feather.png",
+		"res://assets/art/skills/meteor_rain_body.png",
+		"res://assets/art/skills/phoenix_heart_wings.png",
+		"res://assets/art/skills/ember_fragments.png",
 	]:
 		_require(FileAccess.file_exists(required_path), "缺少方案 D 共用组件：%s" % required_path)
 	for file_name in DirAccess.get_files_at("res://scripts/ui"):

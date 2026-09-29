@@ -80,7 +80,8 @@ func can_upgrade_skill(skill_id: String) -> bool:
 	var data := SkillCatalog.skill(skill_id)
 	if level >= int(data["max_level"]):
 		return false
-	return level + 1 != int(data["branch_level"]) or skill_branches.has(skill_id)
+	var branch_level := int(data["branch_level"])
+	return branch_level == 0 or level + 1 != branch_level or skill_branches.has(skill_id)
 
 
 func upgrade_skill(skill_id: String) -> bool:
@@ -97,7 +98,7 @@ func can_select_branch(skill_id: String, branch_id: String) -> bool:
 	if not has_skill(skill_id) or skill_branches.has(skill_id):
 		return false
 	var data := SkillCatalog.skill(skill_id)
-	if data.is_empty() or int(skill_levels[skill_id]) + 1 != int(data["branch_level"]):
+	if data.is_empty() or int(data["branch_level"]) == 0 or int(skill_levels[skill_id]) + 1 != int(data["branch_level"]):
 		return false
 	return data["branches"].has(branch_id)
 

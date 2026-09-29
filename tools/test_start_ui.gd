@@ -107,29 +107,29 @@ func _on_process_frame() -> void:
 	)
 	_require(screen.bottom_bar.visible and not screen.compendium.collection_view.close_button.visible, "图鉴主页面仍使用临时弹层导航")
 	_require(
-		screen.compendium.collection_view.paper_sheet.get_node_or_null("SunlitFrame") != null
-		and screen.compendium.tab_buttons["enemies"].get_node_or_null("SunlitFrame") != null,
-		"图鉴外框或页签没有复用日光远征装饰组件"
+		screen.compendium.collection_view.paper_sheet.texture.resource_path == "res://assets/art/ui/compendium/page_frame.png" and screen.compendium.collection_view.selected_plate.texture is AtlasTexture and screen.compendium.collection_view.selected_plate.texture.atlas.resource_path == "res://assets/art/ui/compendium/category_selected.png"
+		and is_equal_approx(screen.compendium.collection_view.selected_plate.size.x, screen.compendium.tab_buttons["enemies"].size.x) and screen.compendium.tab_buttons["enemies"].get_node("TabContent").get_theme_constant("separation") == 0,
+		"图鉴外框或页签没有接入独立日光远征素材"
 	)
 	for button in screen.bottom_bar.buttons.values():
 		_require(button.is_visible_in_tree() and button.modulate.a > 0.99, "图鉴页丢失底部主导航入口")
 	_require(screen.compendium.list.get_child_count() == 7, "锁定内容没有保留完整怪物图鉴槽位")
-	_require(screen.compendium.list.get_child(0).get_node_or_null("SunlitFrame") != null, "图鉴内容卡没有复用日光远征装饰组件")
-	_require(screen.compendium.tab_buttons["enemies"].text == "怪物 0/7", "怪物图鉴进度错误")
+	_require(screen.compendium.list.get_child(0).get_node_or_null("SunlitFrame") == null, "图鉴内容仍在复制独立卡框")
+	_require(screen.compendium.tab_buttons["enemies"].get_meta("title") == "怪物" and int(screen.compendium.tab_buttons["enemies"].get_meta("discovered")) == 0, "怪物图鉴进度错误")
 	_require(not bool(screen.compendium.list.get_child(0).get_meta("discovered", true)), "新存档错误显示怪物详情")
 	screen.records.discover_content("enemies", "green_grub")
 	screen.compendium.show_category("enemies")
-	_require(screen.compendium.tab_buttons["enemies"].text == "怪物 1/7", "发现怪物后图鉴进度没有刷新")
+	_require(int(screen.compendium.tab_buttons["enemies"].get_meta("discovered")) == 1, "发现怪物后图鉴进度没有刷新")
 	_require(bool(screen.compendium.list.get_child(0).get_meta("discovered", false)), "发现怪物后图鉴详情仍被锁定")
 	screen.compendium.show_category("relics")
 	_require(screen.compendium.list.get_child_count() == 6, "遗物没有保留全部图鉴槽位")
-	_require(screen.compendium.tab_buttons["relics"].text == "遗物 0/6", "遗物图鉴进度错误")
+	_require(screen.compendium.tab_buttons["relics"].get_meta("title") == "遗物" and int(screen.compendium.tab_buttons["relics"].get_meta("total")) == 6, "遗物图鉴进度错误")
 	_require(not bool(screen.compendium.list.get_child(0).get_meta("discovered", true)), "未获得遗物错误显示详情")
 	screen.records.discover_content("skills", "star_lance")
 	screen.compendium.show_category("skills")
 	var discovered_skill_card: Panel = screen.compendium.list.get_child(0)
-	var skill_description: Label = discovered_skill_card.get_child(3)
-	_require(skill_description.text.contains("分支 · ？？？"), "未选过的技能分支提前显示详情")
+	var skill_description: Label = discovered_skill_card.get_node("DetailDescription")
+	_require(skill_description.text.contains("分支 · ？？？") and discovered_skill_card.get_node_or_null("OwnerAvatarBadge") != null and not skill_description.text.contains("专属"), "技能归属头像或分支隐藏状态错误")
 	screen.bottom_bar.buttons["character"].pressed.emit()
 	_require(
 		screen.current_page == "character"

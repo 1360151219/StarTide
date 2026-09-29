@@ -3,36 +3,44 @@ extends Control
 signal close_requested
 
 const UiFactory = preload("res://scripts/ui/ui_factory.gd")
-const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
+const CharacterAssets = preload("res://scripts/ui/character_asset_catalog.gd")
+const BACK_ICON = preload("res://assets/art/ui/compendium/back_icon.png")
+const CATEGORY_SILHOUETTES := {
+	"heroes": preload("res://assets/art/ui/compendium/category_heroes.png"),
+	"enemies": preload("res://assets/art/ui/compendium/category_enemies.png"),
+	"pickups": preload("res://assets/art/ui/compendium/category_pickups.png"),
+	"skills": preload("res://assets/art/ui/compendium/category_skills.png"),
+	"relics": preload("res://assets/art/ui/compendium/category_relics.png"),
+}
+const SECTION_MARKERS := ["基础效果", "终极效果", "分支 ·"]
 
 var detail_icon: TextureRect
 var detail_title: Label
 var detail_subtitle: Label
 var detail_description: RichTextLabel
 var detail_hint: Label
-var detail_panel: Panel
+var detail_panel: Control
 var back_button: Button
+var detail_scroll_hint: Label
+var owner_badge: Panel
+var owner_portrait: TextureRect
 var navigation_mode := false
 var navigation_reserve := 142.0
+var reveal_tween: Tween
 
 
 func build() -> void:
 	anchor_right = 1.0
 	anchor_bottom = 1.0
-	offset_top = 174.0
+	offset_top = 216.0
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 12
-	var scrim := ColorRect.new()
-	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	scrim.color = Color(0.02, 0.1, 0.12, 0.72)
-	scrim.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(scrim)
-	detail_panel = _build_panel()
+	detail_panel = Control.new()
+	detail_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(detail_panel)
-	_build_header(detail_panel)
+	_build_back(detail_panel)
 	_build_record(detail_panel)
 	_build_description(detail_panel)
-	_build_footer(detail_panel)
 	resized.connect(_layout)
 	_layout()
 	visible = false
@@ -55,111 +63,175 @@ func present(
 	discovered: bool,
 	accent: Color,
 	description: String,
-	hint: String
+	hint: String,
+	category: String
 ) -> void:
-	detail_icon.texture = entry["texture"]
-	detail_icon.modulate = Color.WHITE if discovered else Color(0.12, 0.2, 0.19, 0.45)
+	detail_icon.texture = entry["texture"] if discovered else CATEGORY_SILHOUETTES[category]
+	detail_icon.modulate = Color.WHITE if discovered else Color(0.22, 0.38, 0.38, 0.48)
 	detail_title.text = entry["name"] if discovered else "？？？"
 	detail_title.add_theme_color_override("font_color", UiFactory.INK)
-	detail_subtitle.text = entry["subtitle"] if discovered else "这条记录还藏在远征途中"
-	detail_subtitle.add_theme_color_override("font_color", accent)
-	detail_description.text = description
+	detail_subtitle.text = _detail_summary(entry) if discovered else "这条记录还藏在远征途中"
+	detail_subtitle.add_theme_color_override("font_color", UiFactory.PRIMARY_DARK if discovered else UiFactory.MUTED_INK)
+	_show_owner(entry, discovered and category == "skills", accent)
+	detail_description.text = _structured_description(description)
 	detail_description.scroll_to_line(0)
 	detail_hint.text = hint
+	detail_hint.visible = not discovered
+	detail_scroll_hint.visible = discovered and (category == "skills" or description.length() > 160)
 	visible = true
+	if reveal_tween != null and reveal_tween.is_valid():
+		reveal_tween.kill()
+	position.x = 8.0
+	modulate.a = 0.0
+	reveal_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	reveal_tween.tween_property(self, "position:x", 0.0, 0.18)
+	reveal_tween.tween_property(self, "modulate:a", 1.0, 0.18)
 
 
 func hide_detail() -> void:
 	visible = false
+	position.x = 0.0
+	modulate.a = 1.0
 
 
-func _build_panel() -> Panel:
-	var panel := Panel.new()
-	panel.position = Vector2(22, 14)
-	SunlitCardStyle.apply_panel(panel, UiFactory.SURFACE, UiFactory.PRIMARY, 14.0, true, false, "map_tag")
-	return panel
+func _build_back(parent: Control) -> void:
+	back_button = Button.new()
+	back_button.name = "BackToCollection"
+	back_button.position = Vector2(36, 4)
+	back_button.size = Vector2(70, 56)
+	back_button.icon = BACK_ICON
+	back_button.expand_icon = true
+	back_button.add_theme_constant_override("icon_max_width", 60)
+	back_button.flat = true
+	back_button.tooltip_text = "返回收藏"
+	back_button.accessibility_name = "返回收藏"
+	back_button.pressed.connect(close_requested.emit)
+	parent.add_child(back_button)
 
 
-func _build_header(panel: Panel) -> void:
-	var record_mark := _plain_label("图鉴记录", 14, UiFactory.PRIMARY_DARK)
-	record_mark.position = Vector2(24, 20)
-	record_mark.size = Vector2(160, 24)
-	panel.add_child(record_mark)
-	var close_button := Button.new()
-	close_button.position = Vector2(388, 16)
-	close_button.size = Vector2(84, 48)
-	close_button.text = "收起"
-	close_button.add_theme_font_size_override("font_size", 14)
-	SunlitCardStyle.apply_button(close_button, false, UiFactory.PRIMARY)
-	close_button.pressed.connect(close_requested.emit)
-	panel.add_child(close_button)
-
-
-func _build_record(panel: Panel) -> void:
+func _build_record(parent: Control) -> void:
 	detail_icon = TextureRect.new()
-	detail_icon.position = Vector2(28, 68)
-	detail_icon.size = Vector2(128, 136)
+	detail_icon.name = "DetailSubject"
+	detail_icon.position = Vector2(48, 58)
+	detail_icon.size = Vector2(168, 170)
 	detail_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	detail_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	panel.add_child(detail_icon)
-	detail_title = _plain_label("", 28, UiFactory.INK)
-	detail_title.position = Vector2(176, 76)
-	detail_title.size = Vector2(282, 42)
+	parent.add_child(detail_icon)
+	detail_title = _plain_label("", 30, UiFactory.INK)
+	UiFactory.apply_key_heading(detail_title, 30, UiFactory.INK)
+	detail_title.position = Vector2(236, 74)
+	detail_title.size = Vector2(252, 44)
+	detail_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	detail_title.clip_text = true
-	panel.add_child(detail_title)
-	detail_subtitle = _plain_label("", 15, UiFactory.PRIMARY_DARK)
-	detail_subtitle.position = Vector2(176, 120)
-	detail_subtitle.size = Vector2(282, 70)
+	parent.add_child(detail_title)
+	detail_subtitle = _plain_label("", 16, UiFactory.PRIMARY_DARK)
+	detail_subtitle.position = Vector2(236, 126)
+	detail_subtitle.size = Vector2(252, 88)
+	detail_subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_subtitle.clip_text = true
-	panel.add_child(detail_subtitle)
+	detail_subtitle.max_lines_visible = 3
+	detail_subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	parent.add_child(detail_subtitle)
+	owner_badge = Panel.new()
+	owner_badge.name = "OwnerAvatarBadge"
+	owner_badge.position = Vector2(236, 136)
+	owner_badge.size = Vector2(52, 52)
+	owner_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(owner_badge)
+	owner_portrait = TextureRect.new()
+	owner_portrait.position = Vector2(4, 4)
+	owner_portrait.size = Vector2(44, 44)
+	owner_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	owner_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	owner_badge.add_child(owner_portrait)
 	var divider := ColorRect.new()
-	divider.position = Vector2(24, 218)
-	divider.size = Vector2(448, 2)
-	divider.color = Color(UiFactory.PRIMARY, 0.42)
-	panel.add_child(divider)
+	divider.position = Vector2(48, 246)
+	divider.size = Vector2(440, 2)
+	divider.color = Color(UiFactory.PRIMARY, 0.36)
+	parent.add_child(divider)
 
 
-func _build_description(panel: Panel) -> void:
+func _build_description(parent: Control) -> void:
 	detail_description = RichTextLabel.new()
-	detail_description.position = Vector2(28, 238)
-	detail_description.size = Vector2(440, 372)
-	detail_description.bbcode_enabled = false
+	detail_description.position = Vector2(52, 270)
+	detail_description.size = Vector2(432, 280)
+	detail_description.bbcode_enabled = true
 	detail_description.fit_content = false
 	detail_description.scroll_active = true
 	detail_description.add_theme_font_size_override("normal_font_size", 17)
 	detail_description.add_theme_color_override("default_color", UiFactory.MUTED_INK)
 	detail_description.add_theme_constant_override("line_separation", 8)
-	panel.add_child(detail_description)
-
-
-func _build_footer(panel: Panel) -> void:
+	parent.add_child(detail_description)
+	detail_scroll_hint = _plain_label("继续下滑查看", 14, UiFactory.PRIMARY_DARK)
+	detail_scroll_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	detail_scroll_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	parent.add_child(detail_scroll_hint)
 	detail_hint = _plain_label("", 15, UiFactory.PRIMARY_DARK)
-	detail_hint.position = Vector2(28, 620)
-	detail_hint.size = Vector2(440, 36)
 	detail_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail_hint.clip_text = true
-	panel.add_child(detail_hint)
-	back_button = Button.new()
-	back_button.position = Vector2(28, 660)
-	back_button.size = Vector2(440, 52)
-	back_button.text = "返回收藏"
-	back_button.add_theme_font_size_override("font_size", 18)
-	SunlitCardStyle.apply_button(back_button, false, UiFactory.PRIMARY)
-	back_button.pressed.connect(close_requested.emit)
-	panel.add_child(back_button)
+	parent.add_child(detail_hint)
 
 
 func _layout() -> void:
-	if not is_instance_valid(detail_panel) or not is_instance_valid(detail_description):
+	if not is_instance_valid(detail_description):
 		return
-	var panel_height := maxf(468.0, size.y - 36.0)
-	detail_panel.size = Vector2(496, panel_height)
-	var footer_top := panel_height - 106.0
-	detail_description.size.y = maxf(100.0, footer_top - 248.0)
-	detail_hint.position.y = footer_top
-	back_button.position.y = panel_height - 66.0
+	var footer_y := maxf(330.0, size.y - 46.0)
+	detail_description.size.y = maxf(80.0, footer_y - 278.0)
+	detail_scroll_hint.position = Vector2(328, footer_y - 30.0)
+	detail_scroll_hint.size = Vector2(156, 28)
+	detail_hint.position = Vector2(52, footer_y - 22.0)
+	detail_hint.size = Vector2(432, 34)
+
+
+func _show_owner(entry: Dictionary, visible_owner: bool, accent: Color) -> void:
+	owner_badge.visible = visible_owner
+	if not visible_owner:
+		detail_subtitle.position.x = 236
+		detail_subtitle.size.x = 252
+		return
+	owner_portrait.texture = CharacterAssets.hero_avatar_texture(str(entry.get("owner_hero_id", "")))
+	owner_badge.add_theme_stylebox_override("panel", _owner_style(accent))
+	detail_subtitle.position.x = 302
+	detail_subtitle.size.x = 186
+
+
+func _owner_style(accent: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = UiFactory.SURFACE
+	style.border_color = Color(accent, 0.9)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(26)
+	return style
+
+
+func _detail_summary(entry: Dictionary) -> String:
+	var lines: Array[String] = []
+	var subtitle := str(entry.get("subtitle", ""))
+	var summary := str(entry.get("summary", ""))
+	if not subtitle.is_empty():
+		lines.append(subtitle)
+	if not summary.is_empty():
+		lines.append(summary)
+	return "\n".join(lines)
+
+
+func _structured_description(description: String) -> String:
+	var result: Array[String] = []
+	for line in description.split("\n"):
+		var text := str(line)
+		if _is_section_marker(text):
+			result.append("[font=%s][font_size=18][color=#286b78]%s[/color][/font_size][/font]" % [UiFactory.expedition_heading_font().resource_path, text])
+		else:
+			result.append(text)
+	return "\n".join(result)
+
+
+func _is_section_marker(text: String) -> bool:
+	for marker in SECTION_MARKERS:
+		if text == marker or text.begins_with(marker):
+			return true
+	return false
 
 
 func _plain_label(text: String, font_size: int, color: Color) -> Label:

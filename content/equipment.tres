@@ -28,14 +28,14 @@ data = {
 script = ExtResource("2_entry")
 content_id = "windstring_bow"
 data = {
-"base_stats": {"damage_percent": 0.04, "projectile_speed_percent": 0.04},
+"base_stats": {"damage_percent": 0.08, "projectile_speed_percent": 0.08, "cooldown_reduction": -0.04},
 "content_tier": 2,
 "default_rarity": "rare",
-"description": "提高技能威力与投射物飞行速度。",
+"description": "提高技能威力与投射物飞行速度，但会延长技能间隔。",
 "icon": ExtResource("4_bow"),
 "name": "风弦短弓",
 "slot": "weapon",
-"stats_per_enhance": {"damage_percent": 0.008, "projectile_speed_percent": 0.006}
+"stats_per_enhance": {"damage_percent": 0.008, "projectile_speed_percent": 0.008, "cooldown_reduction": -0.002}
 }
 
 [sub_resource type="Resource" id="Guard"]
@@ -105,7 +105,7 @@ data = {
 "icon": ExtResource("9_windseal"),
 "name": "千里风印",
 "slot": "charm",
-"stats_per_enhance": {"cooldown_reduction": 0.001714286, "move_speed_percent": 0.002285714}
+"stats_per_enhance": {"cooldown_reduction": 0.003, "move_speed_percent": 0.004}
 }
 
 [resource]

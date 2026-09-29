@@ -82,14 +82,14 @@ func _refresh_speed() -> void:
 func move(direction: Vector2, delta: float) -> Vector2:
 	var bounds := map.world_bounds
 	var previous_position := position
-	movement_amount = direction.length()
+	movement_amount = minf(direction.length(), 1.0)
 	if direction.length_squared() > 0.01:
 		facing = direction.normalized()
 		if absf(facing.x) > 0.28:
 			var next_facing := -1 if facing.x < 0.0 else 1
 			if next_facing != horizontal_facing:
 				horizontal_facing = next_facing
-		position += facing * speed * delta
+		position += facing * movement_amount * speed * delta
 	position.x = clampf(position.x, bounds.position.x + 24.0, bounds.end.x - 24.0)
 	position.y = clampf(position.y, bounds.position.y + 24.0, bounds.end.y - 24.0)
 	z_index = map.depth_index(position.y)

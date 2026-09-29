@@ -27,7 +27,8 @@ func legal_candidates(build_state: RefCounted, skill_pool_ids, relic_pool_ids, h
 		if current_level >= int(skill["max_level"]):
 			continue
 		var target_level := current_level + 1
-		if target_level == int(skill["branch_level"]) and not build_state.skill_branches.has(skill_id):
+		var branch_level := int(skill["branch_level"])
+		if branch_level > 0 and target_level == branch_level and not build_state.skill_branches.has(skill_id):
 			for branch_id in SkillCatalog.branch_ids(skill_id):
 				choices.append(_with_weight(ChoiceFactory.skill_branch(skill_id, branch_id, target_level), _content_weight(skill_pool_ids, skill_id)))
 		elif build_state.can_upgrade_skill(skill_id):

@@ -1,6 +1,6 @@
 extends RefCounted
 
-const FORMULA_VERSION := 1
+const FORMULA_VERSION := 2
 const BASE_POWER := 1000
 const LEVEL_DAMAGE_WEIGHT := 20.0
 const LEVEL_HEALTH_WEIGHT := 10.0
@@ -26,3 +26,9 @@ static func frequency_gain_percent(interval_multiplier: float) -> float:
 	if interval_multiplier <= 0.0:
 		return 0.0
 	return maxf(0.0, 1.0 / interval_multiplier - 1.0) * 100.0
+
+
+static func frequency_change_percent(interval_multiplier: float) -> float:
+	if interval_multiplier <= 0.0:
+		return 0.0
+	return (1.0 / interval_multiplier - 1.0) * 100.0

@@ -84,8 +84,6 @@ static func _name_text(choice: Dictionary) -> String:
 
 static func _special_text(choice: Dictionary) -> String:
 	var kind := str(choice.get("kind", ""))
-	if kind == "skill_branch":
-		return "选择分支"
 	if kind == "skill_upgrade":
 		var skill := SkillCatalog.skill(str(choice.get("content_id", "")))
 		if not skill.is_empty() and int(choice.get("target_level", 0)) >= int(skill["max_level"]):
@@ -114,7 +112,7 @@ static func _skill_metrics(skill_id: String, target_level: int) -> Array[Diction
 		return [_metric("等级", ChoiceFactory.roman(target_level), "level")]
 	var result: Array[Dictionary] = []
 	var definitions := [
-		["count", "数量", "level"], ["damage", "伤害", "enemy"], ["healing", "恢复", "heal"],
+		["count", "数量", "count"], ["damage", "伤害", "enemy"], ["healing", "恢复", "heal"],
 		["cooldown", "间隔", "clock"], ["hit_interval", "间隔", "clock"],
 		["radius", "范围", "magnet"], ["blast_radius", "爆炸", "bomb"], ["orbit_radius", "环绕", "expedition"],
 	]

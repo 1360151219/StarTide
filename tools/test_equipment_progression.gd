@@ -14,7 +14,7 @@ func _initialize() -> void:
 	_test_same_name_upgrade()
 	_test_level_drop_tables()
 	if not failed:
-		print("EQUIPMENT_PROGRESSION_OK levels=%d drops=1-4 tiered=true quality_curves=true" % LevelCatalog.all().size())
+		print("EQUIPMENT_PROGRESSION_OK levels=%d drops=1-4 tiered=true quality_base_only=true tradeoff=true" % LevelCatalog.all().size())
 	quit(1 if failed else 0)
 
 
@@ -26,8 +26,18 @@ func _test_quality_and_level_stats() -> void:
 	var rare_level_one := float(EquipmentCatalog.resolved_stats("apprentice_starwand", "rare", 1)["damage_percent"])
 	var top_level_one := float(EquipmentCatalog.resolved_stats("apprentice_starwand", "top", 1)["damage_percent"])
 	var common_level_five := float(EquipmentCatalog.resolved_stats("apprentice_starwand", "common", 5)["damage_percent"])
-	_require(common_level_one < rare_level_one and rare_level_one < top_level_one, "品质没有提高同等级装备属性")
-	_require(common_level_five > common_level_one, "升级没有逐级提高装备属性")
+	var top_level_two := float(EquipmentCatalog.resolved_stats("apprentice_starwand", "top", 2)["damage_percent"])
+	_require(is_equal_approx(common_level_one, 0.05) and is_equal_approx(rare_level_one, 0.0675) and is_equal_approx(top_level_one, 0.0875), "品质没有只放大装备基础属性")
+	_require(is_equal_approx(common_level_five, 0.09) and is_equal_approx(top_level_two - top_level_one, 0.01), "装备成长仍被品质重复放大")
+	var rare_bow := EquipmentCatalog.resolved_stats("windstring_bow", "rare", 5)
+	var top_bow := EquipmentCatalog.resolved_stats("windstring_bow", "top", 5)
+	_require(
+		is_equal_approx(float(rare_bow["damage_percent"]), 0.14)
+		and is_equal_approx(float(rare_bow["projectile_speed_percent"]), 0.14)
+		and is_equal_approx(float(rare_bow["cooldown_reduction"]), -0.048)
+		and is_equal_approx(float(top_bow["cooldown_reduction"]), -0.048),
+		"风弦短弓的增益、代价或负属性品质规则错误"
+	)
 	for equipment_id in EquipmentCatalog.ids():
 		_require(EquipmentCatalog.content_tier(equipment_id) >= 1, "%s 内容阶级无效" % equipment_id)
 

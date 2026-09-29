@@ -102,15 +102,15 @@ func _test_star_skill_modifiers(host: Node2D, effects: Node2D) -> void:
 	_require(_close(lance.skills.runtime.bolt_timer, lance_data["cooldown"][1] * 0.96), "星芒枪冷却训练未应用")
 	lance.free()
 
-	var orbit := _trained_session(host, effects, "star_warden", "sun_orbit", 42)
-	var orbit_data: Dictionary = HeroCatalog.skill("sun_orbit")["runtime"]
-	var orbit_enemy = _durable_enemy(orbit, orbit.player.position + Vector2(orbit_data["orbit_radius"][1] * 1.08, 0.0))
-	orbit.skills.runtime.orbit_phase = 0.0
-	orbit.skills.runtime.orbit_hit_timer = 0.0
-	orbit.skills.advance(0.0, 0.0, 1.0)
-	_require(_close(999.0 - orbit_enemy.health, orbit_data["damage"][1] * 1.135 * 1.04), "日轮伤害或范围训练未应用")
-	_require(_close(orbit.skills.runtime.orbit_hit_timer, orbit_data["hit_interval"][1] * 0.96), "日轮命中间隔训练未应用")
-	orbit.free()
+	var slash := _trained_session(host, effects, "star_warden", "sun_orbit", 42)
+	var slash_data: Dictionary = HeroCatalog.skill("sun_orbit")["runtime"]
+	var slash_enemy = _durable_enemy(slash, slash.player.position + Vector2(slash_data["radius"][1] * 1.08, 0.0))
+	slash.skills.runtime.slash_timer = 0.0
+	slash.skills.advance(0.0, 0.0, 1.0)
+	slash.skills.advance(0.0, 0.09, 1.09)
+	_require(_close(999.0 - slash_enemy.health, slash_data["damage"][1] * 1.135 * 1.04), "寒冰斩伤害或范围训练未应用")
+	_require(_close(slash.skills.runtime.slash_timer, slash_data["cooldown"][1] * 0.96), "寒冰斩冷却训练未应用")
+	slash.free()
 
 	var frost := _trained_session(host, effects, "star_warden", "frost_tide", 43)
 	var frost_data: Dictionary = HeroCatalog.skill("frost_tide")["runtime"]
@@ -155,7 +155,7 @@ func _test_ember_skill_modifiers(host: Node2D, effects: Node2D) -> void:
 	phoenix.skills.advance(0.0, 0.19, 1.19)
 	_require(_close(phoenix.player.health - health_before, phoenix_data["healing"][1] * 1.04), "凤凰之心治疗训练未应用")
 	_require(_close(999.0 - phoenix_enemy.health, phoenix_data["damage"][1] * 1.135 * 1.04), "凤凰之心伤害训练未应用")
-	_require(_has_effect_radius(effects, "phoenix", phoenix_data["radius"][1] * 1.08), "凤凰之心范围训练未应用")
+	_require(_close(float(phoenix.skills.runtime.phoenix_visual["radius"]), phoenix_data["radius"][1] * 1.08), "凤凰之心视觉快照没有应用范围训练")
 	phoenix.free()
 
 

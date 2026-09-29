@@ -27,6 +27,7 @@
 | 永久成长、装备、属性、战力 | `docs/NUMERICAL_SYSTEMS.md`、`scripts/profile/` 相关实现 | 对应内容资源与回归测试 |
 | UI、布局、交互状态、响应式 | `docs/ART_DIRECTION.md`、`docs/UI_SPEC.md` | `docs/ASSET_MANIFEST.md`、三张参考图 |
 | 角色、怪物、技能特效、环境、音频 | `docs/ART_DIRECTION.md`、`docs/ASSET_MANIFEST.md` | `docs/UI_SPEC.md` |
+| 英雄或怪物技能特效制作、优化 | 上述视觉文档，尤其 `ART_DIRECTION.md` 的 `Combat Material VFX Standard`；目标技能的表现与结算代码 | 对应素材生产提示词、实际运行对照 |
 | 新增或替换生成素材 | 上述视觉文档、对应 `.prompts/*.md` | 三张参考图 |
 | 视觉方向复盘 | `docs/VISUAL_DIRECTIONS.md` | `docs/VISUAL_AUDIT.md`、三张参考图 |
 | 修复当前视觉问题 | `docs/VISUAL_AUDIT.md`、对应权威规范 | 实际运行截图 |
@@ -53,6 +54,8 @@
 4. `VISUAL_DIRECTIONS.md`、`VISUAL_AUDIT.md` 和参考图。
 
 `NUMERICAL_SYSTEMS.md` 的“当前已实现”部分必须与配置、运行时代码和测试一致；发现不一致时先确定真实运行行为，再同步单一实现与本文，不在 UI 或新文档中创建第二套公式。
+
+技能特效以用户认可的陨星雨材质效果为质量基准：主体体积、属性材质内部运动、命中层次与可读性缺一不可。后续 Agent 必须先读取 `ART_DIRECTION.md` 的 `Combat Material VFX Standard`，再修改表现；不能退回粗线、多边形描边、统一圆爆炸或单张静图缩放作为主效果。各元素遵循自己的材质与轮廓，不把所有技能套成陨星火球；验收以游戏内动态结果为准。
 
 ## 3. 代码与数据结构
 

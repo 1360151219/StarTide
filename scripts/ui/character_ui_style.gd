@@ -229,8 +229,12 @@ static func stats_text(raw_stats: Variant) -> String:
 	var parts := PackedStringArray()
 	for stat_id in raw_stats:
 		var value := float(raw_stats[stat_id])
-		var value_text := "+%.0f" % value if stat_id == "max_health_flat" else "+%.0f%%" % (value * 100.0)
-		parts.append("%s %s" % [STAT_NAMES.get(stat_id, str(stat_id)), value_text])
+		if stat_id == "cooldown_reduction" and value < 0.0:
+			parts.append("代价：技能间隔 +%.0f%%" % (-value * 100.0))
+			continue
+		var value_text := "%+.0f" % value if stat_id == "max_health_flat" else "%+.0f%%" % (value * 100.0)
+		var prefix := "代价：" if value < 0.0 else ""
+		parts.append("%s%s %s" % [prefix, STAT_NAMES.get(stat_id, str(stat_id)), value_text])
 	return "  ·  ".join(parts)
 
 

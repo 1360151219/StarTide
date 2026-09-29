@@ -22,6 +22,7 @@ var current_owner_id := ""
 func _ready() -> void:
 	custom_minimum_size = Vector2(88, 88)
 	focus_mode = Control.FOCUS_ALL
+	mouse_filter = Control.MOUSE_FILTER_PASS
 	clip_contents = false
 	CharacterStyle.apply_item_card(self, "common", false)
 	background_view = TextureRect.new()

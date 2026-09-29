@@ -105,6 +105,8 @@ func _build_inventory_sheet() -> void:
 	scroll.clip_contents = true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+	scroll.scroll_deadzone = 6
+	scroll.follow_focus = true
 	scroll.get_v_scroll_bar().custom_minimum_size.x = 8
 	inventory_sheet.add_child(scroll)
 	inventory_grid = GridContainer.new()
@@ -118,6 +120,7 @@ func _build_inventory_sheet() -> void:
 	empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	count_label = CharacterStyle.add_label(inventory_sheet, "", 14, CharacterStyle.MUTED, Vector2(414, 36), Vector2(86, 24), HORIZONTAL_ALIGNMENT_CENTER)
 	status_label = CharacterStyle.add_label(inventory_sheet, "", 14, CharacterStyle.MUTED, Vector2(190, 174), Vector2(236, 24), HORIZONTAL_ALIGNMENT_RIGHT)
+	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	detail_sheet = DetailSheet.new()
 	detail_sheet.action_requested.connect(_perform_selected_action)
 	detail_sheet.upgrade_requested.connect(_upgrade_selected_item)

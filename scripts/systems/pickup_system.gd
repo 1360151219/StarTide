@@ -135,7 +135,6 @@ func _collect(pickup: Node, elapsed: float) -> void:
 		"heal":
 			audio.play_sfx("pickup_heal", -1.0, rng.randf_range(0.98, 1.04))
 			effects.add_follow_effect(player, 42.0, data["accent"], 0.52, "pickup_heal")
-			effects.add_heal_number(player.position - Vector2(18.0, 34.0), float(data["amount"]))
 			heal_requested.emit(float(data["amount"]))
 		"magnet":
 			audio.play_sfx("pickup_magnet", -1.0)

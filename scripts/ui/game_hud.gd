@@ -75,7 +75,8 @@ func refresh(state: RefCounted, level: LevelConfig, player: Node2D, skills: Node
 	if last_health_value >= 0.0 and player.health < last_health_value:
 		_show_health_notch(health_ratio)
 	last_health_value = player.health
-	top_panel.refresh(state.player_level, player.health, player.max_health, state.experience, state.experience_needed, "生存 %s" % _format_time(state.elapsed), state.kills, health_ratio <= 0.3)
+	var objective_time := "清除强敌" if is_instance_valid(elite) else "计时 %s" % _format_time(state.objective_elapsed())
+	top_panel.refresh(state.player_level, player.health, player.max_health, state.experience, state.experience_needed, objective_time, state.kills, health_ratio <= 0.3)
 	skill_dock.refresh(skills, state.elapsed)
 	var passive_color := Color("70e8ff") if state.hero_id == "star_warden" else Color("ff9a62")
 	stage_hud.refresh(stage, passives.status_text(state.elapsed), passive_color, pickups.remaining_magnet_seconds(state.elapsed), elite, state.objective_elapsed(), level.duration)
@@ -109,6 +110,14 @@ func movement_vector() -> Vector2:
 func cancel_input() -> void:
 	joystick.cancel_input()
 	skill_dock.collapse()
+
+
+func set_upgrade_obscured(obscured: bool) -> void:
+	top_panel.visible = not obscured
+	stage_hud.visible = not obscured
+	skill_dock.visible = not obscured
+	tutorial_panel.visible = not obscured and tutorial_panel.modulate.a > 0.001
+	joystick.mouse_filter = Control.MOUSE_FILTER_IGNORE if obscured else Control.MOUSE_FILTER_STOP
 
 
 func show_banner(title: String, subtitle: String, duration: float) -> void:

@@ -19,16 +19,6 @@
 [ext_resource type="Script" path="res://scripts/levels/equipment_reward_config.gd" id="17_equipment_reward"]
 [ext_resource type="Texture2D" path="res://assets/art/ui/home/route_icon_oasis.png" id="18_route_icon"]
 
-[sub_resource type="Resource" id="SkillSunOrbit"]
-script = ExtResource("13_weighted")
-content_id = "sun_orbit"
-weight = 1.15
-
-[sub_resource type="Resource" id="SkillMeteorRain"]
-script = ExtResource("13_weighted")
-content_id = "meteor_rain"
-weight = 1.15
-
 [sub_resource type="Resource" id="RelicEnergyPrism"]
 script = ExtResource("13_weighted")
 content_id = "energy_prism"
@@ -42,9 +32,7 @@ weight = 1.2
 [sub_resource type="Resource" id="ContentPool"]
 script = ExtResource("12_pool")
 inherit_from_level_id = "level_01"
-introduced_skill_ids = PackedStringArray("sun_orbit", "meteor_rain")
 introduced_relic_ids = PackedStringArray("energy_prism", "star_bell")
-skill_entries = Array[ExtResource("13_weighted")]([SubResource("SkillSunOrbit"), SubResource("SkillMeteorRain")])
 relic_entries = Array[ExtResource("13_weighted")]([SubResource("RelicEnergyPrism"), SubResource("RelicStarBell")])
 skill_pool_limit = 4
 relic_pool_limit = 4

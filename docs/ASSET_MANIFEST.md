@@ -27,10 +27,10 @@ assets/
 │   ├── environment/       # 五生态战斗地面
 │   ├── items/             # 物品图集
 │   ├── pickups/           # 拾取物
-│   ├── skills/            # 六项技能图标
+│   ├── skills/            # 六项技能图标与正式技能特效
 │   ├── sunlit/backgrounds/# 当前远征地图环境底板
-│   └── ui/                # 首页与角色中心正式 UI 位图
-├── audio/                 # 7 条音乐与 56 个 Cue
+│   └── ui/                # 首页、角色中心、战斗与升级正式 UI 位图
+├── audio/                 # 7 条音乐与 60 个 Cue
 ├── fonts/                 # 三套运行时字体及许可
 └── generated/
     ├── equipment/         # 七件装备图标
@@ -95,7 +95,7 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 以下六张图为唯一技能图标主体：
 
 - `assets/art/skills/star_lance.png`
-- `assets/art/skills/sun_orbit.png`
+- `assets/art/skills/frost_slash.png`
 - `assets/art/skills/frost_tide.png`
 - `assets/art/skills/ember_volley.png`
 - `assets/art/skills/meteor_rain.png`
@@ -103,7 +103,34 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 
 卡框、品质、等级和冷却由运行时组件表达，不复制带底框版本。
 
-### 5.2 装备
+### 5.2 技能特效
+
+| 路径 | 用途 |
+|---|---|
+| `assets/art/skills/star_lance_core.png` | 星芒枪独立四棱晶核，512 px / mipmap 导入；内部晶面复用于冰刃与霜潮材质，尾流由运行时控制 |
+| `assets/art/skills/frost_slash_arc.png` | 寒冰斩 Lv1～4 高品质单刃母版 |
+| `assets/art/skills/frost_slash_arc_mask.png` | 单刃从尾端到刃尖的渐变挥斩遮罩 |
+| `assets/art/skills/frost_slash_ultimate_upper.png` | 寒冰斩 Lv5 左上起势的上刃独立层 |
+| `assets/art/skills/frost_slash_ultimate_upper_mask.png` | Lv5 上刃顺时针挥斩遮罩 |
+| `assets/art/skills/frost_slash_ultimate_lower.png` | 寒冰斩 Lv5 右下起势的下刃独立层 |
+| `assets/art/skills/frost_slash_ultimate_lower_mask.png` | Lv5 下刃反向挥斩遮罩 |
+| `assets/art/skills/frost_tide_wave.png` | 霜潮脉冲 Lv1 中性破口潮环 |
+| `assets/art/skills/frost_tide_field_wave.png` | 永冻冰原宽阔稀疏潮环 |
+| `assets/art/skills/frost_tide_shatter_wave.png` | 碎星寒潮紧凑碎裂潮锋 |
+| `assets/art/skills/frost_tide_star_crown.png` | Lv5 八向破口星海冰冠 |
+| `assets/art/skills/frost_tide_shards.png` | 寒冰斩与霜潮共用的四格独立冰屑透明图集 |
+| `assets/art/skills/ember_volley_feather.png` | 烬羽连矢 Lv1～5 羽刃主体；分支差异由尺寸、密度与材质强度表达 |
+| `assets/art/skills/meteor_rain_body.png` | 陨星雨独立熔岩岩核，无烘焙尾焰或落点；运行时限制 512 px 并生成 mipmap，复用于抛射碎岩 |
+| `assets/art/skills/phoenix_heart_wings.png` | 凤凰之心双翼主体；运行时拆分左右半幅，围绕翼根独立展开并破碎消散 |
+| `assets/art/skills/ember_fragments.png` | 四格羽尖、燃岩、余烬与金色火星透明图集 |
+
+寒冰斩三张主体与霜潮五张素材均共享白色锋面、冰青渐变和湖蓝暗边。主体使用 mipmap，避免缩小时羽脉与晶面出现碎点；冰系 Shader 保留原有轮廓，并从星枪晶核内部取样材质，叠加年龄驱动的折光与碎裂，不叠加粗圆弧。寒冰斩遮罩只记录角向运动顺序；霜潮由径向 Shader 和实际数值半径控制传播，不另存尺寸表。命中范围、随机朝向、时序与伤害仍由运行时控制，不在素材中烘焙角色、敌人或完整圆环。
+
+烬羽四张特效素材共享象牙金锋面、橙红主体和酒红暗边。羽矢由投射物朝向控制；陨星只烘焙有明暗层次的岩核，尾焰、爆发火烟、尘浪与余烬由 `meteor_rain_visual.gd`、`meteor_flame.gdshader`、`meteor_ground.gdshader` 和共享 `meteor_turbulence.tres` 生成，不烘焙角色、落点或整段动画。岩核使用内置 imagegen 生成并保留真实透明通道，生产提示词见 `.prompts/card-art.md` 的陨星岩核条目。凤凰母版只提供左右翼材质，心形负空间、实际半径、180 ms 命中与分支节奏均由运行时控制。
+
+星枪晶核使用内置 imagegen 生成，真实透明通道与生产提示词记录于 `.prompts/card-art.md`。`projectile_visual.gd` / `projectile_material.gdshader` 负责晶核、火羽与流动尾迹；`skill_material.gdshaderinc` 共用陨星的单一 `meteor_turbulence.tres`，供星、冰、羽焰产生各自材质。`skill_impact_visual.gd` / `skill_impact.gdshader` 负责属性命中与抛射碎片，沿用 64 个短效的总预算与清理入口。没有新增噪声副本、序列帧母版或仅换色贴图。具体制作和验收要求以 `ART_DIRECTION.md` 的 `Combat Material VFX Standard` 为准。
+
+### 5.3 装备
 
 | 装备 | 路径 |
 |---|---|
@@ -117,7 +144,7 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 
 不同品质复用同一主体图；运行时方格统一为 `1:1` 正方形：`common` 使用灰色单压线，`rare` 使用鲜绿双压线与左上缺口，`top` 使用明亮金色三段边框与左上冠形徽记，均不带底部节点或挂件。已装备归属头像由运行时叠加，不复制进装备主体或品质框素材。
 
-### 5.3 拾取物与物品图集
+### 5.4 拾取物与物品图集
 
 | 路径 | 用途 |
 |---|---|
@@ -140,6 +167,13 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 | `assets/art/sunlit/backgrounds/expedition_route_map.png` | 远征大厅五生态环境底板 | 无角色、关卡钉、文字和导航 |
 | `assets/art/ui/battle/battle_status_frame.png` | 战斗顶部连续状态栏空白底框 | 运行时叠加等级、生命、经验、时间、击败与暂停 Glyph；不烘焙文字、数值、图标或填充状态 |
 | `assets/art/ui/battle/battle_progress_frame.png` | 战斗远征进度织带空白底框 | 运行时叠加路径段、阶段节点、标记与状态；不烘焙进度、文字或图标 |
+| `assets/art/ui/upgrade/upgrade_title_banner.png` | 三选一升级空白标题牌 | 运行时叠加标题与副标题；不烘焙文字、等级或选项内容 |
+| `assets/art/ui/upgrade/upgrade_level_medallion.png` | 三选一升级等级徽牌 | 运行时叠加等级数值；不烘焙数字或升级状态 |
+| `assets/art/ui/upgrade/upgrade_choice_board.png` | 三选一连续帆布选项板 | 三段缝线区由运行时叠加选项内容与选中反馈；不烘焙技能、遗物或补给信息 |
+| `assets/art/ui/upgrade/upgrade_icon_medallion.png` | 三选一通用主体图标环 | 中央叠加技能、遗物或补给主体；不追加下挂流派分支图标或第二徽章 |
+| `assets/art/ui/upgrade/upgrade_type_ribbon.png` | 三选一选项类型织带 | 运行时叠加“技能”“遗物”“补给”等短标签；不烘焙文字或品质状态 |
+| `assets/art/ui/upgrade/upgrade_reroll_frame.png` | 三选一重抽按钮空白底框 | 运行时叠加次数、文案与禁用态；不烘焙数字或交互状态 |
+| `assets/art/ui/upgrade/metrics/*.png` | 三选一阶段、特性、定位、恢复、速度、伤害、间隔、范围与数量指标图标 | 只表达指标语义；标签和值由运行时上下对齐叠加，不烘焙文字或数值 |
 | `assets/art/ui/home/expedition_brief_frame.png` | 首页关卡信息牌 | 统一承载名称、页码、战力与奖励分区，不烘焙数据 |
 | `assets/art/ui/home/home_compass_banner.png` | 首页左上远征罗盘挂旗 | 替代程序圆角方形入口；不承载文字或点击状态 |
 | `assets/art/ui/home/brief_icon_recommended.png` | 关卡信息牌建议评分图标 | 闭合盾形，20 px 灰度下与养成评分区分 |
@@ -162,6 +196,15 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 | `assets/art/ui/home/nav_icon_expedition.png` | 首页远征入口图标 | 无文字、徽章或按钮底框 |
 | `assets/art/ui/home/nav_icon_compendium.png` | 首页图鉴入口图标 | 无文字、徽章或按钮底框 |
 | `assets/art/ui/home/settings_medallion.png` | 首页及共享紧凑设置入口 | 60×60 运行时显示；点击状态由 Godot 控制 |
+| `assets/art/ui/compendium/page_frame.png` | 图鉴集合与详情共用的桦木纸张内页 | 空白中央由运行时叠加标题、分类、内容和详情；不烘焙文字或条目 |
+| `assets/art/ui/compendium/category_rail.png` | 图鉴五分类连续青色织带底板 | 五个等宽分区；不烘焙分类图标、文字、进度或选中状态 |
+| `assets/art/ui/compendium/category_selected.png` | 图鉴当前分类下挂选中片 | 仅表达当前分类；由运行时在五个槽位之间移动 |
+| `assets/art/ui/compendium/category_heroes.png` | 图鉴英雄分类图标与未发现类别剪影 | 不替代具体英雄主体 |
+| `assets/art/ui/compendium/category_enemies.png` | 图鉴怪物分类图标与未发现类别剪影 | 不提前暴露具体怪物 |
+| `assets/art/ui/compendium/category_pickups.png` | 图鉴道具分类图标与未发现类别剪影 | 不绑定具体掉落 ID |
+| `assets/art/ui/compendium/category_skills.png` | 图鉴技能分类图标与未发现类别剪影 | 不表达技能所属英雄 |
+| `assets/art/ui/compendium/category_relics.png` | 图鉴遗物分类图标与未发现类别剪影 | 不表达具体品质或等级 |
+| `assets/art/ui/compendium/back_icon.png` | 图鉴详情返回收藏图标 | 无文字；Tooltip 与无障碍名称由运行时提供 |
 | `assets/art/ui/character/character_camp_backdrop.png` | 角色中心日光营地环境底板 | 仅承载环境；全屏背景层切换，不烘焙角色、文字、装备或交互状态 |
 | `assets/art/ui/character/hero_stage_frame.png` | 角色中心桦木帆布英雄台 | 透明中央由运行时叠加 HeroRig、装备槽与养成评分；不烘焙内容数据 |
 | `assets/art/ui/character/character_title_plaque.png` | 角色中心空白标题签 | 运行时叠加页面标题；不烘焙文字 |
@@ -177,7 +220,7 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 | `assets/art/ui/character/filter_icon_charm.png` | 装备背包饰品筛选图标 | 新月护符轮廓，不烘焙按钮底框或文字 |
 | `assets/generated/ui/victory_crest.png` | 胜利与高价值奖励徽章 | 不作为普通装饰重复使用 |
 
-程序组件 `SunlitFrame`、`SunlitCardStyle`、`SunlitGlyph` 和 `SunlitLockBadge` 负责边框、状态、触控与响应式，不生成整页 UI 位图。
+程序组件 `SunlitFrame`、`SunlitCardStyle`、`SunlitGlyph` 和 `SunlitLockBadge` 继续负责通用边框、状态、触控与响应式；图鉴只使用上表登记的空白内页和连续分类织带，不使用烘焙内容或整页截图。
 
 ## 7. 音频
 
@@ -195,14 +238,14 @@ Smiley Sans 使用[官方 v2.0.1 发行包](https://github.com/atelier-anchor/sm
 
 ### 7.2 Cue
 
-`assets/audio/` 中除上述 7 条音乐外保留 56 个由 `scripts/audio_cue_catalog.gd` 明确引用的 Cue，覆盖：
+`assets/audio/` 中除上述 7 条音乐外保留 60 个由 `scripts/audio_cue_catalog.gd` 明确引用的 Cue，覆盖：
 
 - UI 选择、确认、导航、打开、返回、锁定、装备、技能培养和升级。
 - 经验、治疗、磁吸、加速、爆破与通用拾取。
 - 玩家受伤、敌人击败、通用命中与危险预警。
 - 青叶团团冲刺、暮翼蝠光弹、阶段、精英、胜利与失败。
 - 云角鹿回风角、铃羽鸢落印，以及驺吾登场、冲刺、尾扫、云印和认可。
-- 六项技能施放，以及冰霜、陨星和凤凰的独立命中。
+- 六项技能施放、寒冰斩回斩、霜潮 Lv5 冻结峰值，以及寒冰斩、霜潮、烬羽、陨星和凤凰的独立命中。
 
 音频路径和 Cue ID 是稳定接口。`tools/generate_audio.py` 是当前波形再生成工具；替换内容不得改变事件时机、总线、优先级和并发契约。
 当前正式音频使用帆布摩擦、轻木敲击、搪瓷清音、阻尼短弦和自然风声五类基础音色；七条 BGM 共享短动机，但按大厅、五个生态和驺吾试炼分别使用独立调式、节奏密度与环境层。

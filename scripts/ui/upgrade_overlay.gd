@@ -8,22 +8,20 @@ const ScreenLayout = preload("res://scripts/ui/screen_layout.gd")
 const DesignFrame = preload("res://scripts/ui/design_frame.gd")
 const UpgradeChoiceCard = preload("res://scripts/ui/upgrade_choice_card.gd")
 const UpgradeChoicePresenter = preload("res://scripts/ui/upgrade_choice_presenter.gd")
-const SunlitCardStyle = preload("res://scripts/ui/sunlit_card_style.gd")
-const UpgradeHeaderOrnament = preload("res://scripts/ui/upgrade_header_ornament.gd")
-
-const INK := UiFactory.INK
-const MUTED_INK := UiFactory.MUTED_INK
-const AMBER := UiFactory.ACCENT_DARK
+const TITLE_BANNER := preload("res://assets/art/ui/upgrade/upgrade_title_banner.png")
+const LEVEL_MEDALLION := preload("res://assets/art/ui/upgrade/upgrade_level_medallion.png")
+const CHOICE_BOARD := preload("res://assets/art/ui/upgrade/upgrade_choice_board.png")
+const REROLL_FRAME := preload("res://assets/art/ui/upgrade/upgrade_reroll_frame.png")
 
 var title: Label
 var buttons: Array[Button] = []
-var choice_views: Array[Dictionary] = []
 var choice_cards: Array = []
 var screen_overlay: ColorRect
 var design_frame: Control
 var reroll_button: Button
-var title_panel: Panel
-var level_plate: Panel
+var title_panel: TextureRect
+var level_plate: TextureRect
+var choice_board: TextureRect
 var reveal_tween: Tween
 var selection_tween: Tween
 var selection_locked := false
@@ -63,12 +61,11 @@ func show_choices(player_level: int, choices: Array, upgrade_system: RefCounted,
 		var choice := UpgradeChoicePresenter.normalize(choices[index], upgrade_system)
 		card.visible = true
 		card.present(choice, UpgradeChoicePresenter.view_model(choice))
-	var rerolls := int(build_state.rerolls_remaining)
-	current_rerolls = rerolls
-	reroll_button.disabled = rerolls <= 0
+	current_rerolls = int(build_state.rerolls_remaining)
+	reroll_button.disabled = current_rerolls <= 0
 	reroll_button.scale = Vector2.ONE
-	reroll_button.text = "重绘选项 · %d" % rerolls
-	reroll_button.tooltip_text = "重绘本组强化，剩余 %d 次" % rerolls
+	reroll_button.text = "重绘选项 · %d" % current_rerolls
+	reroll_button.tooltip_text = "重绘本组强化，剩余 %d 次" % current_rerolls
 	reroll_button.accessibility_description = reroll_button.tooltip_text
 	visible = true
 	_play_reveal()
@@ -76,44 +73,45 @@ func show_choices(player_level: int, choices: Array, upgrade_system: RefCounted,
 
 func _build_background() -> void:
 	screen_overlay = ColorRect.new()
-	screen_overlay.color = Color(0.006, 0.07, 0.09, 0.54)
+	screen_overlay.color = Color(0.006, 0.07, 0.09, 0.52)
 	screen_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(screen_overlay)
 	ScreenLayout.fill(screen_overlay)
 
 
 func _build_heading() -> void:
-	title_panel = Panel.new()
-	title_panel.position = Vector2(52, 66)
-	title_panel.size = Vector2(436, 92)
-	title_panel.pivot_offset = title_panel.size * 0.5
-	SunlitCardStyle.apply_panel(title_panel, Color(UiFactory.SURFACE, 0.96), Color("9b7544"), 10.0, true, false, "map_tag")
-	design_frame.add_child(title_panel)
-	var ornament := UpgradeHeaderOrnament.new()
-	ornament.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	title_panel.add_child(ornament)
-	level_plate = Panel.new()
-	level_plate.position = Vector2(151, 11)
-	level_plate.size = Vector2(134, 70)
+	title_panel = _texture_layer(TITLE_BANNER, Vector2(34, 50), Vector2(472, 142))
+	var heading := UiFactory.surface_label("远征强化", 27, UiFactory.INK)
+	UiFactory.apply_key_heading(heading, 27, UiFactory.INK)
+	heading.position = Vector2(120, 12)
+	heading.size = Vector2(232, 40)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_panel.add_child(heading)
+	level_plate = _texture_layer(LEVEL_MEDALLION, Vector2(150, 104), Vector2(240, 88))
 	level_plate.pivot_offset = level_plate.size * 0.5
-	SunlitCardStyle.apply_panel(level_plate, UiFactory.HUD_SURFACE_ALT, UiFactory.ACCENT, 8.0, true, true, "enamel", 2)
-	title_panel.add_child(level_plate)
-	title = _surface_label("LV.1", 28, UiFactory.HUD_TEXT)
+	title = UiFactory.surface_label("LV.1", 32, UiFactory.HUD_TEXT)
 	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title.offset_left = 26
+	title.offset_top = 14
+	title.offset_right = -26
+	title.offset_bottom = -10
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_shadow_color", Color(UiFactory.INK, 0.82))
+	title.add_theme_constant_override("shadow_offset_x", 1)
+	title.add_theme_constant_override("shadow_offset_y", 2)
 	level_plate.add_child(title)
-	var heading := _surface_label("远征强化", 18, INK)
-	UiFactory.apply_key_heading(heading, 18, INK)
-	heading.position = Vector2(20, 29)
-	heading.size = Vector2(120, 32)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_panel.add_child(heading)
-	var hint := _surface_label("选择 1 项", 16, MUTED_INK)
-	hint.position = Vector2(296, 31)
-	hint.size = Vector2(120, 28)
+	var hint := UiFactory.surface_label("选择 1 项", 17, UiFactory.HUD_TEXT)
+	hint.position = Vector2(198, 190)
+	hint.size = Vector2(144, 30)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_panel.add_child(hint)
+	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	design_frame.add_child(hint)
+
+
+func _build_choice_board() -> void:
+	choice_board = _texture_layer(CHOICE_BOARD, Vector2(22, 192), Vector2(496, 594))
 
 
 func _build_choice_card(index: int) -> void:
@@ -124,31 +122,21 @@ func _build_choice_card(index: int) -> void:
 	design_frame.add_child(card)
 	choice_cards.append(card)
 	buttons.append(card)
-	choice_views.append(card.views)
-
-
-func _build_choice_board() -> void:
-	var board := Panel.new()
-	board.position = Vector2(22, 166)
-	board.size = Vector2(496, 576)
-	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	SunlitCardStyle.apply_panel(board, Color(UiFactory.SURFACE, 0.12), Color(UiFactory.PRIMARY, 0.42), 10.0, false, true, "canvas")
-	design_frame.add_child(board)
 
 
 func _build_footer() -> void:
-	var footer := Panel.new()
-	footer.position = Vector2(125, 774)
-	footer.size = Vector2(290, 80)
-	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	SunlitCardStyle.apply_panel(footer, Color(UiFactory.SURFACE, 0.96), Color(UiFactory.PRIMARY, 0.7), 8.0, false, true, "ribbon")
-	design_frame.add_child(footer)
+	_texture_layer(REROLL_FRAME, Vector2(118, 844), Vector2(304, 72))
 	reroll_button = Button.new()
-	reroll_button.position = Vector2(155, 786)
-	reroll_button.size = Vector2(230, 56)
+	reroll_button.position = Vector2(151, 852)
+	reroll_button.size = Vector2(238, 54)
 	reroll_button.add_theme_font_size_override("font_size", 17)
 	reroll_button.add_theme_constant_override("outline_size", 0)
-	UiFactory.apply_secondary_button(reroll_button)
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		reroll_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	reroll_button.add_theme_color_override("font_color", UiFactory.INK)
+	reroll_button.add_theme_color_override("font_hover_color", UiFactory.PRIMARY_DARK)
+	reroll_button.add_theme_color_override("font_pressed_color", UiFactory.INK)
+	reroll_button.add_theme_color_override("font_disabled_color", Color(UiFactory.MUTED_INK, 0.66))
 	reroll_button.pressed.connect(reroll_requested.emit)
 	design_frame.add_child(reroll_button)
 
@@ -166,11 +154,12 @@ func _select(button: Button) -> void:
 	if selection_tween != null and selection_tween.is_valid():
 		selection_tween.kill()
 	selection_tween = create_tween().set_parallel(true)
-	selection_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	selection_tween.tween_property(button, "scale", Vector2(1.04, 1.04), 0.22)
+	selection_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	selection_tween.tween_property(button, "position:y", button.position.y + 2.0, 0.12)
+	selection_tween.tween_property(button, "modulate", Color(1.0, 0.93, 0.66, 1.0), 0.16)
 	for candidate in buttons:
 		if candidate != button:
-			selection_tween.tween_property(candidate, "modulate:a", 0.34, 0.18)
+			selection_tween.tween_property(candidate, "modulate:a", 0.34, 0.16)
 	selection_tween.finished.connect(_commit_selection, CONNECT_ONE_SHOT)
 
 
@@ -194,6 +183,7 @@ func restore_selection() -> void:
 	for candidate in buttons:
 		candidate.mouse_filter = Control.MOUSE_FILTER_STOP
 		candidate.focus_mode = Control.FOCUS_ALL
+		candidate.position = candidate.get_meta("rest_position", candidate.position)
 		candidate.scale = Vector2.ONE
 		candidate.modulate = Color.WHITE
 	reroll_button.disabled = current_rerolls <= 0
@@ -202,7 +192,6 @@ func restore_selection() -> void:
 func _play_reveal() -> void:
 	if reveal_tween != null and reveal_tween.is_valid():
 		reveal_tween.kill()
-	title_panel.scale = Vector2.ONE
 	title_panel.modulate.a = 1.0
 	level_plate.scale = Vector2(0.84, 0.84)
 	for button in buttons:
@@ -216,13 +205,15 @@ func _play_reveal() -> void:
 	for index in range(buttons.size()):
 		var card := buttons[index]
 		var target: Vector2 = card.get_meta("rest_position", card.position - Vector2(0, 16))
-		var delay := 0.05 + index * 0.045
+		var delay := index * 0.045
 		reveal_tween.tween_property(card, "position", target, 0.18).set_delay(delay)
-		reveal_tween.tween_property(card, "modulate:a", 1.0, 0.14).set_delay(delay)
+		reveal_tween.tween_property(card, "modulate:a", 1.0, 0.12).set_delay(delay)
 
 
-func _surface_label(text: String, font_size: int, color: Color) -> Label:
-	var node := UiFactory.label(text, font_size, color)
-	node.add_theme_constant_override("outline_size", 0)
-	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return node
+func _texture_layer(texture: Texture2D, at: Vector2, extent: Vector2) -> TextureRect:
+	var layer := UiFactory.texture_rect(texture, TextureRect.STRETCH_SCALE)
+	layer.position = at
+	layer.size = extent
+	layer.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	design_frame.add_child(layer)
+	return layer

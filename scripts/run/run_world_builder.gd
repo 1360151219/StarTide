@@ -26,6 +26,7 @@ func build(parent: Node2D, state: RefCounted, build_state: RefCounted, level: Le
 	player.z_index = level.map.depth_index(player.position.y)
 	parent.add_child(player)
 	world.track_player(player)
+	effects.player = player
 	var camera := _create_camera(player, level.map)
 	var enemies := EnemySystem.new()
 	parent.add_child(enemies)
